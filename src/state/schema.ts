@@ -141,6 +141,7 @@ export const BalanceSchema = z.object({
   traitUnlockThreshold: z.number(),
   maxEquippedTraits: z.number().int(),
   fadedStaminaThreshold: z.number(),
+  baseStrikeDamage: z.number(),
   weeklyDecay: z.object({
     partner: z.number(),
     hype: z.number(),
