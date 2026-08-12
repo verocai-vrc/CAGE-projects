@@ -7,5 +7,6 @@
   "cutPenaltyClean": 1.0,
   "traitUnlockThreshold": 85,
   "maxEquippedTraits": 2,
+  "fadedStaminaThreshold": 30,
   "weeklyDecay": { "partner": 4, "hype": 3, "sponsor": 3, "trainingPartners": 5 }
 }
