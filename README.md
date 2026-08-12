@@ -108,7 +108,7 @@ The full architecture, data model, engine spec, and milestone plan are in [`DESI
 - [x] Concept and reference research
 - [x] Loop and mechanics design
 - [x] Architecture and data model specified (`DESIGN.md`)
-- [ ] M1 — Engine + lab
+- [x] M1 — Engine + lab
 - [ ] M2 — Fight viewer
 - [ ] M3 — Career shell
 - [ ] M4 — Life layer + wrapper
