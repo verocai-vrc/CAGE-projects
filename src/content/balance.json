@@ -1,1 +1,11 @@
-{}
+{
+  "k": 13,
+  "kFinish": 10,
+  "staminaDrainBase": 1.0,
+  "cardioDrainScale": 0.6,
+  "cutPenaltyBotched": 0.82,
+  "cutPenaltyClean": 1.0,
+  "traitUnlockThreshold": 85,
+  "maxEquippedTraits": 2,
+  "weeklyDecay": { "partner": 4, "hype": 3, "sponsor": 3, "trainingPartners": 5 }
+}

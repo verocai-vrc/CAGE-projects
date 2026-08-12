@@ -1,1 +1,10 @@
-{}
+[
+  { "id": "power", "label": "Power", "pillar": "striking" },
+  { "id": "technique", "label": "Technique", "pillar": "striking" },
+  { "id": "speed", "label": "Speed", "pillar": "striking" },
+  { "id": "wrestling", "label": "Wrestling", "pillar": "grappling" },
+  { "id": "groundControl", "label": "Ground Control", "pillar": "grappling" },
+  { "id": "chin", "label": "Chin", "pillar": "durability" },
+  { "id": "cardio", "label": "Cardio", "pillar": "durability" },
+  { "id": "fightIQ", "label": "Fight IQ", "pillar": "mind" }
+]
