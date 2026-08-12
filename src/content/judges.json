@@ -1,1 +1,20 @@
-{}
+[
+  {
+    "id": "mcgrath",
+    "name": "Dana McGrath",
+    "bias": { "strike": 1.0, "control": 1.2, "knockdown": 2.5, "submission": 1.2 },
+    "noise": 1.0
+  },
+  {
+    "id": "oyelaran",
+    "name": "Femi Oyelaran",
+    "bias": { "strike": 1.6, "control": 0.2, "knockdown": 2.0, "submission": 0.2 },
+    "noise": 1.4
+  },
+  {
+    "id": "park",
+    "name": "Grace Park",
+    "bias": { "strike": 0.8, "control": 1.6, "knockdown": 2.8, "submission": 1.6 },
+    "noise": 0.7
+  }
+]

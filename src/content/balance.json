@@ -9,5 +9,6 @@
   "maxEquippedTraits": 2,
   "fadedStaminaThreshold": 30,
   "baseStrikeDamage": 6,
+  "dominantRoundThreshold": 15,
   "weeklyDecay": { "partner": 4, "hype": 3, "sponsor": 3, "trainingPartners": 5 }
 }

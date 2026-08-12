@@ -131,6 +131,20 @@ export const ArchetypeSchema = z.object({
   attributes: AttributesSchema,
 });
 
+export const JudgeBiasSchema = z.object({
+  strike: z.number(),
+  control: z.number(),
+  knockdown: z.number(),
+  submission: z.number(),
+});
+
+export const JudgeSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  bias: JudgeBiasSchema,
+  noise: z.number().min(0),
+});
+
 export const BalanceSchema = z.object({
   k: z.number(),
   kFinish: z.number(),
@@ -142,6 +156,7 @@ export const BalanceSchema = z.object({
   maxEquippedTraits: z.number().int(),
   fadedStaminaThreshold: z.number(),
   baseStrikeDamage: z.number(),
+  dominantRoundThreshold: z.number(),
   weeklyDecay: z.object({
     partner: z.number(),
     hype: z.number(),
