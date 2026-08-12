@@ -102,12 +102,23 @@ function applyStrike(
     events.push({ t: 'knockdown', who: def.fighter.id, round });
   }
 
-  const defChin = effectiveChin(def.fighter.attributes.chin, def.health, MAX_HEALTH, def.stamina, def.cutPenalty);
-  const attackValue = atk.fighter.attributes.power * atk.cutPenalty;
-  if (def.health <= 0 || rollFinish(attackValue, defChin, balance.kFinish, rng)) {
-    const method: FightMethod = def.health <= balance.tkoHealthThreshold ? 'TKO' : 'KO';
-    events.push({ t: 'finish', who: atk.fighter.id, method, round });
-    return { winner: attacker, method };
+  if (def.health <= 0) {
+    events.push({ t: 'finish', who: atk.fighter.id, method: 'TKO', round });
+    return { winner: attacker, method: 'TKO' };
+  }
+
+  // "Per landed significant strike" (§6.4) — not every landed strike is a
+  // fight-threatening power shot; most just add to the tally judges see.
+  // Only significant strikes roll for the finish.
+  const isSignificant = rng.next() < balance.significantStrikeChance;
+  if (isSignificant) {
+    const defChin = effectiveChin(def.fighter.attributes.chin, def.health, MAX_HEALTH, def.stamina, def.cutPenalty);
+    const attackValue = atk.fighter.attributes.power * atk.cutPenalty;
+    if (rollFinish(attackValue, defChin, balance.kFinish, rng)) {
+      const method: FightMethod = def.health <= balance.tkoHealthThreshold ? 'TKO' : 'KO';
+      events.push({ t: 'finish', who: atk.fighter.id, method, round });
+      return { winner: attacker, method };
+    }
   }
   return null;
 }

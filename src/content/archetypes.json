@@ -3,42 +3,42 @@
     "id": "striker",
     "label": "Striker",
     "attributes": {
-      "power": 80,
-      "technique": 82,
-      "speed": 75,
-      "wrestling": 28,
-      "groundControl": 25,
-      "chin": 60,
-      "cardio": 58,
-      "fightIQ": 52
+      "power": 48,
+      "technique": 78,
+      "speed": 68,
+      "wrestling": 24,
+      "groundControl": 22,
+      "chin": 72,
+      "cardio": 56,
+      "fightIQ": 72
     }
   },
   {
     "id": "wrestler",
     "label": "Wrestler",
     "attributes": {
-      "power": 48,
-      "technique": 32,
-      "speed": 42,
-      "wrestling": 85,
-      "groundControl": 80,
-      "chin": 50,
-      "cardio": 55,
-      "fightIQ": 45
+      "power": 38,
+      "technique": 30,
+      "speed": 38,
+      "wrestling": 82,
+      "groundControl": 78,
+      "chin": 68,
+      "cardio": 56,
+      "fightIQ": 44
     }
   },
   {
     "id": "allrounder",
     "label": "All-Rounder",
     "attributes": {
-      "power": 60,
-      "technique": 60,
-      "speed": 58,
-      "wrestling": 55,
-      "groundControl": 52,
-      "chin": 60,
-      "cardio": 62,
-      "fightIQ": 60
+      "power": 44,
+      "technique": 54,
+      "speed": 52,
+      "wrestling": 50,
+      "groundControl": 48,
+      "chin": 70,
+      "cardio": 60,
+      "fightIQ": 58
     }
   }
 ]

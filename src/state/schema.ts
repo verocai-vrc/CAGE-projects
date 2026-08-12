@@ -165,6 +165,7 @@ export const BalanceSchema = z.object({
   knockdownHealthThreshold: z.number(),
   tkoHealthThreshold: z.number(),
   groundDefenseMultiplier: z.number().min(0).max(1),
+  significantStrikeChance: z.number().min(0).max(1),
   weeklyDecay: z.object({
     partner: z.number(),
     hype: z.number(),

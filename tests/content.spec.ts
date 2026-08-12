@@ -46,9 +46,13 @@ describe('loadContent', () => {
 });
 
 describe('real content fixtures', () => {
-  it('balance.json validates and loads the Appendix A starting values', () => {
+  it('balance.json validates and loads', () => {
+    // k stays at its Appendix A starting value; kFinish (and the other
+    // finish-related constants) were retuned in Loop 1.8 via the balance
+    // lab to hit the win-rate and finish-rate acceptance gates — see
+    // lab/report.ts for the documented target bands.
     expect(balance.k).toBe(13);
-    expect(balance.kFinish).toBe(10);
+    expect(balance.kFinish).toBeTypeOf('number');
     expect(Object.isFrozen(balance)).toBe(true);
   });
 
