@@ -4,6 +4,7 @@
 // decisions and controversy emerge for free, no scripting.
 
 import type { RNG } from './rng';
+import type { Scorecard } from './types';
 
 export interface RoundTape {
   round: number;
@@ -52,11 +53,6 @@ export function scoreRound(
   if (noisyDiff < -balance.dominantRoundThreshold) return { a: 8, b: 10 };
   if (noisyDiff >= 0) return { a: 10, b: 9 };
   return { a: 9, b: 10 };
-}
-
-export interface Scorecard {
-  judgeId: string;
-  roundScores: { a: number; b: number }[];
 }
 
 export function scoreFight(tapes: RoundTape[], judge: Judge, balance: JudgingBalance, rng: RNG): Scorecard {

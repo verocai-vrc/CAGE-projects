@@ -60,11 +60,22 @@ export interface Origin {
 
 export type TacticId = 'pressPace' | 'shootTakedowns' | 'protectLead' | 'headhunt' | 'balanced';
 
-// Per-round tactic choice for one fighter, keyed by round number (1-based).
-export type FighterTactics = Record<number, TacticId>;
+// Fight-week cut quality (weightcut.ts resolves this into a cutPenalty).
+// Camp-long diet/hydration management that produces this classification is
+// M4 (Loop 4.2); for M1-M3 it's supplied directly.
+export type CutQuality = 'clean' | 'botched';
 
-// Both fighters' tactics for a fight, keyed by fighter id.
-export type Tactics = Record<string, FighterTactics>;
+// One fighter's plan for a fight: cut quality plus a tactic choice per round
+// (keyed by round number, 1-based). Corner decisions (M2, Loop 2.3) update
+// the round tactic map mid-playback; simulateFight's signature stays pure by
+// having the full plan precomputed before it runs.
+export interface FighterPlan {
+  cutQuality: CutQuality;
+  rounds: Record<number, TacticId>;
+}
+
+// Both fighters' plans for a fight, keyed by fighter id.
+export type Tactics = Record<string, FighterPlan>;
 
 export type PositionState = 'standing' | 'clinch' | 'topControl' | 'bottomControl';
 

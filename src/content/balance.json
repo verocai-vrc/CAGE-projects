@@ -10,5 +10,13 @@
   "fadedStaminaThreshold": 30,
   "baseStrikeDamage": 6,
   "dominantRoundThreshold": 15,
+  "roundsPerFight": 3,
+  "ticksPerRound": 40,
+  "takedownAttemptChance": 0.04,
+  "takedownAttemptChanceAggressive": 0.15,
+  "submissionAttemptChance": 0.05,
+  "knockdownHealthThreshold": 55,
+  "tkoHealthThreshold": 35,
+  "groundDefenseMultiplier": 0.4,
   "weeklyDecay": { "partner": 4, "hype": 3, "sponsor": 3, "trainingPartners": 5 }
 }

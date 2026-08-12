@@ -3,7 +3,7 @@
 // decide which CutQuality to pass in from accumulated camp state; this
 // function stays a pure lookup.
 
-export type CutQuality = 'clean' | 'botched';
+import type { CutQuality } from './types';
 
 export interface WeightCutBalance {
   cutPenaltyBotched: number;
