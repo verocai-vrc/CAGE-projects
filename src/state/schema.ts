@@ -83,6 +83,8 @@ export const FightEventSchema = z.discriminatedUnion('t', [
     round: z.number().int(),
     scoreA: z.number(),
     scoreB: z.number(),
+    staminaA: z.number(),
+    staminaB: z.number(),
   }),
   z.object({
     t: z.literal('finish'),

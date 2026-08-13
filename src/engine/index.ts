@@ -4,6 +4,8 @@
 export { simulateFight } from './fight';
 export { mulberry32, seedFromString, rollLogistic } from './rng';
 export type { RNG } from './rng';
+export { computePillars } from './round';
+export type { Pillars } from './round';
 
 export type {
   Attributes,

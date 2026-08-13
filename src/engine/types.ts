@@ -89,7 +89,7 @@ export type FightEvent =
   | { t: 'submissionAttempt'; by: string; escaped: boolean; round: number }
   | { t: 'cornerCall'; round: number; tacticId: string }
   | { t: 'playerMoment'; round: number; kind: MomentKind; outcome: 'success' | 'fail' }
-  | { t: 'roundEnd'; round: number; scoreA: number; scoreB: number }
+  | { t: 'roundEnd'; round: number; scoreA: number; scoreB: number; staminaA: number; staminaB: number }
   | { t: 'finish'; who: string; method: string; round: number };
 
 export interface Scorecard {

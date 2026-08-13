@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { simulateFight } from '../src/engine/fight';
 import { mulberry32 } from '../src/engine/rng';
 import type { Fighter, Tactics } from '../src/engine/types';
-import { FightSummarySchema } from '../src/state/schema';
+import { FightResultSchema, FightSummarySchema } from '../src/state/schema';
 import { archetypes } from '../src/content';
 
 function fighterFromArchetype(id: string, archetypeId: string): Fighter {
@@ -118,5 +118,42 @@ describe('simulateFight sanity', () => {
     const finishEvents = finishResult!.events.filter((e) => e.t === 'finish');
     expect(finishEvents).toHaveLength(1);
     expect(finishResult!.events[finishResult!.events.length - 1].t).toBe('finish');
+  });
+});
+
+describe('roundEnd stamina snapshots (Loop 2.2 — HUD bars replay from the event log)', () => {
+  it('carries in-bounds, non-increasing-per-fighter stamina across successive roundEnd events', () => {
+    // Not every seed reaches a roundEnd (an early finish produces none), so
+    // search for one that goes at least two rounds — same pattern as the
+    // "finish before the last round" test above.
+    let result = simulateFight(fighterA, fighterB, emptyTactics, mulberry32(0));
+    for (let seed = 0; seed < 50; seed++) {
+      const candidate = simulateFight(fighterA, fighterB, emptyTactics, mulberry32(seed));
+      if (candidate.events.filter((e) => e.t === 'roundEnd').length >= 2) {
+        result = candidate;
+        break;
+      }
+    }
+    const roundEnds = result.events.filter((e) => e.t === 'roundEnd');
+    expect(roundEnds.length).toBeGreaterThan(0);
+
+    let prevA = 100;
+    let prevB = 100;
+    for (const event of roundEnds) {
+      if (event.t !== 'roundEnd') continue;
+      expect(event.staminaA).toBeGreaterThanOrEqual(0);
+      expect(event.staminaA).toBeLessThanOrEqual(100);
+      expect(event.staminaB).toBeGreaterThanOrEqual(0);
+      expect(event.staminaB).toBeLessThanOrEqual(100);
+      expect(event.staminaA).toBeLessThanOrEqual(prevA);
+      expect(event.staminaB).toBeLessThanOrEqual(prevB);
+      prevA = event.staminaA;
+      prevB = event.staminaB;
+    }
+  });
+
+  it('the full FightResult, including the extended roundEnd shape, still validates against FightResultSchema', () => {
+    const result = simulateFight(fighterA, fighterB, emptyTactics, mulberry32(0));
+    expect(FightResultSchema.safeParse(result).success).toBe(true);
   });
 });

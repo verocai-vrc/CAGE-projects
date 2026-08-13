@@ -257,7 +257,14 @@ export function simulateFight(a: Fighter, b: Fighter, tactics: Tactics, rng: RNG
       }
     }
 
-    events.push({ t: 'roundEnd', round, scoreA: tape.strikesLandedA, scoreB: tape.strikesLandedB });
+    events.push({
+      t: 'roundEnd',
+      round,
+      scoreA: tape.strikesLandedA,
+      scoreB: tape.strikesLandedB,
+      staminaA: runtime.a.stamina,
+      staminaB: runtime.b.stamina,
+    });
     tapes.push(tape);
   }
 
