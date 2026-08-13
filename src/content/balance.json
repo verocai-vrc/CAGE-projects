@@ -19,5 +19,11 @@
   "tkoHealthThreshold": 35,
   "groundDefenseMultiplier": 0.4,
   "significantStrikeChance": 0.016,
+  "pressPaceStaminaDrainBonus": 0.15,
+  "pressPaceStrikingBonus": 20,
+  "protectLeadStrikingPenalty": 5,
+  "protectLeadDefenseBonus": 6,
+  "headhuntPowerMultiplier": 1.25,
+  "headhuntStrikingPenalty": 8,
   "weeklyDecay": { "partner": 4, "hype": 3, "sponsor": 3, "trainingPartners": 5 }
 }

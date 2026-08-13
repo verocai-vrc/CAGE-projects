@@ -168,6 +168,12 @@ export const BalanceSchema = z.object({
   tkoHealthThreshold: z.number(),
   groundDefenseMultiplier: z.number().min(0).max(1),
   significantStrikeChance: z.number().min(0).max(1),
+  pressPaceStaminaDrainBonus: z.number().min(0),
+  pressPaceStrikingBonus: z.number(),
+  protectLeadStrikingPenalty: z.number(),
+  protectLeadDefenseBonus: z.number(),
+  headhuntPowerMultiplier: z.number().min(0),
+  headhuntStrikingPenalty: z.number(),
   weeklyDecay: z.object({
     partner: z.number(),
     hype: z.number(),

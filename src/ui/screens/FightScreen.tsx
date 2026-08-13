@@ -7,11 +7,12 @@
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { computePillars, simulateFight } from '../../engine';
 import { mulberry32 } from '../../engine/rng';
-import type { Fighter, FightEvent, FightResult, Tactics } from '../../engine/types';
-import { archetypes, judges } from '../../content';
+import type { Fighter, FightEvent, FightResult, Tactics, TacticId } from '../../engine/types';
+import { archetypes, balance, judges } from '../../content';
 import { PlayByPlay } from '../components/PlayByPlay';
 import { HudBar } from '../components/HudBar';
 import { StatRadar } from '../components/StatRadar';
+import { CornerChoice } from '../components/CornerChoice';
 
 const REVEAL_INTERVAL_MS = 220;
 const FIXTURE_SEED = 2026;
@@ -38,8 +39,21 @@ const fighterA = fighterFromArchetype('fighter-a', 'Riko Tanaka', 'striker');
 const fighterB = fighterFromArchetype('fighter-b', 'Deshawn Cole', 'wrestler');
 const emptyTactics: Tactics = {};
 
-function buildFixtureResult(): FightResult {
-  return simulateFight(fighterA, fighterB, emptyTactics, mulberry32(FIXTURE_SEED));
+// Corner choices are precomputed into `tactics` (DESIGN.md §6.7 / Loop 2.3
+// recommendation) rather than pausing the engine mid-sim. Re-running
+// simulateFight from the same seed with an updated tactics map reproduces a
+// byte-identical event prefix up to the round the choice was made, then
+// diverges from there — so replaying it from revealCount 0 is safe and cheap.
+//
+// Why the prefix is stable: a round-N tactic is only read from round N
+// onward, so every roll before round N sees identical inputs and draws the
+// same values from the same seeded stream. Note this holds *per round*, not
+// per tick — RNG consumption within a round is outcome-dependent (a landed
+// strike draws extra values for the significant-strike and finish rolls),
+// so a tactic that changes hit rates shifts the stream from that point on.
+// Only ever extend `tactics` at rounds that haven't been revealed yet.
+function buildResult(tactics: Tactics): FightResult {
+  return simulateFight(fighterA, fighterB, tactics, mulberry32(FIXTURE_SEED));
 }
 
 function winnerName(result: FightResult): string {
@@ -102,7 +116,8 @@ function runningScorecardTotals(result: FightResult, roundsScored: number) {
 }
 
 export function FightScreen() {
-  const [result] = useState<FightResult>(buildFixtureResult);
+  const [tactics, setTactics] = useState<Tactics>(emptyTactics);
+  const [result, setResult] = useState<FightResult>(() => buildResult(emptyTactics));
   const [revealCount, setRevealCount] = useState(0);
   const [playing, setPlaying] = useState(true);
 
@@ -111,6 +126,19 @@ export function FightScreen() {
   const accumulatorRef = useRef(0);
 
   const done = revealCount >= result.events.length;
+
+  // Pause playback right after revealing a roundEnd for any round before the
+  // last, unless fighter A's corner has already picked a tactic for the
+  // round that follows it.
+  const pendingCornerRound = useMemo(() => {
+    if (revealCount === 0 || revealCount > result.events.length) return null;
+    const lastRevealed = result.events[revealCount - 1];
+    if (lastRevealed?.t !== 'roundEnd') return null;
+    if (lastRevealed.round >= balance.roundsPerFight) return null;
+    const nextRound = lastRevealed.round + 1;
+    if (tactics[fighterA.id]?.rounds[nextRound] !== undefined) return null;
+    return nextRound;
+  }, [result, revealCount, tactics]);
 
   const hud = useMemo(
     () => deriveHudState(result.events, revealCount, fighterA.id, fighterB.id),
@@ -123,8 +151,24 @@ export function FightScreen() {
   const pillarsA = useMemo(() => computePillars(fighterA.attributes), []);
   const pillarsB = useMemo(() => computePillars(fighterB.attributes), []);
 
+  function chooseCornerTactic(tactic: TacticId) {
+    if (pendingCornerRound === null) return;
+    const nextTactics: Tactics = {
+      ...tactics,
+      [fighterA.id]: {
+        cutQuality: tactics[fighterA.id]?.cutQuality ?? 'clean',
+        rounds: { ...tactics[fighterA.id]?.rounds, [pendingCornerRound]: tactic },
+      },
+    };
+    setTactics(nextTactics);
+    // Same seed + an unchanged tactics prefix reproduces the already-revealed
+    // events byte-for-byte (see buildResult) — safe to swap the result out
+    // from under an in-progress reveal without rewinding what's on screen.
+    setResult(buildResult(nextTactics));
+  }
+
   useEffect(() => {
-    if (!playing || done) return;
+    if (!playing || done || pendingCornerRound !== null) return;
 
     function tick(ts: number) {
       if (lastTsRef.current === null) lastTsRef.current = ts;
@@ -148,7 +192,7 @@ export function FightScreen() {
       frameRef.current = null;
       lastTsRef.current = null;
     };
-  }, [playing, done, result.events.length]);
+  }, [playing, done, pendingCornerRound, result.events.length]);
 
   return (
     <div>
@@ -187,13 +231,17 @@ export function FightScreen() {
       </div>
 
       <div>
-        <button type="button" onClick={() => setPlaying((p) => !p)} disabled={done}>
+        <button type="button" onClick={() => setPlaying((p) => !p)} disabled={done || pendingCornerRound !== null}>
           {done ? 'Finished' : playing ? 'Pause' : 'Play'}
         </button>
         <button type="button" onClick={() => setRevealCount(result.events.length)} disabled={done}>
           Skip to end
         </button>
       </div>
+
+      {pendingCornerRound !== null && (
+        <CornerChoice fighterName={fighterA.name} nextRound={pendingCornerRound} onChoose={chooseCornerTactic} />
+      )}
 
       <PlayByPlay
         events={result.events}

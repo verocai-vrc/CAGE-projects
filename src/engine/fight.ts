@@ -63,6 +63,59 @@ function tacticFor(tactics: Tactics, fighterId: string, round: number): TacticId
   return tactics[fighterId]?.rounds[round] ?? 'balanced';
 }
 
+// Real trade-offs per §6.7, applied at the call site so round.ts's roll
+// functions stay tactic-agnostic (same pattern as cutPenalty). All deltas
+// are additive/multiplicative on existing pillar values — no new roll paths.
+//
+// Tuning note (all values live in balance.json, never here): stamina
+// COMPOUNDS — it multiplies accuracy on every later roll — while a striking
+// delta is a one-off edge on a single roll. So a stamina cost that looks
+// small per tick outweighs a large pillar bonus across a fight. pressPace is
+// deliberately tuned to a round-1 surge that reverses into a round-3 fade
+// (§6.3's "fast starter who fades"), NOT a whole-fight volume gain: at
+// bonus=20/drain=0.15 the striker fixture lands ~+5% in round 1 and ~-22% in
+// round 3 vs balanced. Re-check tests/corner.spec.ts if these are retuned.
+//
+// 'balanced' and 'shootTakedowns' return all-neutral modifiers, so a fight
+// with no tactics map is bit-identical to the pre-tactics engine (verified
+// across every archetype pairing) — the M1 lab gates are unaffected.
+interface TacticModifiers {
+  ownStrikingDelta: number; // added to own striking pillar when attacking
+  opponentStrikingDelta: number; // added to own striking pillar when it's used as the opponent's defense
+  powerMultiplier: number; // multiplies power for damage + finish rolls
+  staminaDrainBonus: number; // extra per-tick stamina drain
+}
+
+function tacticModifiersFor(tactic: TacticId): TacticModifiers {
+  switch (tactic) {
+    case 'pressPace':
+      return {
+        ownStrikingDelta: balance.pressPaceStrikingBonus,
+        opponentStrikingDelta: 0,
+        powerMultiplier: 1,
+        staminaDrainBonus: balance.pressPaceStaminaDrainBonus,
+      };
+    case 'protectLead':
+      return {
+        ownStrikingDelta: -balance.protectLeadStrikingPenalty,
+        opponentStrikingDelta: balance.protectLeadDefenseBonus,
+        powerMultiplier: 1,
+        staminaDrainBonus: 0,
+      };
+    case 'headhunt':
+      return {
+        ownStrikingDelta: -balance.headhuntStrikingPenalty,
+        opponentStrikingDelta: 0,
+        powerMultiplier: balance.headhuntPowerMultiplier,
+        staminaDrainBonus: 0,
+      };
+    case 'shootTakedowns':
+    case 'balanced':
+    default:
+      return { ownStrikingDelta: 0, opponentStrikingDelta: 0, powerMultiplier: 1, staminaDrainBonus: 0 };
+  }
+}
+
 type TapeCounter = 'strikesLanded' | 'controlTime' | 'knockdowns' | 'submissionThreats';
 
 function bumpTape(tape: RoundTape, side: Side, counter: TapeCounter): void {
@@ -78,6 +131,8 @@ interface FinishOutcome {
 
 // Resolves a landed strike's damage, knockdown, and finish roll against the
 // defender (§6.4). Returns a FinishOutcome if the fight ends here.
+// powerMultiplier folds in the attacker's active tactic (headhunt raises it —
+// §6.7); it's resolved by the caller, keeping this function tactic-agnostic.
 function applyStrike(
   runtime: Record<Side, FighterRuntime>,
   attacker: Side,
@@ -87,12 +142,14 @@ function applyStrike(
   tape: RoundTape,
   rng: RNG,
   kind: 'strike' | 'groundStrike',
+  powerMultiplier: number,
 ): FinishOutcome | null {
   const atk = runtime[attacker];
   const def = runtime[defender];
 
   bumpTape(tape, attacker, 'strikesLanded');
-  const damage = strikeDamage(atk.fighter.attributes.power * atk.cutPenalty, balance.baseStrikeDamage);
+  const power = atk.fighter.attributes.power * atk.cutPenalty * powerMultiplier;
+  const damage = strikeDamage(power, balance.baseStrikeDamage);
   def.health = Math.max(0, def.health - damage);
   events.push({ t: 'strike', by: atk.fighter.id, kind, landed: true, damage, round });
 
@@ -113,8 +170,7 @@ function applyStrike(
   const isSignificant = rng.next() < balance.significantStrikeChance;
   if (isSignificant) {
     const defChin = effectiveChin(def.fighter.attributes.chin, def.health, MAX_HEALTH, def.stamina, def.cutPenalty);
-    const attackValue = atk.fighter.attributes.power * atk.cutPenalty;
-    if (rollFinish(attackValue, defChin, balance.kFinish, rng)) {
+    if (rollFinish(power, defChin, balance.kFinish, rng)) {
       const method: FightMethod = def.health <= balance.tkoHealthThreshold ? 'TKO' : 'KO';
       events.push({ t: 'finish', who: atk.fighter.id, method, round });
       return { winner: attacker, method };
@@ -156,17 +212,46 @@ export function simulateFight(a: Fighter, b: Fighter, tactics: Tactics, rng: RNG
     const tape = emptyTape(round);
     endRound = round;
 
+    if (round > 1) {
+      for (const side of ['a', 'b'] as Side[]) {
+        const plan = tactics[runtime[side].fighter.id];
+        if (plan?.rounds[round] !== undefined) {
+          events.push({ t: 'cornerCall', round, tacticId: plan.rounds[round] });
+        }
+      }
+    }
+
+    // Tactics are fixed for the whole round, so resolve them once here rather
+    // than per tick.
+    const tacticA = tacticFor(tactics, a.id, round);
+    const tacticB = tacticFor(tactics, b.id, round);
+    const modsA = tacticModifiersFor(tacticA);
+    const modsB = tacticModifiersFor(tacticB);
+    const mods: Record<Side, TacticModifiers> = { a: modsA, b: modsB };
+    const tactic: Record<Side, TacticId> = { a: tacticA, b: tacticB };
+
     for (let tick = 0; tick < balance.ticksPerRound; tick++) {
-      runtime.a.stamina = tickStamina(runtime.a.stamina, a.attributes.cardio * runtime.a.cutPenalty, balance);
-      runtime.b.stamina = tickStamina(runtime.b.stamina, b.attributes.cardio * runtime.b.cutPenalty, balance);
+      runtime.a.stamina = tickStamina(
+        runtime.a.stamina,
+        a.attributes.cardio * runtime.a.cutPenalty,
+        balance,
+        modsA.staminaDrainBonus,
+      );
+      runtime.b.stamina = tickStamina(
+        runtime.b.stamina,
+        b.attributes.cardio * runtime.b.cutPenalty,
+        balance,
+        modsB.staminaDrainBonus,
+      );
 
       if (position === 'standing') {
         let attemptedTakedown = false;
         for (const side of ['a', 'b'] as Side[]) {
           if (attemptedTakedown) break;
-          const tactic = tacticFor(tactics, runtime[side].fighter.id, round);
           const chance =
-            tactic === 'shootTakedowns' ? balance.takedownAttemptChanceAggressive : balance.takedownAttemptChance;
+            tactic[side] === 'shootTakedowns'
+              ? balance.takedownAttemptChanceAggressive
+              : balance.takedownAttemptChance;
           if (rng.next() < chance) {
             attemptedTakedown = true;
             const opp = otherSide(side);
@@ -190,15 +275,15 @@ export function simulateFight(a: Fighter, b: Fighter, tactics: Tactics, rng: RNG
           for (const side of ['a', 'b'] as Side[]) {
             const opp = otherSide(side);
             const landed = resolveStrike(
-              runtime[side].pillars.striking,
+              runtime[side].pillars.striking + mods[side].ownStrikingDelta,
               runtime[side].stamina,
-              runtime[opp].pillars.striking,
+              runtime[opp].pillars.striking + mods[opp].opponentStrikingDelta,
               runtime[opp].stamina,
               balance.k,
               rng,
             );
             if (landed) {
-              const result = applyStrike(runtime, side, opp, round, events, tape, rng, 'strike');
+              const result = applyStrike(runtime, side, opp, round, events, tape, rng, 'strike', mods[side].powerMultiplier);
               if (result) {
                 outcome = result;
                 tapes.push(tape);
@@ -238,15 +323,26 @@ export function simulateFight(a: Fighter, b: Fighter, tactics: Tactics, rng: RNG
           }
         } else {
           const landed = resolveStrike(
-            runtime[dominant].pillars.striking,
+            runtime[dominant].pillars.striking + mods[dominant].ownStrikingDelta,
             runtime[dominant].stamina,
-            runtime[defender].pillars.striking * balance.groundDefenseMultiplier,
+            (runtime[defender].pillars.striking + mods[defender].opponentStrikingDelta) *
+              balance.groundDefenseMultiplier,
             runtime[defender].stamina,
             balance.k,
             rng,
           );
           if (landed) {
-            const result = applyStrike(runtime, dominant, defender, round, events, tape, rng, 'groundStrike');
+            const result = applyStrike(
+              runtime,
+              dominant,
+              defender,
+              round,
+              events,
+              tape,
+              rng,
+              'groundStrike',
+              mods[dominant].powerMultiplier,
+            );
             if (result) {
               outcome = result;
               tapes.push(tape);

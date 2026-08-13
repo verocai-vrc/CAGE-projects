@@ -18,8 +18,11 @@ export function staminaDrainPerTick(cardio: number, balance: StaminaBalance): nu
   return balance.staminaDrainBase * (1 - balance.cardioDrainScale * (cardio / 100));
 }
 
-export function tickStamina(stamina: number, cardio: number, balance: StaminaBalance): number {
-  const drained = stamina - staminaDrainPerTick(cardio, balance);
+// extraDrain folds in a tactic's stamina cost (e.g. pressPace, §6.7) — added
+// on top of the base cardio-scaled drain, resolved by the caller so this
+// function stays tactic-agnostic.
+export function tickStamina(stamina: number, cardio: number, balance: StaminaBalance, extraDrain = 0): number {
+  const drained = stamina - staminaDrainPerTick(cardio, balance) - extraDrain;
   return Math.max(0, Math.min(MAX_STAMINA, drained));
 }
 
