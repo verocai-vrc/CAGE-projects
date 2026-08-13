@@ -5,7 +5,13 @@
 // mount/unmount storm).
 
 import { useEffect, useRef } from 'preact/hooks';
-import type { FightEvent } from '../../engine/types';
+import type { FightEvent, MomentKind } from '../../engine/types';
+
+const MOMENT_LABEL: Record<MomentKind, string> = {
+  scramble: 'scramble',
+  submissionEscape: 'submission escape',
+  finishingSequence: 'finishing sequence',
+};
 
 function describeEvent(event: FightEvent, name: (id: string) => string): string {
   switch (event.t) {
@@ -21,8 +27,13 @@ function describeEvent(event: FightEvent, name: (id: string) => string): string 
       return `R${event.round} — ${name(event.by)} hunts a submission — ${event.escaped ? 'defended' : 'locked in'}`;
     case 'cornerCall':
       return `R${event.round} — corner calls for ${event.tacticId}`;
-    case 'playerMoment':
-      return `R${event.round} — ${event.kind}: ${event.outcome}`;
+    case 'playerMoment': {
+      const label = MOMENT_LABEL[event.kind];
+      const verdict = event.outcome === 'success' ? 'won' : 'lost';
+      // 'auto' marks a moment the engine resolved (skipped or auto-resolved);
+      // 'played' marks one the player took by hand.
+      return `R${event.round} — ${label} ${verdict} (${event.played ? 'played' : 'auto'})`;
+    }
     case 'roundEnd':
       return `— End of round ${event.round} (${event.scoreA}-${event.scoreB} strikes) —`;
     case 'finish':

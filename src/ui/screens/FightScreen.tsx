@@ -7,12 +7,21 @@
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import { computePillars, simulateFight } from '../../engine';
 import { mulberry32 } from '../../engine/rng';
-import type { Fighter, FightEvent, FightResult, Tactics, TacticId } from '../../engine/types';
+import type {
+  Fighter,
+  FightEvent,
+  FightResult,
+  MomentOverrides,
+  MomentPerformance,
+  Tactics,
+  TacticId,
+} from '../../engine/types';
 import { archetypes, balance, judges } from '../../content';
 import { PlayByPlay } from '../components/PlayByPlay';
 import { HudBar } from '../components/HudBar';
 import { StatRadar } from '../components/StatRadar';
 import { CornerChoice } from '../components/CornerChoice';
+import { MomentBar } from '../components/MomentBar';
 
 const REVEAL_INTERVAL_MS = 220;
 const FIXTURE_SEED = 2026;
@@ -52,8 +61,13 @@ const emptyTactics: Tactics = {};
 // strike draws extra values for the significant-strike and finish rolls),
 // so a tactic that changes hit rates shifts the stream from that point on.
 // Only ever extend `tactics` at rounds that haven't been revealed yet.
-function buildResult(tactics: Tactics): FightResult {
-  return simulateFight(fighterA, fighterB, tactics, mulberry32(FIXTURE_SEED));
+// Player moments (Loop 2.4) ride the same re-simulate mechanism: the engine
+// resolves every moment itself (that IS the auto-resolve path), and playing
+// one by hand adds a MomentOverrides entry and re-runs. RNG consumption per
+// moment is constant, so an override changes the outcome without moving any
+// later moment to a different exchange.
+function buildResult(tactics: Tactics, momentOverrides: MomentOverrides): FightResult {
+  return simulateFight(fighterA, fighterB, tactics, mulberry32(FIXTURE_SEED), momentOverrides);
 }
 
 function winnerName(result: FightResult): string {
@@ -115,11 +129,17 @@ function runningScorecardTotals(result: FightResult, roundsScored: number) {
   });
 }
 
+const emptyOverrides: MomentOverrides = {};
+
 export function FightScreen() {
   const [tactics, setTactics] = useState<Tactics>(emptyTactics);
-  const [result, setResult] = useState<FightResult>(() => buildResult(emptyTactics));
+  const [momentOverrides, setMomentOverrides] = useState<MomentOverrides>(emptyOverrides);
+  const [result, setResult] = useState<FightResult>(() => buildResult(emptyTactics, emptyOverrides));
   const [revealCount, setRevealCount] = useState(0);
   const [playing, setPlaying] = useState(true);
+  // Moment indices the player has already answered (played or auto-resolved),
+  // so a resolved moment doesn't re-prompt when playback continues past it.
+  const [handledMoments, setHandledMoments] = useState<Record<number, true>>({});
 
   const frameRef = useRef<number | null>(null);
   const lastTsRef = useRef<number | null>(null);
@@ -139,6 +159,16 @@ export function FightScreen() {
     if (tactics[fighterA.id]?.rounds[nextRound] !== undefined) return null;
     return nextRound;
   }, [result, revealCount, tactics]);
+
+  // The next event to be revealed, if it's an unhandled player moment (§7).
+  // Offered BEFORE it is revealed, since the outcome decides what follows it
+  // in the log — the player is choosing, not reading back a result.
+  const pendingMoment = useMemo(() => {
+    const next = result.events[revealCount];
+    if (next?.t !== 'playerMoment') return null;
+    if (handledMoments[next.index]) return null;
+    return next;
+  }, [result, revealCount, handledMoments]);
 
   const hud = useMemo(
     () => deriveHudState(result.events, revealCount, fighterA.id, fighterB.id),
@@ -164,11 +194,46 @@ export function FightScreen() {
     // Same seed + an unchanged tactics prefix reproduces the already-revealed
     // events byte-for-byte (see buildResult) — safe to swap the result out
     // from under an in-progress reveal without rewinding what's on screen.
-    setResult(buildResult(nextTactics));
+    setResult(buildResult(nextTactics, momentOverrides));
   }
 
+  // A played moment contributes a performance (-1..+1) that tilts the
+  // engine's roll for it, and the fight is re-simulated. Auto-resolve passes
+  // performance 0 — identical to the unaided roll already in `result` — so
+  // it needs no re-simulation at all (§7's "fair to skip").
+  function resolveMoment(index: number, performance: MomentPerformance, played: boolean) {
+    setHandledMoments((handled) => ({ ...handled, [index]: true }));
+    if (!played || performance === 0) return;
+
+    const nextOverrides: MomentOverrides = { ...momentOverrides, [index]: performance };
+    setMomentOverrides(nextOverrides);
+    setResult(buildResult(tactics, nextOverrides));
+  }
+
+  // Accepts the engine's outcome for every remaining moment and reveals the
+  // rest of the fight. No override is recorded, so `result` already reflects
+  // exactly these outcomes — nothing to re-simulate.
+  function skipToEnd() {
+    const handled: Record<number, true> = { ...handledMoments };
+    for (const event of result.events) {
+      if (event.t === 'playerMoment') handled[event.index] = true;
+    }
+    setHandledMoments(handled);
+    setRevealCount(result.events.length);
+  }
+
+  // Index of the next unhandled moment, used to clamp batched reveals so a
+  // slow frame can't skip past a moment the player must answer first.
+  const nextMomentIndex = useMemo(() => {
+    for (let i = revealCount; i < result.events.length; i++) {
+      const event = result.events[i];
+      if (event.t === 'playerMoment' && !handledMoments[event.index]) return i;
+    }
+    return -1;
+  }, [result, revealCount, handledMoments]);
+
   useEffect(() => {
-    if (!playing || done || pendingCornerRound !== null) return;
+    if (!playing || done || pendingCornerRound !== null || pendingMoment !== null) return;
 
     function tick(ts: number) {
       if (lastTsRef.current === null) lastTsRef.current = ts;
@@ -181,7 +246,9 @@ export function FightScreen() {
         revealed++;
       }
       if (revealed > 0) {
-        setRevealCount((count) => Math.min(result.events.length, count + revealed));
+        // Never reveal past an unanswered moment, however long the frame was.
+        const ceiling = nextMomentIndex === -1 ? result.events.length : nextMomentIndex;
+        setRevealCount((count) => Math.min(ceiling, count + revealed));
       }
       frameRef.current = requestAnimationFrame(tick);
     }
@@ -192,7 +259,7 @@ export function FightScreen() {
       frameRef.current = null;
       lastTsRef.current = null;
     };
-  }, [playing, done, pendingCornerRound, result.events.length]);
+  }, [playing, done, pendingCornerRound, pendingMoment, nextMomentIndex, result.events.length]);
 
   return (
     <div>
@@ -231,16 +298,30 @@ export function FightScreen() {
       </div>
 
       <div>
-        <button type="button" onClick={() => setPlaying((p) => !p)} disabled={done || pendingCornerRound !== null}>
+        <button
+          type="button"
+          onClick={() => setPlaying((p) => !p)}
+          disabled={done || pendingCornerRound !== null || pendingMoment !== null}
+        >
           {done ? 'Finished' : playing ? 'Pause' : 'Play'}
         </button>
-        <button type="button" onClick={() => setRevealCount(result.events.length)} disabled={done}>
+        {/* Skipping to the end auto-resolves every remaining moment: the
+            result already holds the engine's own outcomes for any moment
+            without an override, so this is the §7 skip path applied wholesale. */}
+        <button type="button" onClick={skipToEnd} disabled={done}>
           Skip to end
         </button>
       </div>
 
       {pendingCornerRound !== null && (
         <CornerChoice fighterName={fighterA.name} nextRound={pendingCornerRound} onChoose={chooseCornerTactic} />
+      )}
+
+      {pendingMoment !== null && (
+        <MomentBar
+          kind={pendingMoment.kind}
+          onResolve={(performance, played) => resolveMoment(pendingMoment.index, performance, played)}
+        />
       )}
 
       <PlayByPlay

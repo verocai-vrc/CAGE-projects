@@ -75,8 +75,10 @@ export const FightEventSchema = z.discriminatedUnion('t', [
   z.object({
     t: z.literal('playerMoment'),
     round: z.number().int(),
+    index: z.number().int().min(0),
     kind: z.enum(['scramble', 'submissionEscape', 'finishingSequence']),
     outcome: z.enum(['success', 'fail']),
+    played: z.boolean(),
   }),
   z.object({
     t: z.literal('roundEnd'),
@@ -174,6 +176,12 @@ export const BalanceSchema = z.object({
   protectLeadDefenseBonus: z.number(),
   headhuntPowerMultiplier: z.number().min(0),
   headhuntStrikingPenalty: z.number(),
+  maxMomentsPerFight: z.number().int().min(0),
+  momentTriggerChance: z.number().min(0).max(1),
+  kMoment: z.number(),
+  momentSuccessStrikingBonus: z.number(),
+  momentFailStrikingPenalty: z.number(),
+  momentSkillSwing: z.number().min(0),
   weeklyDecay: z.object({
     partner: z.number(),
     hype: z.number(),

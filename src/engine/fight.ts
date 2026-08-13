@@ -13,7 +13,19 @@
 // needs to be displayed or shared.
 
 import type { RNG } from './rng';
-import type { Fighter, FightEvent, FightMethod, FightResult, Scorecard, Tactics, TacticId } from './types';
+import { rollLogistic } from './rng';
+import type {
+  Fighter,
+  FightEvent,
+  FightMethod,
+  FightResult,
+  MomentKind,
+  MomentOutcome,
+  MomentOverrides,
+  Scorecard,
+  Tactics,
+  TacticId,
+} from './types';
 import {
   computePillars,
   effectiveChin,
@@ -116,6 +128,96 @@ function tacticModifiersFor(tactic: TacticId): TacticModifiers {
   }
 }
 
+// --- Player moments (§7) ---
+//
+// The sim is always authoritative: every moment is resolved here by an
+// engine roll (player pillar vs opponent pillar through the shared logistic
+// form), which IS the auto-resolve path — skipping a moment and never
+// opening the UI give the identical probability model, as Loop 2.4 requires.
+// A player who plays the moment by hand supplies an override, and the fight
+// is re-simulated.
+//
+// The engine roll happens even when an override is present, so RNG
+// consumption per moment is constant and an override shifts the outcome
+// without shifting the stream (mirrors the corner-call replay property).
+interface MomentState {
+  count: number; // moments triggered so far this fight
+}
+
+// Fighter A is the player — moments are offered on their exchanges only.
+const PLAYER_SIDE: Side = 'a';
+
+function momentPillar(runtime: FighterRuntime, kind: MomentKind): number {
+  switch (kind) {
+    case 'scramble':
+    case 'submissionEscape':
+      return runtime.pillars.grappling;
+    case 'finishingSequence':
+      return runtime.pillars.striking;
+  }
+}
+
+// Resolves one moment for `player` against `opponent`. Always consumes
+// exactly one rng.next() — the roll happens whether or not the player played
+// it, so the sim owns the probability and the random stream stays aligned.
+//
+// A supplied performance (-1..+1) tilts the contested delta by at most
+// balance.momentSkillSwing. It cannot manufacture a win from a hopeless
+// exchange, nor throw away a comfortable one: skill moves the odds, the
+// engine still decides (§7).
+function resolveMoment(
+  runtime: Record<Side, FighterRuntime>,
+  player: Side,
+  kind: MomentKind,
+  index: number,
+  overrides: MomentOverrides,
+  rng: RNG,
+): { outcome: MomentOutcome; played: boolean } {
+  const opponent = otherSide(player);
+  const performance = overrides[index];
+  const played = performance !== undefined;
+
+  // Clamped so a caller can't smuggle in an unbounded swing.
+  const tilt = played ? Math.max(-1, Math.min(1, performance)) * balance.momentSkillSwing : 0;
+
+  // Stamina-scaled, exactly like every other contested action (§6.3).
+  const attack = momentPillar(runtime[player], kind) * (runtime[player].stamina / MAX_HEALTH) + tilt;
+  const defense = momentPillar(runtime[opponent], kind) * (runtime[opponent].stamina / MAX_HEALTH);
+  const outcome: MomentOutcome = rollLogistic(attack, defense, balance.kMoment, rng) ? 'success' : 'fail';
+
+  return { outcome, played };
+}
+
+// Offers a moment at an eligible exchange, capped at maxMomentsPerFight
+// ("1-3 times per fight", §6.7). Returns the pillar delta to apply to the
+// player's side of this exchange: +bonus on success, -penalty on fail, 0 if
+// no moment triggered.
+//
+// The trigger roll is unconditional once the cap check passes, and
+// resolveMoment always rolls too, so for a given (seed, tactics) the set of
+// ticks that produce moments is fixed — overriding an outcome never moves a
+// later moment to a different tick.
+function maybeMoment(
+  kind: MomentKind,
+  round: number,
+  events: FightEvent[],
+  runtime: Record<Side, FighterRuntime>,
+  rng: RNG,
+  moments: MomentState,
+  overrides: MomentOverrides,
+): number {
+  if (moments.count >= balance.maxMomentsPerFight) return 0;
+  if (rng.next() >= balance.momentTriggerChance) return 0;
+
+  const index = moments.count;
+  moments.count++;
+
+  const { outcome, played } = resolveMoment(runtime, PLAYER_SIDE, kind, index, overrides, rng);
+  events.push({ t: 'playerMoment', round, index, kind, outcome, played });
+
+  return outcome === 'success' ? balance.momentSuccessStrikingBonus : -balance.momentFailStrikingPenalty;
+}
+
 type TapeCounter = 'strikesLanded' | 'controlTime' | 'knockdowns' | 'submissionThreats';
 
 function bumpTape(tape: RoundTape, side: Side, counter: TapeCounter): void {
@@ -143,6 +245,8 @@ function applyStrike(
   rng: RNG,
   kind: 'strike' | 'groundStrike',
   powerMultiplier: number,
+  moments: MomentState,
+  overrides: MomentOverrides,
 ): FinishOutcome | null {
   const atk = runtime[attacker];
   const def = runtime[defender];
@@ -169,8 +273,22 @@ function applyStrike(
   // Only significant strikes roll for the finish.
   const isSignificant = rng.next() < balance.significantStrikeChance;
   if (isSignificant) {
+    // A fight-threatening exchange is the player's finishing-sequence
+    // moment (§7) — the one kind allowed to end the fight, and it does so
+    // only by swinging this finish roll, never by fiat.
+    const finishDelta = maybeMoment(
+      'finishingSequence',
+      round,
+      events,
+      runtime,
+      rng,
+      moments,
+      overrides,
+    );
+    const powerDelta = attacker === PLAYER_SIDE ? finishDelta : -finishDelta;
+
     const defChin = effectiveChin(def.fighter.attributes.chin, def.health, MAX_HEALTH, def.stamina, def.cutPenalty);
-    if (rollFinish(power, defChin, balance.kFinish, rng)) {
+    if (rollFinish(power + powerDelta, defChin, balance.kFinish, rng)) {
       const method: FightMethod = def.health <= balance.tkoHealthThreshold ? 'TKO' : 'KO';
       events.push({ t: 'finish', who: atk.fighter.id, method, round });
       return { winner: attacker, method };
@@ -179,7 +297,18 @@ function applyStrike(
   return null;
 }
 
-export function simulateFight(a: Fighter, b: Fighter, tactics: Tactics, rng: RNG): FightResult {
+// momentOverrides is optional: omitted (the lab, the career layer, any
+// headless sim) means every moment auto-resolves via the engine's own roll,
+// so the fight is fully playable and identical with zero player input (§7).
+export function simulateFight(
+  a: Fighter,
+  b: Fighter,
+  tactics: Tactics,
+  rng: RNG,
+  momentOverrides: MomentOverrides = {},
+): FightResult {
+  const moments: MomentState = { count: 0 };
+
   const runtime: Record<Side, FighterRuntime> = {
     a: {
       fighter: a,
@@ -255,8 +384,22 @@ export function simulateFight(a: Fighter, b: Fighter, tactics: Tactics, rng: RNG
           if (rng.next() < chance) {
             attemptedTakedown = true;
             const opp = otherSide(side);
+
+            // A takedown exchange the player is part of can become a
+            // scramble moment (§7). Its outcome modifies this exchange —
+            // never an instant win/loss.
+            const scrambleDelta = maybeMoment(
+              'scramble',
+              round,
+              events,
+              runtime,
+              rng,
+              moments,
+              momentOverrides,
+            );
+
             const success = resolvePositionChange(
-              runtime[side].pillars.grappling,
+              runtime[side].pillars.grappling + (side === PLAYER_SIDE ? scrambleDelta : -scrambleDelta),
               runtime[side].stamina,
               runtime[opp].pillars.grappling,
               runtime[opp].stamina,
@@ -283,7 +426,19 @@ export function simulateFight(a: Fighter, b: Fighter, tactics: Tactics, rng: RNG
               rng,
             );
             if (landed) {
-              const result = applyStrike(runtime, side, opp, round, events, tape, rng, 'strike', mods[side].powerMultiplier);
+              const result = applyStrike(
+                runtime,
+                side,
+                opp,
+                round,
+                events,
+                tape,
+                rng,
+                'strike',
+                mods[side].powerMultiplier,
+                moments,
+                momentOverrides,
+              );
               if (result) {
                 outcome = result;
                 tapes.push(tape);
@@ -310,8 +465,24 @@ export function simulateFight(a: Fighter, b: Fighter, tactics: Tactics, rng: RNG
           position = 'standing';
           events.push({ t: 'position', state: 'standing', round });
         } else if (rng.next() < balance.submissionAttemptChance) {
+          // Caught in a submission is the player's escape moment (§7). The
+          // outcome modifies their defense in this exchange — a failed
+          // escape makes the tap likelier, it does not cause it outright.
+          const escapeDelta = maybeMoment(
+            'submissionEscape',
+            round,
+            events,
+            runtime,
+            rng,
+            moments,
+            momentOverrides,
+          );
+          const defenderDelta = defender === PLAYER_SIDE ? escapeDelta : -escapeDelta;
+
           const subAttack = runtime[dominant].pillars.grappling * runtime[dominant].cutPenalty;
-          const subDefense = runtime[defender].pillars.grappling * (runtime[defender].stamina / MAX_HEALTH);
+          const subDefense =
+            (runtime[defender].pillars.grappling + defenderDelta) *
+            (runtime[defender].stamina / MAX_HEALTH);
           const success = rollFinish(subAttack, subDefense, balance.kFinish, rng);
           events.push({ t: 'submissionAttempt', by: runtime[dominant].fighter.id, escaped: !success, round });
           bumpTape(tape, dominant, 'submissionThreats');
@@ -342,6 +513,8 @@ export function simulateFight(a: Fighter, b: Fighter, tactics: Tactics, rng: RNG
               rng,
               'groundStrike',
               mods[dominant].powerMultiplier,
+              moments,
+              momentOverrides,
             );
             if (result) {
               outcome = result;

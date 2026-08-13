@@ -25,5 +25,11 @@
   "protectLeadDefenseBonus": 6,
   "headhuntPowerMultiplier": 1.25,
   "headhuntStrikingPenalty": 8,
+  "maxMomentsPerFight": 3,
+  "momentTriggerChance": 0.35,
+  "kMoment": 16,
+  "momentSuccessStrikingBonus": 14,
+  "momentFailStrikingPenalty": 10,
+  "momentSkillSwing": 12,
   "weeklyDecay": { "partner": 4, "hype": 3, "sponsor": 3, "trainingPartners": 5 }
 }

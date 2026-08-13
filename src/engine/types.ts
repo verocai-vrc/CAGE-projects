@@ -81,6 +81,29 @@ export type PositionState = 'standing' | 'clinch' | 'topControl' | 'bottomContro
 
 export type MomentKind = 'scramble' | 'submissionEscape' | 'finishingSequence';
 
+export type MomentOutcome = 'success' | 'fail';
+
+// How well the player executed a moment, -1 (worst) .. +1 (best). The engine
+// converts this into a bounded tilt on the moment's roll — see
+// balance.momentSkillSwing. 0 is neutral, i.e. exactly what the engine would
+// have rolled unaided.
+export type MomentPerformance = number;
+
+// Player-moment inputs (M2, Loop 2.4), keyed by the moment's 0-based index
+// within the fight.
+//
+// simulateFight ALWAYS rolls every moment itself, so the sim owns the
+// probability (§7) and a fight with no input at all is fully playable — that
+// unaided roll is the auto-resolve path. Playing a moment by hand supplies a
+// performance here and the fight is re-simulated; the performance TILTS the
+// roll by at most momentSkillSwing, it does not dictate the result. A player
+// who executes perfectly on a badly-mismatched exchange can still lose.
+//
+// The engine consumes exactly one rng.next() per moment either way, so
+// supplying a performance changes the outcome's odds without shifting the
+// random stream — the same replay property corner calls rely on.
+export type MomentOverrides = Record<number, MomentPerformance>;
+
 export type FightEvent =
   | { t: 'strike'; by: string; kind: string; landed: boolean; damage: number; round: number }
   | { t: 'takedown'; by: string; success: boolean; round: number }
@@ -88,7 +111,10 @@ export type FightEvent =
   | { t: 'knockdown'; who: string; round: number }
   | { t: 'submissionAttempt'; by: string; escaped: boolean; round: number }
   | { t: 'cornerCall'; round: number; tacticId: string }
-  | { t: 'playerMoment'; round: number; kind: MomentKind; outcome: 'success' | 'fail' }
+  // index: 0-based position of this moment within the fight — the key a
+  // MomentOverrides entry uses. played: true when the outcome came from the
+  // player rather than the engine's own roll.
+  | { t: 'playerMoment'; round: number; index: number; kind: MomentKind; outcome: MomentOutcome; played: boolean }
   | { t: 'roundEnd'; round: number; scoreA: number; scoreB: number; staminaA: number; staminaB: number }
   | { t: 'finish'; who: string; method: string; round: number };
 
