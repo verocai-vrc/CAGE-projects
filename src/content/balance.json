@@ -32,7 +32,12 @@
   "momentFailStrikingPenalty": 10,
   "momentSkillSwing": 12,
   "weeklyDecay": { "partner": 4, "hype": 3, "sponsor": 3, "trainingPartners": 5 },
-  "energyPerWeek": 10,
-  "trainingGainPerEnergy": 0.5,
-  "restHealPerEnergy": 3
+  "weeklyEnergyBudget": 10,
+  "trainingGainPerEnergy": 0.4,
+  "restRegenPerEnergy": 1.5,
+  "defaultTrainingPartnerQuality": 0.75,
+  "baseOfferPurse": 5000,
+  "offerPursePerRankingPoint": 400,
+  "offerPursePerHype": 50,
+  "baseHypeReward": 5
 }

@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import type { Attributes, Fighter, Origin, FightResult } from '../engine/types';
-import type { CareerRecord, CareerState } from '../career/types';
+import type { CareerState } from './store';
 
 export const AttributesSchema = z.object({
   power: z.number().int().min(0).max(100),
@@ -122,25 +122,16 @@ export const FightResultSchema = z.object({
   summary: FightSummarySchema,
 }) satisfies z.ZodType<FightResult>;
 
-// Career-layer save state (DESIGN.md §8, §11) — validated on load from
-// localStorage; a mismatch here means clean-restart, never a thrown error.
-export const CareerRecordSchema = z.object({
-  wins: z.number().int().min(0),
-  losses: z.number().int().min(0),
-  draws: z.number().int().min(0),
-  noContests: z.number().int().min(0),
-}) satisfies z.ZodType<CareerRecord>;
-
+// state/store.ts's CareerState — the shape persisted to localStorage (§11).
+// Event logs are never part of this: fightHistory holds FightSummary only.
 export const CareerStateSchema = z.object({
-  fighter: FighterSchema,
-  origin: OriginSchema,
+  player: FighterSchema.nullable(),
+  origin: OriginSchema.nullable(),
   week: z.number().int().min(0),
-  purse: z.number().min(0),
-  hype: z.number().min(0).max(100),
+  energy: z.number(),
+  purse: z.number(),
   ranking: z.number().int().min(1).nullable(),
-  record: CareerRecordSchema,
   fightHistory: z.array(FightSummarySchema),
-  retired: z.boolean(),
 }) satisfies z.ZodType<CareerState>;
 
 // Content-file schemas (not part of the §4 data model, but validated at boot
@@ -154,6 +145,7 @@ export const AttributeMetaSchema = z.object({
 export const ArchetypeSchema = z.object({
   id: z.string(),
   label: z.string(),
+  weight: z.number().positive(),
   attributes: AttributesSchema,
 });
 
@@ -162,6 +154,13 @@ export const JudgeBiasSchema = z.object({
   control: z.number(),
   knockdown: z.number(),
   submission: z.number(),
+});
+
+export const NamePoolSchema = z.object({
+  nationality: z.string(),
+  weight: z.number().positive(),
+  firstNames: z.array(z.string()).min(1),
+  lastNames: z.array(z.string()).min(1),
 });
 
 export const JudgeSchema = z.object({
@@ -210,7 +209,12 @@ export const BalanceSchema = z.object({
     sponsor: z.number(),
     trainingPartners: z.number(),
   }),
-  energyPerWeek: z.number().min(0),
+  weeklyEnergyBudget: z.number().min(0),
   trainingGainPerEnergy: z.number().min(0),
-  restHealPerEnergy: z.number().min(0),
+  restRegenPerEnergy: z.number().min(0),
+  defaultTrainingPartnerQuality: z.number().min(0).max(1),
+  baseOfferPurse: z.number().min(0),
+  offerPursePerRankingPoint: z.number().min(0),
+  offerPursePerHype: z.number().min(0),
+  baseHypeReward: z.number().min(0),
 });

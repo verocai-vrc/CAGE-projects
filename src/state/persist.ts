@@ -1,96 +1,77 @@
-// persist.ts — localStorage load/save/migrate, debounced (DESIGN.md §11).
-//
-// Saving is convenience, never a dependency: any failure to read back a
-// valid save (corrupt JSON, failed schema validation, a version bump with
-// no migration path) falls back to a clean restart — it must never throw
-// out to the caller.
+// persist.ts — versioned localStorage save/load (DESIGN.md §11). Saving is
+// convenience, never a hard dependency: a corrupt or missing save must fall
+// back to a clean restart, never throw.
 
 import { CareerStateSchema } from './schema';
-import type { CareerState } from '../career/types';
+import { initialCareerState, type CareerState } from './store';
 
-// Minimal shape persist.ts actually needs from Storage, so tests can supply
-// an in-memory fake instead of requiring a DOM/localStorage environment.
-export interface StorageLike {
-  getItem(key: string): string | null;
-  setItem(key: string, value: string): void;
-  removeItem(key: string): void;
-}
-
-const SAVE_KEY = 'cage:save';
+const STORAGE_KEY = 'cage:save';
 const SAVE_VERSION = 1;
+const DEBOUNCE_MS = 500;
 
-interface SavePayload {
+interface SaveEnvelope {
   version: number;
   career: CareerState;
 }
 
-function defaultStorage(): StorageLike | null {
-  if (typeof localStorage === 'undefined') return null;
-  return localStorage;
+let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+
+function defaultStorage(): Storage {
+  return window.localStorage;
 }
 
-// Zod-validated load with a migration-or-clean-restart fallback. There is no
-// migration path yet (SAVE_VERSION has only ever been 1) — a version
-// mismatch takes the same clean-restart branch as a validation failure.
-export function loadCareer(storage: StorageLike | null = defaultStorage()): CareerState | null {
-  if (!storage) return null;
+function writeNow(career: CareerState, storage: Storage): void {
+  const envelope: SaveEnvelope = { version: SAVE_VERSION, career };
+  storage.setItem(STORAGE_KEY, JSON.stringify(envelope));
+}
 
-  const raw = storage.getItem(SAVE_KEY);
-  if (!raw) return null;
+// Debounced by default so rapid store updates (e.g. slider drags in camp
+// allocation) don't hit localStorage on every tick.
+export function saveCareer(career: CareerState, storage: Storage = defaultStorage()): void {
+  if (debounceTimer !== undefined) clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(() => writeNow(career, storage), DEBOUNCE_MS);
+}
+
+// Bypasses the debounce — for explicit "save now" actions or tests.
+export function saveCareerImmediate(career: CareerState, storage: Storage = defaultStorage()): void {
+  if (debounceTimer !== undefined) {
+    clearTimeout(debounceTimer);
+    debounceTimer = undefined;
+  }
+  writeNow(career, storage);
+}
+
+// Never throws. Returns the initial (empty) career state on any failure:
+// missing key, malformed JSON, schema mismatch, or an unknown save version.
+export function loadCareer(storage: Storage = defaultStorage()): CareerState {
+  const raw = storage.getItem(STORAGE_KEY);
+  if (raw === null) return initialCareerState;
 
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
   } catch {
-    storage.removeItem(SAVE_KEY);
-    return null;
+    return initialCareerState;
   }
 
   if (
     typeof parsed !== 'object' ||
     parsed === null ||
-    (parsed as { version?: unknown }).version !== SAVE_VERSION
+    !('version' in parsed) ||
+    !('career' in parsed) ||
+    (parsed as { version: unknown }).version !== SAVE_VERSION
   ) {
-    storage.removeItem(SAVE_KEY);
-    return null;
+    return initialCareerState;
   }
 
-  const result = CareerStateSchema.safeParse((parsed as SavePayload).career);
-  if (!result.success) {
-    storage.removeItem(SAVE_KEY);
-    return null;
+  const result = CareerStateSchema.safeParse((parsed as SaveEnvelope).career);
+  return result.success ? result.data : initialCareerState;
+}
+
+export function clearCareer(storage: Storage = window.localStorage): void {
+  if (debounceTimer !== undefined) {
+    clearTimeout(debounceTimer);
+    debounceTimer = undefined;
   }
-
-  return result.data;
-}
-
-export function saveCareerNow(career: CareerState, storage: StorageLike | null = defaultStorage()): void {
-  if (!storage) return;
-  const payload: SavePayload = { version: SAVE_VERSION, career };
-  storage.setItem(SAVE_KEY, JSON.stringify(payload));
-}
-
-export function clearSave(storage: StorageLike | null = defaultStorage()): void {
-  storage?.removeItem(SAVE_KEY);
-}
-
-const DEBOUNCE_MS = 500;
-
-// Returns a debounced save function bound to one storage target — used to
-// coalesce rapid store updates (e.g. dragging a camp-week allocation slider)
-// into a single write.
-export function createDebouncedSaver(
-  storage: StorageLike | null = defaultStorage(),
-  delayMs = DEBOUNCE_MS,
-): (career: CareerState) => void {
-  let timer: ReturnType<typeof setTimeout> | null = null;
-
-  return function scheduleSave(career: CareerState) {
-    if (!storage) return;
-    if (timer !== null) clearTimeout(timer);
-    timer = setTimeout(() => {
-      timer = null;
-      saveCareerNow(career, storage);
-    }, delayMs);
-  };
+  storage.removeItem(STORAGE_KEY);
 }

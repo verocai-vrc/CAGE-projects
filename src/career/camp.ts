@@ -1,99 +1,102 @@
-// camp.ts — DESIGN.md §8.1: the scarce weekly energy budget spent across
-// training, weight management, and rest. Training gains are gated by a
-// training-partner quality multiplier — for M3 this is a flat stub
-// (default 1, i.e. full effectiveness); the real neglect-based decay that
-// drives this multiplier down is M4 (Loop 4.1, career/life.ts).
-//
-// Weight management is tracked as an energy sink here (it competes for the
-// same scarce budget) but has no effect on the fighter yet — the camp-long
-// diet/hydration system that consumes it resolves into cutPenalty in
-// Loop 4.2. Rest restores condition.health, the long-term wear stat, not
-// in-fight health.
+// camp.ts — Loop 3.2: camp-week energy allocation (DESIGN.md §8.1). The core
+// scarcity loop: a fixed weekly energy budget spent across training (attribute
+// gains, gated by training-partner quality), weight management (feeds the
+// fight-week cut — camp-long tracking is M4/Loop 4.2, this loop only reserves
+// the allocation), and rest (condition.health regen). Life-bar decay (§8.3) is
+// M4 — this function is deliberately decoupled from it.
 
 import type { Attributes, Fighter } from '../engine/types';
-import { balance } from '../content';
 
-export type TrainingAllocation = Partial<Record<keyof Attributes, number>>;
+export interface CampBalance {
+  weeklyEnergyBudget: number;
+  trainingGainPerEnergy: number;
+  restRegenPerEnergy: number;
+  defaultTrainingPartnerQuality: number;
+}
 
+// Energy spent per week, split across the three camp pillars (§8.1). Values
+// are clamped and rebalanced against the budget in resolveCampWeek — this
+// type does not itself guarantee a valid allocation.
 export interface CampAllocation {
-  training: TrainingAllocation; // energy spent per attribute, this week
-  weightManagement: number; // energy spent; stubbed no-op until Loop 4.2
-  rest: number; // energy spent; restores condition.health
+  training: number;
+  weightManagement: number;
+  rest: number;
 }
 
 export interface CampWeekResult {
   fighter: Fighter;
-  energySpent: number; // total, never exceeds energyAvailable
-  energyAvailable: number; // the budget this result was resolved against
+  energySpent: CampAllocation;
+  energyRemaining: number;
 }
 
-const ATTRIBUTE_KEYS: (keyof Attributes)[] = [
+// Which attributes each pillar's training energy raises, and in what
+// proportion. Kept flat/even for now; archetype-specific training focus is a
+// later loop's concern, not this one's.
+const TRAINING_ATTRIBUTES: (keyof Attributes)[] = [
   'power',
   'technique',
   'speed',
   'wrestling',
   'groundControl',
-  'chin',
   'cardio',
-  'fightIQ',
 ];
 
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
-}
+function clampAllocation(allocation: CampAllocation, budget: number): CampAllocation {
+  const training = Math.max(0, allocation.training);
+  const weightManagement = Math.max(0, allocation.weightManagement);
+  const rest = Math.max(0, allocation.rest);
+  const total = training + weightManagement + rest;
 
-// Scales every requested allocation down proportionally so the total never
-// exceeds the week's energy budget — a week always resolves, it never
-// throws on a caller (e.g. a UI slider) that requests more than it has.
-function normalizeAllocation(allocation: CampAllocation, energyAvailable: number): CampAllocation {
-  const trainingTotal = ATTRIBUTE_KEYS.reduce((sum, key) => sum + (allocation.training[key] ?? 0), 0);
-  const requestedTotal = trainingTotal + allocation.weightManagement + allocation.rest;
-
-  if (requestedTotal <= energyAvailable) return allocation;
-
-  const scale = requestedTotal > 0 ? energyAvailable / requestedTotal : 0;
-  const training: TrainingAllocation = {};
-  for (const key of ATTRIBUTE_KEYS) {
-    const value = allocation.training[key];
-    if (value !== undefined) training[key] = value * scale;
-  }
+  // Never allow the week to spend more energy than the budget allows — scale
+  // every pillar down proportionally rather than picking a winner.
+  if (total <= budget || total === 0) return { training, weightManagement, rest };
+  const scale = budget / total;
   return {
-    training,
-    weightManagement: allocation.weightManagement * scale,
-    rest: allocation.rest * scale,
+    training: training * scale,
+    weightManagement: weightManagement * scale,
+    rest: rest * scale,
   };
 }
 
+// Pure: given a fighter, a requested allocation, and this week's energy
+// budget, returns a new fighter with training gains applied (gated by a flat
+// training-partner-quality multiplier — real per-gym decay is M4/Loop 4.1)
+// and rest regen applied to condition.health. Weight-management energy is
+// reserved/validated here but has no fight-facing effect yet (Loop 4.2 wires
+// it into the cut).
 export function resolveCampWeek(
   fighter: Fighter,
   allocation: CampAllocation,
-  energyAvailable: number = balance.energyPerWeek,
-  trainingPartnerQuality: number = 1,
+  balance: CampBalance,
+  trainingPartnerQuality: number = balance.defaultTrainingPartnerQuality,
 ): CampWeekResult {
-  const normalized = normalizeAllocation(allocation, Math.max(0, energyAvailable));
+  const budget = balance.weeklyEnergyBudget;
+  const spent = clampAllocation(allocation, budget);
 
+  const gainPerAttribute = spent.training * balance.trainingGainPerEnergy * trainingPartnerQuality;
+
+  // Attributes are integers on a 0-100 scale (DESIGN.md §4) — round each
+  // gain rather than letting fractional camp gains accumulate silently.
   const attributes: Attributes = { ...fighter.attributes };
-  let trainingSpent = 0;
-  for (const key of ATTRIBUTE_KEYS) {
-    const spent = normalized.training[key] ?? 0;
-    if (spent <= 0) continue;
-    trainingSpent += spent;
-    const gain = spent * balance.trainingGainPerEnergy * trainingPartnerQuality;
-    attributes[key] = clamp(Math.round(attributes[key] + gain), 0, 100);
+  for (const key of TRAINING_ATTRIBUTES) {
+    attributes[key] = Math.min(100, Math.round(attributes[key] + gainPerAttribute));
   }
 
-  const healthGain = normalized.rest * balance.restHealPerEnergy;
-  const health = clamp(fighter.condition.health + healthGain, 0, 100);
+  const healthRegen = spent.rest * balance.restRegenPerEnergy;
+  const health = Math.min(100, Math.round(fighter.condition.health + healthRegen));
 
-  const energySpent = trainingSpent + normalized.weightManagement + normalized.rest;
+  const energyRemaining = Math.max(
+    0,
+    budget - (spent.training + spent.weightManagement + spent.rest),
+  );
 
   return {
     fighter: {
       ...fighter,
       attributes,
-      condition: { ...fighter.condition, health },
+      condition: { ...fighter.condition, injuries: fighter.condition.injuries, health },
     },
-    energySpent,
-    energyAvailable,
+    energySpent: spent,
+    energyRemaining,
   };
 }

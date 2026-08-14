@@ -1,103 +1,96 @@
-// CampScreen.tsx — Loop 3.2: spend the week's scarce energy budget across
-// training, weight management, and rest (DESIGN.md §8.1). Resolution goes
-// through career/camp.ts's pure resolveCampWeek — this screen only collects
-// the allocation and commits the result to the store.
+// CampScreen.tsx — Loop 3.2: the camp-week energy allocation screen (DESIGN.md
+// §8.1). Player splits the week's energy budget across training / weight
+// management / rest via sliders, then resolves the week — updating the
+// career store's player fighter, week, and energy fields. Life-bar decay
+// (§8.3, training-partner quality beyond the flat stub) is M4.
 
-import { useMemo, useState } from 'preact/hooks';
-import { useCareerStore } from '../../state/store';
-import { resolveCampWeek } from '../../career/camp';
-import type { CampAllocation, TrainingAllocation } from '../../career/camp';
-import type { Attributes } from '../../engine/types';
-import { attributeMeta, balance } from '../../content';
+import { useState } from 'preact/hooks';
+import { resolveCampWeek, type CampAllocation } from '../../career/camp';
+import { balance } from '../../content';
+import { useCageStore } from '../../state/store';
 import { HudBar } from '../components/HudBar';
 
-function readNumber(e: Event): number {
-  const value = Number((e.target as HTMLInputElement).value);
-  return Number.isFinite(value) ? Math.max(0, value) : 0;
-}
+const PILLAR_LABELS: Record<keyof CampAllocation, string> = {
+  training: 'Training',
+  weightManagement: 'Weight management',
+  rest: 'Rest',
+};
+
+const PILLAR_IDS = Object.keys(PILLAR_LABELS) as (keyof CampAllocation)[];
 
 export function CampScreen() {
-  const career = useCareerStore((s) => s.career);
-  const updateCareer = useCareerStore((s) => s.updateCareer);
+  const career = useCageStore((s) => s.career);
+  const updateCareer = useCageStore((s) => s.updateCareer);
 
-  const [training, setTraining] = useState<TrainingAllocation>({});
-  const [weightManagement, setWeightManagement] = useState(0);
-  const [rest, setRest] = useState(0);
+  const [allocation, setAllocation] = useState<CampAllocation>({
+    training: 0,
+    weightManagement: 0,
+    rest: 0,
+  });
 
-  const trainingTotal = useMemo(
-    () => Object.values(training).reduce((sum: number, value) => sum + (value ?? 0), 0),
-    [training],
-  );
-  const spent = trainingTotal + weightManagement + rest;
-  const remaining = balance.energyPerWeek - spent;
+  const budget = balance.weeklyEnergyBudget;
+  const spent = allocation.training + allocation.weightManagement + allocation.rest;
+  const remaining = Math.max(0, budget - spent);
+  const overBudget = spent > budget;
 
-  if (!career) {
-    return (
-      <div>
-        <h1>Camp</h1>
-        <p>No active career yet.</p>
-      </div>
-    );
+  function maxForPillar(pillar: keyof CampAllocation): number {
+    return budget - (spent - allocation[pillar]);
   }
 
-  const currentFighter = career.fighter;
-  const currentWeek = career.week;
+  function setPillar(pillar: keyof CampAllocation, value: number) {
+    setAllocation((prev) => ({ ...prev, [pillar]: Math.max(0, value) }));
+  }
 
   function resolveWeek() {
-    const allocation: CampAllocation = { training, weightManagement, rest };
-    const { fighter } = resolveCampWeek(currentFighter, allocation, balance.energyPerWeek, 1);
-    updateCareer({ fighter, week: currentWeek + 1 });
-    setTraining({});
-    setWeightManagement(0);
-    setRest(0);
+    if (!career.player) return;
+    const result = resolveCampWeek(career.player, allocation, balance);
+    updateCareer({
+      player: result.fighter,
+      week: career.week + 1,
+      energy: result.energyRemaining,
+    });
+    setAllocation({ training: 0, weightManagement: 0, rest: 0 });
+  }
+
+  if (!career.player) {
+    return <div id="camp-screen">No active fighter — start a career first.</div>;
   }
 
   return (
-    <div>
-      <h1>Camp — week {career.week + 1}</h1>
-      <p>{career.fighter.name}</p>
+    <div id="camp-screen" style={{ maxWidth: '32rem', padding: '1rem' }}>
+      <h2>
+        Camp — Week {career.week + 1}, {career.player.name}
+      </h2>
 
-      <HudBar
-        label="Energy remaining"
-        value={Math.max(0, remaining)}
-        max={balance.energyPerWeek}
-        tone="stamina"
-      />
+      <HudBar label="Energy remaining" value={remaining} max={budget} tone="stamina" />
+      {overBudget && (
+        <p style={{ color: '#d64545', fontSize: '0.8rem' }}>
+          Over budget — allocations will be scaled down when the week resolves.
+        </p>
+      )}
 
-      <h2>Training</h2>
-      {attributeMeta.map((attr) => {
-        const key = attr.id as keyof Attributes;
-        return (
-          <div key={attr.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.25rem' }}>
-            <label style={{ width: '8rem' }}>{attr.label}</label>
-            <input
-              type="number"
-              min={0}
-              value={training[key] ?? 0}
-              onInput={(e) => setTraining((prev) => ({ ...prev, [key]: readNumber(e) }))}
-            />
-            <span style={{ fontSize: '0.8rem', opacity: 0.7 }}>current {career.fighter.attributes[key]}</span>
-          </div>
-        );
-      })}
+      {PILLAR_IDS.map((pillar) => (
+        <div key={pillar} style={{ marginBottom: '0.75rem' }}>
+          <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
+            <span>{PILLAR_LABELS[pillar]}</span>
+            <span>{allocation[pillar]}</span>
+          </label>
+          <input
+            type="range"
+            min={0}
+            max={budget}
+            step={1}
+            value={allocation[pillar]}
+            onInput={(e) => setPillar(pillar, Number((e.target as HTMLInputElement).value))}
+            style={{ width: '100%' }}
+          />
+          <span style={{ fontSize: '0.7rem', color: '#888' }}>
+            up to {Math.max(0, maxForPillar(pillar))} more before over budget
+          </span>
+        </div>
+      ))}
 
-      <div style={{ display: 'flex', gap: '1.5rem', margin: '0.75rem 0' }}>
-        <label>
-          Weight management{' '}
-          <input type="number" min={0} value={weightManagement} onInput={(e) => setWeightManagement(readNumber(e))} />
-        </label>
-        <label>
-          Rest <input type="number" min={0} value={rest} onInput={(e) => setRest(readNumber(e))} />
-        </label>
-      </div>
-
-      <p>
-        {remaining < 0
-          ? `Over budget by ${-remaining} — allocation will be scaled down when the week resolves.`
-          : `${remaining} energy unspent.`}
-      </p>
-
-      <button type="button" onClick={resolveWeek}>
+      <button type="button" onClick={resolveWeek} disabled={spent === 0}>
         Resolve week
       </button>
     </div>
