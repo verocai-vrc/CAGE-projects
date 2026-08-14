@@ -53,8 +53,11 @@ const fixtureCareer: CareerState = {
   week: 4,
   energy: 8,
   purse: 15000,
+  hype: 35,
   ranking: 12,
+  record: { wins: 3, losses: 1, draws: 0, noContests: 0 },
   fightHistory: [],
+  retired: false,
 };
 
 describe('persist', () => {

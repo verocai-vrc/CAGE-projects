@@ -6,14 +6,24 @@
 import { create } from 'zustand';
 import type { Fighter, FightSummary, Origin } from '../engine/types';
 
+export interface CareerRecord {
+  wins: number;
+  losses: number;
+  draws: number;
+  noContests: number;
+}
+
 export interface CareerState {
   player: Fighter | null;
   origin: Origin | null;
   week: number;
   energy: number;
   purse: number;
+  hype: number; // 0..100, feeds matchmaking offer quality (DESIGN.md §8.4)
   ranking: number | null; // null = unranked; 1 = champion
+  record: CareerRecord;
   fightHistory: FightSummary[]; // summaries only — full event logs are never persisted (DESIGN.md §2)
+  retired: boolean;
 }
 
 export const initialCareerState: CareerState = {
@@ -22,8 +32,11 @@ export const initialCareerState: CareerState = {
   week: 0,
   energy: 0,
   purse: 0,
+  hype: 0,
   ranking: null,
+  record: { wins: 0, losses: 0, draws: 0, noContests: 0 },
   fightHistory: [],
+  retired: false,
 };
 
 export interface CageStore {

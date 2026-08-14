@@ -39,5 +39,17 @@
   "baseOfferPurse": 5000,
   "offerPursePerRankingPoint": 400,
   "offerPursePerHype": 50,
-  "baseHypeReward": 5
+  "baseHypeReward": 5,
+  "purseWinBonus": 1.5,
+  "hypeGainWin": 8,
+  "hypeLossLoss": 6,
+  "rankingMoveOnWin": 3,
+  "rankingMoveOnLoss": 2,
+  "unrankedEntryRanking": 15,
+  "injuryChanceOnWin": 0.05,
+  "injuryChanceOnLoss": 0.15,
+  "injurySeverityMin": 10,
+  "injurySeverityMax": 60,
+  "injuryWeeksMin": 1,
+  "injuryWeeksMax": 8
 }

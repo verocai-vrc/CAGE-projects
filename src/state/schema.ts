@@ -124,14 +124,24 @@ export const FightResultSchema = z.object({
 
 // state/store.ts's CareerState — the shape persisted to localStorage (§11).
 // Event logs are never part of this: fightHistory holds FightSummary only.
+export const CareerRecordSchema = z.object({
+  wins: z.number().int().min(0),
+  losses: z.number().int().min(0),
+  draws: z.number().int().min(0),
+  noContests: z.number().int().min(0),
+});
+
 export const CareerStateSchema = z.object({
   player: FighterSchema.nullable(),
   origin: OriginSchema.nullable(),
   week: z.number().int().min(0),
   energy: z.number(),
   purse: z.number(),
+  hype: z.number().min(0).max(100),
   ranking: z.number().int().min(1).nullable(),
+  record: CareerRecordSchema,
   fightHistory: z.array(FightSummarySchema),
+  retired: z.boolean(),
 }) satisfies z.ZodType<CareerState>;
 
 // Content-file schemas (not part of the §4 data model, but validated at boot
@@ -217,4 +227,16 @@ export const BalanceSchema = z.object({
   offerPursePerRankingPoint: z.number().min(0),
   offerPursePerHype: z.number().min(0),
   baseHypeReward: z.number().min(0),
+  purseWinBonus: z.number().min(0),
+  hypeGainWin: z.number(),
+  hypeLossLoss: z.number(),
+  rankingMoveOnWin: z.number().min(0),
+  rankingMoveOnLoss: z.number().min(0),
+  unrankedEntryRanking: z.number().int().min(1),
+  injuryChanceOnWin: z.number().min(0).max(1),
+  injuryChanceOnLoss: z.number().min(0).max(1),
+  injurySeverityMin: z.number().min(0).max(100),
+  injurySeverityMax: z.number().min(0).max(100),
+  injuryWeeksMin: z.number().int().min(0),
+  injuryWeeksMax: z.number().int().min(0),
 });
