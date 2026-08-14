@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { Attributes, Fighter, Origin, FightResult } from '../engine/types';
+import type { CareerRecord, CareerState } from '../career/types';
 
 export const AttributesSchema = z.object({
   power: z.number().int().min(0).max(100),
@@ -120,6 +121,27 @@ export const FightResultSchema = z.object({
   events: z.array(FightEventSchema),
   summary: FightSummarySchema,
 }) satisfies z.ZodType<FightResult>;
+
+// Career-layer save state (DESIGN.md §8, §11) — validated on load from
+// localStorage; a mismatch here means clean-restart, never a thrown error.
+export const CareerRecordSchema = z.object({
+  wins: z.number().int().min(0),
+  losses: z.number().int().min(0),
+  draws: z.number().int().min(0),
+  noContests: z.number().int().min(0),
+}) satisfies z.ZodType<CareerRecord>;
+
+export const CareerStateSchema = z.object({
+  fighter: FighterSchema,
+  origin: OriginSchema,
+  week: z.number().int().min(0),
+  purse: z.number().min(0),
+  hype: z.number().min(0).max(100),
+  ranking: z.number().int().min(1).nullable(),
+  record: CareerRecordSchema,
+  fightHistory: z.array(FightSummarySchema),
+  retired: z.boolean(),
+}) satisfies z.ZodType<CareerState>;
 
 // Content-file schemas (not part of the §4 data model, but validated at boot
 // alongside it — see content/load.ts).
