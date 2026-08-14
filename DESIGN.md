@@ -283,13 +283,13 @@ Score each round from strike differential, control time, knockdowns, and threate
 
 ---
 
-## 7. The single interactive mechanic
+## 7. The interactive mechanics
 
-Build **one** mechanic and reskin it. Recommended: a **timing bar** OR a **push-your-luck risk ladder**. Pick one; do not build both.
+Build a small, tightly scoped set of interactive mechanics — currently two: a **timing bar** and a **push-your-luck risk ladder** — reskinned per `MomentKind` through one shared component. Any additional mechanic beyond these two requires updating this section explicitly; the cap on *count* is what's load-bearing, not the number two itself.
 
-- Same component (`MomentBar`), different labels/stakes per `MomentKind`.
-- Its outcome (`success | fail`) feeds back into the engine as a modifier to the current exchange, not as an instant win/loss (except an explicit finishing-sequence moment, which can end the fight).
-- The moment must be *fair to skip*: an "auto-resolve" option resolves it via the engine so the game is fully playable without twitch input (accessibility + it keeps the sim authoritative).
+- Same component (`MomentBar`), different labels/stakes per `MomentKind`; the timing bar suits single explosive instants (scramble, finishing sequence), the risk ladder suits moments the fighter can grind through or bail out of (submission escape).
+- Its outcome feeds back into the engine as a bounded performance tilt (`-1..+1`) on the moment's contested delta, not as an instant win/loss (except an explicit finishing-sequence moment, which can end the fight).
+- The moment must be *fair to skip*: an "auto-resolve" option resolves it via the engine so the game is fully playable without twitch input (accessibility + it keeps the sim authoritative). Performance 0 (the auto-resolve value) is exactly the engine's own unaided roll.
 
 ---
 

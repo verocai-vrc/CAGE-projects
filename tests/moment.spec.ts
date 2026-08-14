@@ -85,7 +85,11 @@ describe('player moments (Loop 2.4)', () => {
       for (const moment of momentsOf(
         simulateFight(mirrorA, mirrorB, emptyTactics, mulberry32(seed)).events,
       )) {
-        moment.outcome === 'success' ? success++ : fail++;
+        if (moment.outcome === 'success') {
+          success++;
+        } else {
+          fail++;
+        }
       }
     }
 

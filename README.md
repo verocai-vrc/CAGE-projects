@@ -50,7 +50,7 @@ A career is a **run**, not a save-file contract. Losing persistence costs one se
 - **Engine is pure.** `simulateFight(a, b, tactics, rng) => FightResult`. No DOM, no `Math.random`, no clock. UI replays the event log. This cannot be undone without rewriting the game.
 - **Determinism everywhere.** One seeded RNG threaded explicitly through every roll. This unlocks the daily challenge, shareable seeds, replayable debugging, and automated balance testing.
 - **The amateur wrapper is skippable.** First run: six formative moments (character creation disguised as a montage) resolve into a reveal screen (radar chart, archetype, weakness). Second run: auto-roll the origin and jump straight to a randomized pro debut — a harder, faster variant.
-- **One interactive fight mechanic, reskinned.** A timing bar (or push-your-luck risk ladder) reused for every player-controlled moment. Building three minigames is how this project dies.
+- **A small, capped set of interactive fight mechanics, reskinned.** A timing bar and a push-your-luck risk ladder, reused across every player-controlled moment via one shared component. Building three-plus minigames is how this project dies.
 - **Balance by measurement.** A hidden `/lab` route runs 10,000 seeded simulations across archetype pairings and prints the win-rate matrix, finish distribution, and stamina-fade curves. All tunable constants live in `balance.json`. No balance change ships without re-running the lab.
 - **Content is capped hard.** One weight class, ~20–30 procedurally generated opponents, ~60 life events. The engine is two weekends; a hand-authored content treadmill is six months.
 
@@ -109,7 +109,7 @@ The full architecture, data model, engine spec, and milestone plan are in [`DESI
 - [x] Loop and mechanics design
 - [x] Architecture and data model specified (`DESIGN.md`)
 - [x] M1 — Engine + lab
-- [ ] M2 — Fight viewer
+- [x] M2 — Fight viewer
 - [ ] M3 — Career shell
 - [ ] M4 — Life layer + wrapper
 - [ ] M5 — Daily prospect
