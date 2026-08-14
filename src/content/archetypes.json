@@ -2,7 +2,7 @@
   {
     "id": "striker",
     "label": "Striker",
-    "weight": 1,
+    "weight": 3,
     "attributes": {
       "power": 48,
       "technique": 78,
@@ -17,7 +17,7 @@
   {
     "id": "wrestler",
     "label": "Wrestler",
-    "weight": 1,
+    "weight": 2,
     "attributes": {
       "power": 38,
       "technique": 30,
@@ -32,7 +32,7 @@
   {
     "id": "allrounder",
     "label": "All-Rounder",
-    "weight": 2,
+    "weight": 1,
     "attributes": {
       "power": 44,
       "technique": 54,
