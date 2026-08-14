@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import type { Attributes, Fighter, Origin, FightResult } from '../engine/types';
+import type { CareerState } from './store';
 
 export const AttributesSchema = z.object({
   power: z.number().int().min(0).max(100),
@@ -120,6 +121,18 @@ export const FightResultSchema = z.object({
   events: z.array(FightEventSchema),
   summary: FightSummarySchema,
 }) satisfies z.ZodType<FightResult>;
+
+// state/store.ts's CareerState — the shape persisted to localStorage (§11).
+// Event logs are never part of this: fightHistory holds FightSummary only.
+export const CareerStateSchema = z.object({
+  player: FighterSchema.nullable(),
+  origin: OriginSchema.nullable(),
+  week: z.number().int().min(0),
+  energy: z.number(),
+  purse: z.number(),
+  ranking: z.number().int().min(1).nullable(),
+  fightHistory: z.array(FightSummarySchema),
+}) satisfies z.ZodType<CareerState>;
 
 // Content-file schemas (not part of the §4 data model, but validated at boot
 // alongside it — see content/load.ts).
