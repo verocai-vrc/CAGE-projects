@@ -31,5 +31,9 @@
   "momentSuccessStrikingBonus": 14,
   "momentFailStrikingPenalty": 10,
   "momentSkillSwing": 12,
-  "weeklyDecay": { "partner": 4, "hype": 3, "sponsor": 3, "trainingPartners": 5 }
+  "weeklyDecay": { "partner": 4, "hype": 3, "sponsor": 3, "trainingPartners": 5 },
+  "weeklyEnergyBudget": 10,
+  "trainingGainPerEnergy": 0.4,
+  "restRegenPerEnergy": 1.5,
+  "defaultTrainingPartnerQuality": 0.75
 }
