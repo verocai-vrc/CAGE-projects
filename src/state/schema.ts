@@ -210,4 +210,7 @@ export const BalanceSchema = z.object({
     sponsor: z.number(),
     trainingPartners: z.number(),
   }),
+  energyPerWeek: z.number().min(0),
+  trainingGainPerEnergy: z.number().min(0),
+  restHealPerEnergy: z.number().min(0),
 });
