@@ -145,6 +145,7 @@ export const AttributeMetaSchema = z.object({
 export const ArchetypeSchema = z.object({
   id: z.string(),
   label: z.string(),
+  weight: z.number().positive(),
   attributes: AttributesSchema,
 });
 
@@ -153,6 +154,13 @@ export const JudgeBiasSchema = z.object({
   control: z.number(),
   knockdown: z.number(),
   submission: z.number(),
+});
+
+export const NamePoolSchema = z.object({
+  nationality: z.string(),
+  weight: z.number().positive(),
+  firstNames: z.array(z.string()).min(1),
+  lastNames: z.array(z.string()).min(1),
 });
 
 export const JudgeSchema = z.object({
@@ -205,4 +213,8 @@ export const BalanceSchema = z.object({
   trainingGainPerEnergy: z.number().min(0),
   restRegenPerEnergy: z.number().min(0),
   defaultTrainingPartnerQuality: z.number().min(0).max(1),
+  baseOfferPurse: z.number().min(0),
+  offerPursePerRankingPoint: z.number().min(0),
+  offerPursePerHype: z.number().min(0),
+  baseHypeReward: z.number().min(0),
 });

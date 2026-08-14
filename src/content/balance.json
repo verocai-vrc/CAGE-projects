@@ -35,5 +35,9 @@
   "weeklyEnergyBudget": 10,
   "trainingGainPerEnergy": 0.4,
   "restRegenPerEnergy": 1.5,
-  "defaultTrainingPartnerQuality": 0.75
+  "defaultTrainingPartnerQuality": 0.75,
+  "baseOfferPurse": 5000,
+  "offerPursePerRankingPoint": 400,
+  "offerPursePerHype": 50,
+  "baseHypeReward": 5
 }
