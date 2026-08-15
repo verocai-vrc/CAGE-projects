@@ -1,0 +1,81 @@
+/* FighterIdentity — §15.5's "a fighter reads as a person at a glance". */
+
+.root {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+/* The corner bar is opt-in, and only drawn when this block is the thing carrying
+ * the corner assignment. Inside a Plate that already has one, a second bar is just
+ * a doubled red rule. */
+.cornered {
+  padding-left: var(--sp-3);
+  border-left: 4px solid var(--corner-fill, var(--mark));
+}
+
+/* Portrait slot, left empty until Loop 6.4's procedural faces land. It reserves its
+ * own space now so adding the face does not reflow every screen that shows a
+ * fighter. */
+.portrait {
+  width: 48px;
+  height: 48px;
+  flex: none;
+  border: 1px solid var(--hairline);
+  background: var(--trough);
+}
+
+.body {
+  min-width: 0;
+}
+
+.nameRow {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.name {
+  font-family: var(--font-display);
+  font-size: var(--t-4);
+  font-weight: 700;
+  letter-spacing: var(--track-display);
+  text-transform: uppercase;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meta {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-3);
+  margin-top: var(--sp-1);
+}
+
+/* §15.3: the record is data, so it is mono and tabular. */
+.record {
+  font-family: var(--font-mono);
+  font-size: var(--t-2);
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+  color: var(--text);
+}
+
+.archetype {
+  font-size: var(--t-1);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+
+/* Small — for a slate of opponents or a ledger row. */
+.compact .portrait {
+  width: 32px;
+  height: 32px;
+}
+
+.compact .name {
+  font-size: var(--t-3);
+}

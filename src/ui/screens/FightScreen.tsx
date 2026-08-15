@@ -18,6 +18,7 @@ import type {
 } from '../../engine/types';
 import { archetypes, balance, judges } from '../../content';
 import { PlayByPlay } from '../components/PlayByPlay';
+import { FighterIdentity } from '../components/FighterIdentity';
 import { Meter } from '../components/Meter';
 import { Plate } from '../components/Plate';
 import { StatRadar } from '../components/StatRadar';
@@ -29,13 +30,23 @@ const REVEAL_INTERVAL_MS = 220;
 const FIXTURE_SEED = 2026;
 const PILLAR_AXES = ['Striking', 'Grappling', 'Durability', 'Mind'] as const;
 
-function fighterFromArchetype(id: string, name: string, archetypeId: string): Fighter {
+// Loop 6.3: these carried nationality: 'fixture', which rendered the neutral flag
+// on the one screen where a fighter most needs to read as a person. The sentinel
+// still resolves safely (§15.5), but a demo matchup with real names should carry
+// the nationalities those names imply. Loop 7.16 deletes this fixture entirely,
+// when the career starts supplying the real matchup.
+function fighterFromArchetype(
+  id: string,
+  name: string,
+  archetypeId: string,
+  nationality: string,
+): Fighter {
   const archetype = archetypes.find((entry) => entry.id === archetypeId);
   if (!archetype) throw new Error(`FightScreen fixture: missing archetype '${archetypeId}'`);
   return {
     id,
     name,
-    nationality: 'fixture',
+    nationality,
     weightClass: 'lightweight',
     stance: 'orthodox',
     attributes: { ...archetype.attributes },
@@ -46,8 +57,8 @@ function fighterFromArchetype(id: string, name: string, archetypeId: string): Fi
   };
 }
 
-const fighterA = fighterFromArchetype('fighter-a', 'Riko Tanaka', 'striker');
-const fighterB = fighterFromArchetype('fighter-b', 'Deshawn Cole', 'wrestler');
+const fighterA = fighterFromArchetype('fighter-a', 'Riko Tanaka', 'striker', 'Japan');
+const fighterB = fighterFromArchetype('fighter-b', 'Deshawn Cole', 'wrestler', 'USA');
 const emptyTactics: Tactics = {};
 
 // Corner choices are precomputed into `tactics` (DESIGN.md §6.7 / Loop 2.3
@@ -281,13 +292,15 @@ export function FightScreen() {
           fill — no component below takes a colour. */}
       <div style={{ display: 'flex', gap: '2rem' }}>
         <div class="corner-red" style={{ flex: 1 }}>
-          <Plate eyebrow={hud.rockedA ? 'Hurt' : 'Red corner'} title={fighterA.name} corner>
+          <Plate eyebrow={hud.rockedA ? 'Hurt' : 'Red corner'} corner>
+            <FighterIdentity fighter={fighterA} />
             <Meter label="Health" value={hud.healthA} tone={hud.rockedA ? 'warn' : 'default'} />
             <Meter label="Stamina" value={hud.staminaA} />
           </Plate>
         </div>
         <div class="corner-blue" style={{ flex: 1 }}>
-          <Plate eyebrow={hud.rockedB ? 'Hurt' : 'Blue corner'} title={fighterB.name} corner>
+          <Plate eyebrow={hud.rockedB ? 'Hurt' : 'Blue corner'} corner>
+            <FighterIdentity fighter={fighterB} />
             <Meter label="Health" value={hud.healthB} tone={hud.rockedB ? 'warn' : 'default'} />
             <Meter label="Stamina" value={hud.staminaB} />
           </Plate>

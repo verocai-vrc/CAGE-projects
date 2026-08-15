@@ -1,11 +1,16 @@
-// FlagChip.tsx — Loop 6.2: the chip geometry only. §15.5's five inline SVG flags
-// and the sentinel lookup are Loop 6.3's build; this establishes the frame, the
-// neutral fallback, and the accessible name so 6.3 is only artwork.
+// FlagChip.tsx — Loop 6.2 built the geometry; Loop 6.3 fills it with §15.5's
+// inline SVG flags.
 //
-// The neutral field is deliberate, not a placeholder to be forgotten: §15.5 requires
-// an explicit fallback for the `lab` and `fixture` sentinels rather than a broken
-// glyph, so this hatched chip is the shipping appearance for those two values.
+// Never an emoji flag: Windows does not render regional indicator sequences
+// (U+1F1E6-1F1FF), so an emoji flag shows as the bare letter pair on the primary
+// development target. The symbols live in the shared defs block
+// (ui/sprite/Sprite.tsx) and each chip is a single <use>.
+//
+// The lookup is total — the `lab` and `fixture` sentinels, and any nationality
+// added to the name pools before its flag is drawn, resolve to the neutral field
+// rather than a broken glyph.
 
+import { flagSymbolId } from '../sprite/flags';
 import styles from './FlagChip.module.css';
 
 interface FlagChipProps {
@@ -16,11 +21,13 @@ interface FlagChipProps {
 }
 
 export function FlagChip({ nationality, showLabel }: FlagChipProps) {
+  const symbol = flagSymbolId(nationality);
+
   return (
     <span class={styles.root}>
-      {/* Loop 6.3 replaces this span with an <svg><use href="#flag-…"/></svg>
-          against the shared sprite defs block. */}
-      <span class={`${styles.chip} ${styles.neutral}`} role="img" aria-label={nationality} />
+      <svg class={styles.chip} viewBox="0 0 24 18" role="img" aria-label={nationality}>
+        <use href={`#${symbol}`} />
+      </svg>
       {showLabel && <span class={styles.label}>{nationality}</span>}
     </span>
   );

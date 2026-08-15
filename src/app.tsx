@@ -6,8 +6,9 @@ import { CareerScreen } from './ui/screens/CareerScreen';
 import { CareerCardScreen } from './ui/screens/CareerCardScreen';
 import { ChargenWrapper } from './ui/screens/ChargenWrapper';
 import { KitScreen } from './ui/screens/KitScreen';
+import { Sprite } from './ui/sprite/Sprite';
 
-export function App() {
+function Routed() {
   const route = useHashRoute();
 
   if (route === '/lab') return <LabScreen />;
@@ -18,4 +19,16 @@ export function App() {
   if (route === '/chargen') return <ChargenWrapper />;
 
   return <CareerScreen />;
+}
+
+export function App() {
+  // The sprite defs block mounts once here and never unmounts, so every <use> in
+  // the tree — flags now, faces from Loop 6.4 — references geometry that is defined
+  // exactly once for the life of the app (§15.4, §2's DOM-reuse rule).
+  return (
+    <>
+      <Sprite />
+      <Routed />
+    </>
+  );
 }

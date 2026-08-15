@@ -1,0 +1,10 @@
+/* The defs block renders nothing itself — it only holds geometry for <use>. Taking
+ * it out of flow here rather than with presentation attributes keeps those bytes
+ * off the §15.5 sprite budget, where they would be styling counted as artwork. */
+
+.sprite {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}

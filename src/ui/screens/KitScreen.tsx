@@ -10,7 +10,9 @@
 // them.
 
 import { useEffect, useState } from 'preact/hooks';
+import type { Fighter } from '../../engine/types';
 import { Button } from '../components/Button';
+import { FighterIdentity } from '../components/FighterIdentity';
 import { FlagChip } from '../components/FlagChip';
 import { FormRow } from '../components/FormRow';
 import { Meter } from '../components/Meter';
@@ -20,7 +22,31 @@ import { Sheet } from '../components/Sheet';
 import { Stamp } from '../components/Stamp';
 import styles from './KitScreen.module.css';
 
+// §15.5's five real values plus both sentinels — the set this loop's verify
+// screenshots at 16px to confirm none falls back to a missing glyph.
 const NATIONALITIES = ['Brazil', 'Ireland', 'Japan', 'Poland', 'USA', 'lab', 'fixture'];
+
+function kitFighter(name: string, nationality: string, archetype: string): Fighter {
+  return {
+    id: `kit-${name}`,
+    name,
+    nationality,
+    weightClass: 'lightweight',
+    stance: 'orthodox',
+    attributes: {
+      power: 60, technique: 60, speed: 60, wrestling: 60,
+      groundControl: 60, chin: 60, cardio: 60, fightIQ: 60,
+    },
+    archetype,
+    weakness: null,
+    traits: [],
+    condition: { health: 100, injuries: [] },
+  };
+}
+
+const KIT_PLAYER = kitFighter('Wanderlei Nascimento', 'Brazil', 'striker');
+const KIT_OPPONENT = kitFighter('Kamil Wisniewski', 'Poland', 'wrestler');
+const KIT_RECORD = { wins: 12, losses: 3, draws: 0, noContests: 1 };
 
 /** The identical prop set both registers are handed. */
 function KitBody({ sweep }: { sweep: number }) {
@@ -80,6 +106,14 @@ function KitBody({ sweep }: { sweep: number }) {
             <FlagChip key={n} nationality={n} showLabel />
           ))}
         </div>
+      </Sheet>
+
+      <Sheet title="Fighter identity" caption="record present vs absent">
+        {/* The player: record from career state. The opponent: no record source
+            until Loop 7.4, so the slot stays empty rather than fabricating 0-0-0. */}
+        <FighterIdentity fighter={KIT_PLAYER} record={KIT_RECORD} corner="red" />
+        <FighterIdentity fighter={KIT_OPPONENT} corner="blue" />
+        <FighterIdentity fighter={KIT_OPPONENT} compact />
       </Sheet>
 
       {/* `corner` is meaningless without a corner ancestor to inherit from — the

@@ -19,6 +19,7 @@ import { sponsorPurseMultiplier } from '../../career/life';
 import { classifyCut, initialCutProgress } from '../../career/weightcut';
 import { useCageStore } from '../../state/store';
 import { Screen } from '../components/Screen';
+import { FighterIdentity } from '../components/FighterIdentity';
 
 // Local calendar date (not UTC) so "today" matches the player's own clock —
 // DESIGN.md §11's daily challenge is meant to change at midnight for them,
@@ -94,9 +95,13 @@ export function CareerScreen() {
 
   return (
     <Screen register="file" id="career-screen" eyebrow="Career file" title={career.player.name}>
+      {/* The player is the one fighter whose record has a real source today — it
+          lives on CareerState. An opponent's stays empty until Loop 7.4 moves
+          `record` onto Fighter. */}
+      <FighterIdentity fighter={career.player} record={career.record} corner="red" />
+
       <p>
-        Week {career.week} · Record {career.record.wins}-{career.record.losses}-{career.record.draws} · Ranking{' '}
-        {career.ranking === null ? 'Unranked' : `#${career.ranking}`}
+        Week {career.week} · Ranking {career.ranking === null ? 'Unranked' : `#${career.ranking}`}
       </p>
       <p>
         Purse ${career.purse.toLocaleString('en-US')} · Hype {Math.round(career.hype)}
