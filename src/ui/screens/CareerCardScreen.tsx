@@ -1,44 +1,42 @@
-// CareerCardScreen.tsx — Loop 3.5: the retirement payoff (DESIGN.md §8.5).
-// Renders record/finishes/grade from real accumulated career state. The full
-// shareable-text career card (rival, highlight moments, title reigns) is a
-// later loop (M5, Loop 5.2) — this is the stub that proves the numbers behind
-// it are real.
+// CareerCardScreen.tsx — Loop 3.5 built the retirement payoff (DESIGN.md
+// §8.5): record/finishes/grade from real accumulated career state. Loop 5.2
+// adds the shareable-text half — computeCareerCardData (career/shareCard.ts)
+// is now the single source for these numbers, and a copy button turns them
+// into Wordle-style text via formatShareText.
 
+import { useState } from 'preact/hooks';
+import { computeCareerCardData, formatShareText } from '../../career/shareCard';
 import { useCageStore } from '../../state/store';
-
-const FINISH_METHODS = new Set(['KO', 'TKO', 'SUB']);
-
-function computeGrade(winRate: number, finishRate: number): string {
-  const score = winRate * 70 + finishRate * 30;
-  if (score >= 85) return 'S';
-  if (score >= 70) return 'A';
-  if (score >= 55) return 'B';
-  if (score >= 40) return 'C';
-  if (score >= 25) return 'D';
-  return 'F';
-}
 
 export function CareerCardScreen() {
   const career = useCageStore((s) => s.career);
+  const [copied, setCopied] = useState(false);
 
-  if (!career.player) {
+  const card = computeCareerCardData(career);
+  if (!card || !career.player) {
     return <div id="career-card-screen">No career on record — start one first.</div>;
   }
 
-  const { player, record, fightHistory, purse, ranking } = career;
-  const totalFights = record.wins + record.losses + record.draws;
-  const finishes = fightHistory.filter(
-    (fight) => fight.winnerId === player.id && FINISH_METHODS.has(fight.method),
-  ).length;
-  const winRate = totalFights > 0 ? record.wins / totalFights : 0;
-  const finishRate = totalFights > 0 ? finishes / totalFights : 0;
-  const grade = computeGrade(winRate, finishRate);
+  const { player } = career;
+
+  async function copyShareText() {
+    const text = formatShareText(card!, player.name);
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard access can be denied/unavailable — the text is still
+      // visible on screen for the player to select and copy by hand.
+      setCopied(false);
+    }
+  }
 
   return (
     <div id="career-card-screen" style={{ maxWidth: '28rem', padding: '1rem' }}>
       <h2>{player.name} — Career Card</h2>
       <p style={{ color: '#888' }}>
-        {career.retired ? 'Retired' : 'Active'} · {player.archetype}
+        {card.retired ? 'Retired' : 'Active'} · {card.archetype}
       </p>
 
       <table>
@@ -46,30 +44,46 @@ export function CareerCardScreen() {
           <tr>
             <td>Record</td>
             <td>
-              {record.wins}-{record.losses}-{record.draws}
-              {record.noContests > 0 ? ` (${record.noContests} NC)` : ''}
+              {card.wins}-{card.losses}-{card.draws}
+              {card.noContests > 0 ? ` (${card.noContests} NC)` : ''}
             </td>
           </tr>
           <tr>
             <td>Finishes</td>
             <td>
-              {finishes} ({Math.round(finishRate * 100)}%)
+              {card.finishes} ({Math.round(card.finishRate * 100)}%)
             </td>
           </tr>
           <tr>
             <td>Final ranking</td>
-            <td>{ranking === null ? 'Unranked' : `#${ranking}`}</td>
+            <td>{card.ranking === null ? 'Unranked' : `#${card.ranking}`}</td>
           </tr>
           <tr>
             <td>Career purse</td>
-            <td>${purse.toLocaleString('en-US')}</td>
+            <td>${card.purse.toLocaleString('en-US')}</td>
           </tr>
           <tr>
             <td>Grade</td>
-            <td>{grade}</td>
+            <td>{card.grade}</td>
           </tr>
         </tbody>
       </table>
+
+      <pre
+        style={{
+          whiteSpace: 'pre-wrap',
+          background: '#1a1a1a',
+          padding: '0.75rem',
+          borderRadius: '4px',
+          fontSize: '0.9rem',
+        }}
+      >
+        {formatShareText(card, player.name)}
+      </pre>
+
+      <button type="button" onClick={copyShareText}>
+        {copied ? 'Copied!' : 'Copy shareable result'}
+      </button>
     </div>
   );
 }

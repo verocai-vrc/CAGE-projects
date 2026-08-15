@@ -112,7 +112,7 @@ The full architecture, data model, engine spec, and milestone plan are in [`DESI
 - [x] M2 — Fight viewer
 - [x] M3 — Career shell
 - [x] M4 — Life layer + wrapper
-- [ ] M5 — Daily prospect
+- [x] M5 — Daily prospect
 
 ---
 
