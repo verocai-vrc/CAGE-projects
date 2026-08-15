@@ -11,6 +11,7 @@ import {
   type FinishRateDistribution,
   type WinRateMatrixRow,
 } from './report';
+import { Screen } from '../ui/components/Screen';
 
 const SIMS_PER_PAIRING = 10_000;
 
@@ -34,8 +35,7 @@ export function LabScreen() {
   }
 
   return (
-    <div>
-      <h1>Balance lab</h1>
+    <Screen register="file" id="lab-screen" eyebrow="Internal · not player-facing" title="Balance lab" wide>
       <button type="button" onClick={run} disabled={running}>
         {running ? 'Running...' : `Run ${SIMS_PER_PAIRING.toLocaleString()} sims per pairing`}
       </button>
@@ -115,6 +115,6 @@ export function LabScreen() {
           </ul>
         </section>
       )}
-    </div>
+    </Screen>
   );
 }

@@ -13,6 +13,7 @@ import { resolveWeightCutWeek } from '../../career/weightcut';
 import { balance } from '../../content';
 import { useCageStore } from '../../state/store';
 import { HudBar } from '../components/HudBar';
+import { Screen } from '../components/Screen';
 
 const PILLAR_LABELS: Record<keyof Required<CampAllocation>, string> = {
   training: 'Training',
@@ -74,15 +75,20 @@ export function CampScreen() {
   }
 
   if (!career.player) {
-    return <div id="camp-screen">No active fighter — start a career first.</div>;
+    return (
+      <Screen register="file" id="camp-screen" title="Camp">
+        <p>No active fighter — start a career first.</p>
+      </Screen>
+    );
   }
 
   return (
-    <div id="camp-screen" style={{ maxWidth: '32rem', padding: '1rem' }}>
-      <h2>
-        Camp — Week {career.week + 1}, {career.player.name}
-      </h2>
-
+    <Screen
+      register="file"
+      id="camp-screen"
+      eyebrow={`Week ${career.week + 1} · ${career.player.name}`}
+      title="Camp"
+    >
       <HudBar label="Training partners" value={career.lifeBars.trainingPartners} tone="stamina" />
       <HudBar label="Personal life" value={career.lifeBars.partner} tone="stamina" />
       <HudBar label="Sponsors" value={career.lifeBars.sponsors} tone="stamina" />
@@ -120,6 +126,6 @@ export function CampScreen() {
       <button type="button" onClick={resolveWeek} disabled={spent === 0}>
         Resolve week
       </button>
-    </div>
+    </Screen>
   );
 }

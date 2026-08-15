@@ -18,6 +18,7 @@ import { buildDailySetup } from '../../career/daily';
 import { sponsorPurseMultiplier } from '../../career/life';
 import { classifyCut, initialCutProgress } from '../../career/weightcut';
 import { useCageStore } from '../../state/store';
+import { Screen } from '../components/Screen';
 
 // Local calendar date (not UTC) so "today" matches the player's own clock —
 // DESIGN.md §11's daily challenge is meant to change at midnight for them,
@@ -72,8 +73,7 @@ export function CareerScreen() {
 
   if (!career.player) {
     return (
-      <div id="career-screen" style={{ padding: '1rem' }}>
-        <h2>CAGE</h2>
+      <Screen register="file" id="career-screen" title="CAGE">
         <p>No active career.</p>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           <a href="#/chargen">
@@ -86,15 +86,14 @@ export function CareerScreen() {
             Today's prospect
           </button>
         </div>
-      </div>
+      </Screen>
     );
   }
 
   const totalFights = career.record.wins + career.record.losses + career.record.draws;
 
   return (
-    <div id="career-screen" style={{ maxWidth: '28rem', padding: '1rem' }}>
-      <h2>{career.player.name}</h2>
+    <Screen register="file" id="career-screen" eyebrow="Career file" title={career.player.name}>
       <p>
         Week {career.week} · Record {career.record.wins}-{career.record.losses}-{career.record.draws} · Ranking{' '}
         {career.ranking === null ? 'Unranked' : `#${career.ranking}`}
@@ -123,6 +122,6 @@ export function CareerScreen() {
       )}
 
       {lastFight && <p>{lastFight}</p>}
-    </div>
+    </Screen>
   );
 }

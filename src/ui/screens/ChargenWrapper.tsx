@@ -10,6 +10,7 @@ import type { MomentOption } from '../../state/schema';
 import { amateurMoments } from '../../content';
 import { buildOriginFromChoices } from '../../career/origin';
 import { startCareer } from '../../career/progression';
+import { Screen } from '../components/Screen';
 import { useCageStore } from '../../state/store';
 import { RevealScreen } from './RevealScreen';
 
@@ -37,12 +38,10 @@ export function ChargenWrapper() {
   }
 
   return (
-    <div id="chargen-wrapper" style={{ maxWidth: '32rem', padding: '1rem' }}>
-      <h2>Where it all started</h2>
-
+    <Screen register="file" id="chargen-wrapper" title="Where it all started">
       {moment && (
         <div>
-          <p style={{ marginBottom: '0.75rem', color: '#888' }}>
+          <p style={{ marginBottom: '0.75rem', color: 'var(--text-soft)' }}>
             Moment {momentIndex + 1} of {amateurMoments.length}
           </p>
           <p style={{ marginBottom: '1rem' }}>{moment.prompt}</p>
@@ -56,12 +55,12 @@ export function ChargenWrapper() {
               >
                 <strong>{option.label}</strong>
                 <br />
-                <span style={{ fontSize: '0.85rem', color: '#aaa' }}>{option.text}</span>
+                <span style={{ fontSize: 'var(--t-2)', color: 'var(--text-soft)' }}>{option.text}</span>
               </button>
             ))}
           </div>
         </div>
       )}
-    </div>
+    </Screen>
   );
 }

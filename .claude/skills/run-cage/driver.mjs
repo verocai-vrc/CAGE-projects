@@ -60,7 +60,7 @@ if (revealVisible > 0) {
 }
 await page.waitForSelector('#career-screen');
 await shot(page, 'career-after-chargen');
-const headerAfterChargen = await page.textContent('#career-screen h2');
+const headerAfterChargen = await page.textContent('#career-screen h1');
 console.log('career header after chargen:', headerAfterChargen);
 
 console.log('--- camp week flow ---');
@@ -131,8 +131,8 @@ await page.evaluate(() => localStorage.clear());
 await page.reload();
 await page.waitForSelector('#career-screen');
 await page.click('button:has-text("Skip: random prospect")');
-await page.waitForSelector('#career-screen h2');
-const skipHeader = await page.textContent('#career-screen h2');
+await page.waitForSelector('#career-screen h1');
+const skipHeader = await page.textContent('#career-screen h1');
 console.log('skip path header:', skipHeader);
 await shot(page, 'skip-path-started');
 

@@ -1,0 +1,92 @@
+/* Screen — the layout primitive every screen roots in (DESIGN.md §15.1/§15.2).
+ * It owns three things and nothing else: the register class, the max-width column,
+ * and page padding. Anything more specific belongs to a component or a screen. */
+
+.root {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--ground);
+  color: var(--text);
+}
+
+.column {
+  max-width: var(--screen-max);
+  margin: 0 auto;
+  padding: var(--sp-6) var(--sp-4) var(--sp-8);
+}
+
+/* §15.1's File is "a light document on a dark desk" — so in that register the
+ * content column IS the document, and the desk shows as the margin around it.
+ * Without this the register renders --ink on --desk: near-black on near-black.
+ *
+ * This is the one component allowed to branch on register, because it is the one
+ * that owns the register class. §15.2 forbids *other* components from doing it.
+ *
+ * Loop 6.2's `Sheet` is not superseded by this: a Sheet is the movable, stampable
+ * form that sits on the desk and slides away to the carbon copy beneath it (§15.7).
+ * This is the page the game is filed on. */
+.document {
+  padding: var(--sp-5) var(--sp-4);
+}
+
+.document .column {
+  background: var(--surface);
+  min-height: calc(100dvh - (2 * var(--sp-5)));
+  box-shadow: 0 1px 0 rgb(0 0 0 / 45%);
+}
+
+/* The lab report is a wide data table and is the one screen the column is wrong
+ * for. It is a hidden dev route, not player-facing (§10). */
+.wide .column {
+  max-width: none;
+  padding-left: var(--sp-5);
+  padding-right: var(--sp-5);
+}
+
+.header {
+  margin-bottom: var(--sp-6);
+}
+
+.eyebrow {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: var(--t-1);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text-soft);
+  margin-bottom: var(--sp-2);
+}
+
+.title {
+  font-size: var(--t-6);
+  color: var(--text);
+}
+
+/* A rule under the header: a form rule in The File, a lower-third hairline in The
+ * Broadcast. Same geometry, the register supplies the colour. */
+.header::after {
+  content: '';
+  display: block;
+  height: 1px;
+  background: var(--hairline);
+  margin-top: var(--sp-4);
+}
+
+@media (max-width: 480px) {
+  .column {
+    padding: var(--sp-5) var(--sp-3) var(--sp-7);
+  }
+
+  /* The desk margin is a luxury at 360px — the document goes full-bleed. */
+  .document {
+    padding: 0;
+  }
+
+  .document .column {
+    min-height: 100dvh;
+  }
+
+  .title {
+    font-size: var(--t-5);
+  }
+}

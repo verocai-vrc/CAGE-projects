@@ -22,6 +22,7 @@ import { HudBar } from '../components/HudBar';
 import { StatRadar } from '../components/StatRadar';
 import { CornerChoice } from '../components/CornerChoice';
 import { MomentBar } from '../components/MomentBar';
+import { Screen } from '../components/Screen';
 
 const REVEAL_INTERVAL_MS = 220;
 const FIXTURE_SEED = 2026;
@@ -262,11 +263,7 @@ export function FightScreen() {
   }, [playing, done, pendingCornerRound, pendingMoment, nextMomentIndex, result.events.length]);
 
   return (
-    <div>
-      <h1>Fight night</h1>
-      <p>
-        {fighterA.name} vs {fighterB.name}
-      </p>
+    <Screen register="broadcast" id="fight-screen" eyebrow={`${fighterA.name} vs ${fighterB.name}`} title="Fight night">
 
       <div style={{ padding: '0 3rem 1rem' }}>
         <StatRadar
@@ -359,6 +356,6 @@ export function FightScreen() {
           {winnerName(result)} wins by {result.method} (round {result.endRound})
         </p>
       )}
-    </div>
+    </Screen>
   );
 }

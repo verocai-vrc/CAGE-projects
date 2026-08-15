@@ -7,6 +7,7 @@
 import { useState } from 'preact/hooks';
 import { computeCareerCardData, formatShareText } from '../../career/shareCard';
 import { useCageStore } from '../../state/store';
+import { Screen } from '../components/Screen';
 
 export function CareerCardScreen() {
   const career = useCageStore((s) => s.career);
@@ -14,7 +15,11 @@ export function CareerCardScreen() {
 
   const card = computeCareerCardData(career);
   if (!card || !career.player) {
-    return <div id="career-card-screen">No career on record — start one first.</div>;
+    return (
+      <Screen register="file" id="career-card-screen" title="Career card">
+        <p>No career on record — start one first.</p>
+      </Screen>
+    );
   }
 
   const { player } = career;
@@ -33,9 +38,8 @@ export function CareerCardScreen() {
   }
 
   return (
-    <div id="career-card-screen" style={{ maxWidth: '28rem', padding: '1rem' }}>
-      <h2>{player.name} — Career Card</h2>
-      <p style={{ color: '#888' }}>
+    <Screen register="file" id="career-card-screen" eyebrow="Career card" title={player.name}>
+      <p style={{ color: 'var(--text-soft)' }}>
         {card.retired ? 'Retired' : 'Active'} · {card.archetype}
       </p>
 
@@ -84,6 +88,6 @@ export function CareerCardScreen() {
       <button type="button" onClick={copyShareText}>
         {copied ? 'Copied!' : 'Copy shareable result'}
       </button>
-    </div>
+    </Screen>
   );
 }

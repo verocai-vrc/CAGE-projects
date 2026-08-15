@@ -1,2 +1,165 @@
+/* CAGE design tokens — DESIGN.md §15.2.
+ *
+ * Three layers, in this order:
+ *   1. PALETTE  — the raw colours of both registers, always defined.
+ *   2. SPINE    — spacing, type scale, geometry, motion. Shared by both registers.
+ *   3. REGISTER — .reg-file / .reg-broadcast bind the raw palette to semantic roles.
+ *
+ * Components draw from the SEMANTIC roles in layer 3, never from layer 1 directly.
+ * That is what lets one component render correctly in both registers from the same
+ * props: the register is a class on an ancestor (§15.2), never a prop, never a media
+ * query, never a per-component branch.
+ *
+ * ---------------------------------------------------------------------------
+ * MEASURED CONTRAST (not estimated — computed from these exact hex values with the
+ * WCAG 2.1 relative-luminance formula; re-measure after any palette change, see the
+ * "Contrast audit" cross-cutting loop in DEVELOPMENT_LOOPS.md)
+ *
+ *   THE FILE
+ *     --ink        on --paper          13.43:1  AAA
+ *     --ink-soft   on --paper           6.02:1  AA
+ *     --stamp-blue on --paper           6.82:1  AA
+ *     --stamp      on --paper           4.64:1  AA   <- least headroom of any pair
+ *     --ink        on --paper-carbon   11.21:1  AAA
+ *     --ink-soft   on --paper-carbon    5.03:1  AA
+ *     --ink        on --paper-pink     10.50:1  AAA
+ *     --ink-soft   on --paper-pink      4.71:1  AA
+ *     --paper      on --desk           14.33:1  AAA
+ *
+ *   THE BROADCAST
+ *     --bone            on --canvas    17.10:1  AAA
+ *     --bone-soft       on --canvas     6.67:1  AA
+ *     --amber           on --canvas     9.22:1  AAA
+ *     --red-corner-text on --canvas     6.29:1  AA
+ *     --blue-corner-text on --canvas    7.72:1  AAA
+ *     --bone            on --canvas-lit 15.55:1 AAA
+ *     --bone-soft       on --canvas-lit  6.06:1 AA
+ *     --red-corner-text on --canvas-lit  5.72:1 AA
+ *     --blue-corner-text on --canvas-lit 7.02:1 AAA
+ *
+ *   FILLS ONLY — these FAIL AA for body text and must never carry small text:
+ *     --red-corner  on --canvas         4.07:1
+ *     --blue-corner on --canvas         4.24:1
+ *     --rule        on --paper          1.83:1  (hairline geometry, never text)
+ *
+ * Any corner-coloured text below 18.66px bold uses the -text variants. §15.2 names
+ * this as the single largest cause of unreadable text; --mark / --mark-text below
+ * exist so the correct choice is the structurally convenient one.
+ * ---------------------------------------------------------------------------
+ */
+
 :root {
+  /* ===== 1. PALETTE ===== */
+
+  /* The File — a light document on a dark desk */
+  --desk: #131210;         /* the surface the document rests on */
+  --paper: #E6E1D3;        /* NCR white stock, aged — deliberately cooler than cream */
+  --paper-carbon: #D8CFA9; /* the goldenrod second sheet */
+  --paper-pink: #DCC3BC;   /* the pink third sheet — medical/suspension only */
+  --ink: #1B1916;          /* typewriter black */
+  --ink-soft: #575145;     /* faded carbon — secondary text */
+  --rule: #AFA792;         /* form rules and field underlines */
+  --stamp: #B4342A;        /* rubber-stamp vermilion */
+  --stamp-blue: #2C4A78;   /* commission blue ink */
+
+  /* The Broadcast — lit figures on arena black */
+  --canvas: #0B0B0D;       /* arena black */
+  --canvas-lit: #17171B;   /* raised surfaces, meter troughs */
+  --bone: #F1EFE9;         /* broadcast white */
+  --bone-soft: #9A968D;    /* secondary */
+  --grid: #26262C;         /* hairlines */
+  --red-corner: #D2382C;   /* fills and marks — the player, always */
+  --blue-corner: #3477BE;  /* fills and marks — the opponent, always */
+  --red-corner-text: #F0655A;  /* the same identity, legible as small text */
+  --blue-corner-text: #6BA6E8;
+  --amber: #E5A63C;        /* rocked, gassed, injured */
+
+  /* ===== 2. SPINE (both registers) ===== */
+
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+  --sp-7: 48px;
+  --sp-8: 64px;
+
+  --t-1: 12px;
+  --t-2: 14px;
+  --t-3: 16px;
+  --t-4: 21px;
+  --t-5: 27px;
+  --t-6: 35px;
+  --t-7: 46px;
+  --t-8: 60px;
+
+  /* Surfaces are square because commission forms and broadcast lower-thirds both
+   * are. Controls carry 2px so they read as touchable. The 2px is a decision. */
+  --radius-surface: 0;
+  --radius-control: 2px;
+
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 420ms;
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+
+  /* Type roles — §15.3. Fallbacks are metric-matched in fonts/fonts.css. */
+  --font-body: 'Archivo', 'Archivo fallback', system-ui, sans-serif;
+  --font-display: 'Archivo Condensed', 'Archivo Condensed fallback', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', 'IBM Plex Mono fallback', ui-monospace, monospace;
+
+  --lh-tight: 1.1;   /* display */
+  --lh-base: 1.5;    /* prose */
+  --lh-data: 1.35;   /* mono rows */
+  --track-display: 0.02em;  /* Archivo Condensed closes up badly without this */
+  --track-label: 0.06em;    /* small-caps-ish form labels */
+
+  --screen-max: 960px;
+  --focus-ring: 2px;
+}
+
+/* ===== 3. REGISTER BINDINGS ===== */
+
+/* The File — career hub, camp, chargen, reveal, career card. */
+.reg-file {
+  --ground: var(--desk);
+  --surface: var(--paper);
+  --surface-alt: var(--paper-carbon);
+  --surface-warn: var(--paper-pink);
+  --text: var(--ink);
+  --text-soft: var(--ink-soft);
+  --hairline: var(--rule);
+  --mark: var(--stamp);            /* fills, stamps, rules */
+  --mark-text: var(--stamp);       /* 4.64:1 — safe as text at body size */
+  --mark-alt: var(--stamp-blue);
+  --focus: var(--stamp-blue);
+}
+
+/* The Broadcast — fight night, corner decisions, moments. */
+.reg-broadcast {
+  --ground: var(--canvas);
+  --surface: var(--canvas-lit);
+  --surface-alt: var(--canvas-lit);
+  --surface-warn: var(--canvas-lit);
+  --text: var(--bone);
+  --text-soft: var(--bone-soft);
+  --hairline: var(--grid);
+  --mark: var(--red-corner);       /* FILL ONLY — 4.07:1 */
+  --mark-text: var(--red-corner-text); /* 6.29:1 — the text-safe twin */
+  --mark-alt: var(--amber);
+  --focus: var(--amber);
+}
+
+/* Corner identity. The player is always red and the opponent always blue, in both
+ * registers, so a meter never needs a label to say whose number it is (§15.2).
+ * -fill is for bars and polygons; -text is for anything rendered as type. */
+.corner-red {
+  --corner-fill: var(--red-corner);
+  --corner-text: var(--red-corner-text);
+}
+
+.corner-blue {
+  --corner-fill: var(--blue-corner);
+  --corner-text: var(--blue-corner-text);
 }

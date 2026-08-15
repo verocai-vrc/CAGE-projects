@@ -1,7 +1,205 @@
-:root {
-  color-scheme: dark;
+/* Base stylesheet — DESIGN.md §15.
+ *
+ * Order matters: fonts and tokens first, then the reset, then base element styles.
+ * Nothing below sets a colour that is not a token, and nothing below is a component
+ * style — components live in CSS Modules under ui/components/. */
+
+@import './ui/styles/fonts/fonts.css';
+@import './ui/styles/tokens.css';
+
+/* ===== RESET ===== */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
-body {
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body,
+h1,
+h2,
+h3,
+h4,
+p,
+figure,
+blockquote,
+dl,
+dd,
+ol,
+ul {
   margin: 0;
+}
+
+ol,
+ul {
+  padding: 0;
+  list-style: none;
+}
+
+img,
+svg {
+  display: block;
+  max-width: 100%;
+}
+
+/* The whole app inherits the body face. This is the line that kills the browser
+ * default serif headings and the native form chrome §15 exists to replace. */
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+  margin: 0;
+}
+
+button {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+
+/* A base control appearance drawn from tokens. Loop 6.2's `Button` component
+ * supersedes this everywhere it is used; until then this is what stops the reset
+ * above from rendering every button as indistinguishable body text. It is a base
+ * element style, not a component — it invents no colour and no geometry. */
+button:not([class]) {
+  border: 1px solid var(--hairline, currentColor);
+  border-radius: var(--radius-control);
+  padding: var(--sp-2) var(--sp-3);
+  background: transparent;
+  color: inherit;
+  font-size: var(--t-2);
+  transition: background-color var(--dur-fast) var(--ease);
+}
+
+button:not([class]):hover:not(:disabled) {
+  background: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+button:not([class]):disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+input[type='range'] {
+  accent-color: var(--mark, currentColor);
+}
+
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+/* ===== BASE ===== */
+
+body {
+  background: var(--desk);
+  color: var(--paper);
+  font-family: var(--font-body);
+  font-size: var(--t-3);
+  line-height: var(--lh-base);
+  font-weight: 400;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Display face is uppercase-only and always tracked out — Archivo Condensed closes
+ * up badly at large sizes without it (§15.3). */
+h1,
+h2,
+h3 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  line-height: var(--lh-tight);
+  letter-spacing: var(--track-display);
+  text-transform: uppercase;
+}
+
+h1 {
+  font-size: var(--t-6);
+}
+
+h2 {
+  font-size: var(--t-5);
+}
+
+h3 {
+  font-size: var(--t-4);
+}
+
+/* Prose never goes below 14px on any surface (§15.3). */
+p,
+li,
+label {
+  font-size: var(--t-2);
+}
+
+a {
+  color: inherit;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
+
+/* Every number in the game is mono and tabular (§15.3). Numbers that shift
+ * horizontally as they change are a named readability failure — `tnum` and
+ * `lining-nums` are what stop a meter from jittering as it counts. */
+.num,
+code,
+kbd,
+samp,
+pre {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+  line-height: var(--lh-data);
+}
+
+/* Small administrative labels — the form-field caption voice of The File. */
+.label {
+  font-size: var(--t-1);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text-soft, var(--ink-soft));
+}
+
+/* ===== FOCUS ===== */
+
+/* One ring, both registers, always visible when keyboard-driven. Every loop in M6
+ * and M8 has "completable by keyboard alone" in its gate; this is the affordance
+ * that makes that true. */
+:focus-visible {
+  outline: var(--focus-ring) solid var(--focus, var(--stamp-blue));
+  outline-offset: 2px;
+}
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ===== REDUCED MOTION ===== */
+
+/* §15.7: cut to the end state, do not slow it down. Durations collapse to ~0 rather
+ * than being stretched, so every transition still *fires* (and any transitionend
+ * handler still runs) but lands immediately. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  :root {
+    --dur-fast: 0.01ms;
+    --dur-base: 0.01ms;
+    --dur-slow: 0.01ms;
+  }
 }

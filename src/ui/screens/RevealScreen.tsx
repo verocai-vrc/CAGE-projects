@@ -10,6 +10,7 @@ import type { Origin } from '../../engine/types';
 import { archetypes } from '../../content';
 import { attributesFromOrigin } from '../../career/origin';
 import { StatRadar } from '../components/StatRadar';
+import { Screen } from '../components/Screen';
 
 const PILLAR_AXES = ['Striking', 'Grappling', 'Durability', 'Mind'] as const;
 
@@ -30,9 +31,8 @@ export function RevealScreen({ origin, onBeginCareer }: RevealScreenProps) {
   const archetypeLabel = archetypes.find((a) => a.id === origin.archetype)?.label ?? origin.archetype;
 
   return (
-    <div id="reveal-screen" style={{ maxWidth: '28rem', padding: '1rem' }}>
-      <h2>Here&rsquo;s who you are</h2>
-      <p style={{ color: '#888' }}>
+    <Screen register="file" id="reveal-screen" eyebrow="Licence issued" title={'Here’s who you are'}>
+      <p style={{ color: 'var(--text-soft)' }}>
         Amateur record {origin.amateurRecord.wins}-{origin.amateurRecord.losses}
       </p>
 
@@ -50,6 +50,6 @@ export function RevealScreen({ origin, onBeginCareer }: RevealScreenProps) {
       <button type="button" onClick={onBeginCareer}>
         Begin pro career
       </button>
-    </div>
+    </Screen>
   );
 }
