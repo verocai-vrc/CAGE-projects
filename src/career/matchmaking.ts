@@ -104,18 +104,24 @@ export interface MatchmakingBalance {
 // Ranking is 1 (champion) .. N (unranked-ish); lower is better, so offer
 // quality scales inversely with ranking distance from the top plus linearly
 // with hype. Unranked (null) fighters get the worst-case offer floor.
+// `sponsorMultiplier` (Loop 4.1, DESIGN.md §8.3) scales the purse down for a
+// neglected sponsors life bar — defaults to 1 (no penalty) so existing
+// callers are unaffected; life.ts's sponsorPurseMultiplier is the intended
+// source of a real value.
 export function offerQuality(
   ranking: number | null,
   hype: number,
   balance: MatchmakingBalance,
+  sponsorMultiplier: number = 1,
 ): { purse: number; hypeReward: number } {
   const rankingFactor = ranking === null ? 0 : Math.max(0, 30 - ranking);
   const purse = Math.max(
     0,
     Math.round(
-      balance.baseOfferPurse +
+      (balance.baseOfferPurse +
         rankingFactor * balance.offerPursePerRankingPoint +
-        hype * balance.offerPursePerHype,
+        hype * balance.offerPursePerHype) *
+        sponsorMultiplier,
     ),
   );
   const hypeReward = Math.max(0, Math.round(balance.baseHypeReward + rankingFactor * 0.2));
@@ -131,12 +137,12 @@ export function generateMatchSlate(
   namePools: readonly NamePool[],
   rng: RNG,
   count: number,
-  options: GenerateOpponentOptions & { ranking: number | null; hype: number },
+  options: GenerateOpponentOptions & { ranking: number | null; hype: number; sponsorMultiplier?: number },
   balance: MatchmakingBalance,
 ): MatchOffer[] {
   const offers: MatchOffer[] = [];
   const usedNames = new Set<string>();
-  const { purse, hypeReward } = offerQuality(options.ranking, options.hype, balance);
+  const { purse, hypeReward } = offerQuality(options.ranking, options.hype, balance, options.sponsorMultiplier);
 
   let attempts = 0;
   const maxAttempts = count * 50;

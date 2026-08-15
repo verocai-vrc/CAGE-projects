@@ -131,6 +131,12 @@ export const CareerRecordSchema = z.object({
   noContests: z.number().int().min(0),
 });
 
+export const LifeBarsSchema = z.object({
+  trainingPartners: z.number().min(0).max(100),
+  partner: z.number().min(0).max(100),
+  sponsors: z.number().min(0).max(100),
+});
+
 export const CareerStateSchema = z.object({
   player: FighterSchema.nullable(),
   origin: OriginSchema.nullable(),
@@ -140,6 +146,7 @@ export const CareerStateSchema = z.object({
   hype: z.number().min(0).max(100),
   ranking: z.number().int().min(1).nullable(),
   record: CareerRecordSchema,
+  lifeBars: LifeBarsSchema,
   fightHistory: z.array(FightSummarySchema),
   retired: z.boolean(),
 }) satisfies z.ZodType<CareerState>;
@@ -241,4 +248,5 @@ export const BalanceSchema = z.object({
   injuryWeeksMax: z.number().int().min(0),
   maxCareerFights: z.number().int().min(1),
   retirementHealthFloor: z.number().min(0).max(100),
+  lifeGainPerEnergy: z.number().min(0),
 });

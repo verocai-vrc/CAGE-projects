@@ -128,4 +128,35 @@ describe('resolveCampWeek', () => {
     // original fighter object is untouched (pure function, no mutation)
     expect(fighter.attributes.power).toBe(50);
   });
+
+  it('a zero focusMultiplier produces no rest regen (Loop 4.1: neglected partner bar)', () => {
+    const fighter = makeFighter({ condition: { health: 70, injuries: [] } });
+    const result = resolveCampWeek(
+      fighter,
+      { training: 0, weightManagement: 0, rest: 10 },
+      testBalance,
+      1,
+      0,
+    );
+    expect(result.fighter.condition.health).toBe(70);
+  });
+
+  it('the life allocation pillar competes for the same weekly budget as the others', () => {
+    const fighter = makeFighter();
+    const result = resolveCampWeek(
+      fighter,
+      { training: 20, weightManagement: 0, rest: 0, life: 20 },
+      testBalance,
+    );
+    const totalSpent =
+      result.energySpent.training + result.energySpent.weightManagement + result.energySpent.rest + result.energySpent.life;
+    expect(totalSpent).toBeLessThanOrEqual(testBalance.weeklyEnergyBudget + 1e-9);
+    expect(result.energySpent.life).toBeGreaterThan(0);
+  });
+
+  it('omitting life defaults it to 0 (backward compatible with pre-Loop-4.1 call sites)', () => {
+    const fighter = makeFighter();
+    const result = resolveCampWeek(fighter, { training: 5, weightManagement: 0, rest: 0 }, testBalance);
+    expect(result.energySpent.life).toBe(0);
+  });
 });

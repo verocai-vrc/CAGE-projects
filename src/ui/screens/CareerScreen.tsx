@@ -12,6 +12,7 @@ import { archetypes, balance, namePools } from '../../content';
 import { generateOpponent, offerQuality } from '../../career/matchmaking';
 import { applyAftermath, checkRetirement, startCareer } from '../../career/progression';
 import { stubOrigin } from '../../career/origin';
+import { sponsorPurseMultiplier } from '../../career/life';
 import { useCageStore } from '../../state/store';
 
 export function CareerScreen() {
@@ -31,7 +32,7 @@ export function CareerScreen() {
       weightClass: career.player.weightClass,
       idPrefix: 'opp',
     });
-    const offer = offerQuality(career.ranking, career.hype, balance);
+    const offer = offerQuality(career.ranking, career.hype, balance, sponsorPurseMultiplier(career.lifeBars));
     const result = simulateFight(career.player, opponent, {}, rng);
     const after = applyAftermath(career, career.player, result, offer, balance, rng);
     const retired = checkRetirement(after, balance);

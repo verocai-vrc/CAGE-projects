@@ -1,55 +1,67 @@
 // CampScreen.tsx — Loop 3.2: the camp-week energy allocation screen (DESIGN.md
 // §8.1). Player splits the week's energy budget across training / weight
-// management / rest via sliders, then resolves the week — updating the
-// career store's player fighter, week, and energy fields. Life-bar decay
-// (§8.3, training-partner quality beyond the flat stub) is M4.
+// management / rest / life via sliders, then resolves the week — updating
+// the career store's player fighter, week, energy, life bars, and hype
+// (Loop 4.1 adds the life pillar and wires its decay/multipliers in).
 
 import { useState } from 'preact/hooks';
 import { resolveCampWeek, type CampAllocation } from '../../career/camp';
+import { campFocusMultiplier, resolveLifeWeek, trainingPartnerQuality } from '../../career/life';
 import { balance } from '../../content';
 import { useCageStore } from '../../state/store';
 import { HudBar } from '../components/HudBar';
 
-const PILLAR_LABELS: Record<keyof CampAllocation, string> = {
+const PILLAR_LABELS: Record<keyof Required<CampAllocation>, string> = {
   training: 'Training',
   weightManagement: 'Weight management',
   rest: 'Rest',
+  life: 'Life',
 };
 
-const PILLAR_IDS = Object.keys(PILLAR_LABELS) as (keyof CampAllocation)[];
+const PILLAR_IDS = Object.keys(PILLAR_LABELS) as (keyof Required<CampAllocation>)[];
 
 export function CampScreen() {
   const career = useCageStore((s) => s.career);
   const updateCareer = useCageStore((s) => s.updateCareer);
 
-  const [allocation, setAllocation] = useState<CampAllocation>({
+  const [allocation, setAllocation] = useState<Required<CampAllocation>>({
     training: 0,
     weightManagement: 0,
     rest: 0,
+    life: 0,
   });
 
   const budget = balance.weeklyEnergyBudget;
-  const spent = allocation.training + allocation.weightManagement + allocation.rest;
+  const spent = allocation.training + allocation.weightManagement + allocation.rest + allocation.life;
   const remaining = Math.max(0, budget - spent);
   const overBudget = spent > budget;
 
-  function maxForPillar(pillar: keyof CampAllocation): number {
+  function maxForPillar(pillar: keyof Required<CampAllocation>): number {
     return budget - (spent - allocation[pillar]);
   }
 
-  function setPillar(pillar: keyof CampAllocation, value: number) {
+  function setPillar(pillar: keyof Required<CampAllocation>, value: number) {
     setAllocation((prev) => ({ ...prev, [pillar]: Math.max(0, value) }));
   }
 
   function resolveWeek() {
     if (!career.player) return;
-    const result = resolveCampWeek(career.player, allocation, balance);
+    const result = resolveCampWeek(
+      career.player,
+      allocation,
+      balance,
+      trainingPartnerQuality(career.lifeBars),
+      campFocusMultiplier(career.lifeBars),
+    );
+    const { bars, hype } = resolveLifeWeek(career.lifeBars, career.hype, result.energySpent.life, balance);
     updateCareer({
       player: result.fighter,
       week: career.week + 1,
       energy: result.energyRemaining,
+      lifeBars: bars,
+      hype,
     });
-    setAllocation({ training: 0, weightManagement: 0, rest: 0 });
+    setAllocation({ training: 0, weightManagement: 0, rest: 0, life: 0 });
   }
 
   if (!career.player) {
@@ -61,6 +73,11 @@ export function CampScreen() {
       <h2>
         Camp — Week {career.week + 1}, {career.player.name}
       </h2>
+
+      <HudBar label="Training partners" value={career.lifeBars.trainingPartners} tone="stamina" />
+      <HudBar label="Personal life" value={career.lifeBars.partner} tone="stamina" />
+      <HudBar label="Sponsors" value={career.lifeBars.sponsors} tone="stamina" />
+      <HudBar label="Hype" value={career.hype} tone="stamina" />
 
       <HudBar label="Energy remaining" value={remaining} max={budget} tone="stamina" />
       {overBudget && (

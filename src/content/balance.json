@@ -53,5 +53,6 @@
   "injuryWeeksMin": 1,
   "injuryWeeksMax": 8,
   "maxCareerFights": 25,
-  "retirementHealthFloor": 20
+  "retirementHealthFloor": 20,
+  "lifeGainPerEnergy": 2.5
 }
