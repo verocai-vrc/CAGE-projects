@@ -1,16 +1,17 @@
 // ChargenWrapper.tsx — Loop 4.3: the amateur wrapper (DESIGN.md §9.1). Six
 // formative moments, fiction-only choices — this screen never renders a
-// statDelta, a point total, or a running attribute number. The payoff
-// (radar chart, rating, archetype, weakness reveal) is Loop 4.4's reveal
-// screen; this one just walks the montage and, at the end, has a complete
-// Origin ready to hand off.
+// statDelta, a point total, or a running attribute number. Loop 4.4 adds
+// the payoff: once the montage is done, RevealScreen takes over with the
+// numbers the montage withheld, and only then does the player commit to a
+// pro debut.
 
-import { useState } from 'preact/hooks';
+import { useMemo, useState } from 'preact/hooks';
 import type { MomentOption } from '../../state/schema';
 import { amateurMoments } from '../../content';
 import { buildOriginFromChoices } from '../../career/origin';
 import { startCareer } from '../../career/progression';
 import { useCageStore } from '../../state/store';
+import { RevealScreen } from './RevealScreen';
 
 export function ChargenWrapper() {
   const setCareer = useCageStore((s) => s.setCareer);
@@ -19,22 +20,27 @@ export function ChargenWrapper() {
   const momentIndex = chosen.length;
   const done = momentIndex >= amateurMoments.length;
   const moment = done ? null : amateurMoments[momentIndex];
+  const origin = useMemo(() => (done ? buildOriginFromChoices(chosen) : null), [done, chosen]);
 
   function choose(option: MomentOption) {
     setChosen((prev) => [...prev, option]);
   }
 
   function beginProCareer() {
-    const origin = buildOriginFromChoices(chosen);
+    if (!origin) return;
     setCareer(startCareer(origin, 'player-1', 'Your Fighter'));
     window.location.hash = '#/';
+  }
+
+  if (done && origin) {
+    return <RevealScreen origin={origin} onBeginCareer={beginProCareer} />;
   }
 
   return (
     <div id="chargen-wrapper" style={{ maxWidth: '32rem', padding: '1rem' }}>
       <h2>Where it all started</h2>
 
-      {!done && moment && (
+      {moment && (
         <div>
           <p style={{ marginBottom: '0.75rem', color: '#888' }}>
             Moment {momentIndex + 1} of {amateurMoments.length}
@@ -54,15 +60,6 @@ export function ChargenWrapper() {
               </button>
             ))}
           </div>
-        </div>
-      )}
-
-      {done && (
-        <div>
-          <p>Your amateur run is over. It's time to go pro.</p>
-          <button type="button" onClick={beginProCareer}>
-            Begin pro career
-          </button>
         </div>
       )}
     </div>

@@ -1,25 +1,19 @@
-// origin.ts — Loop 3.5 introduced stubOrigin/fighterFromOrigin for the
-// career shell. Loop 4.3 adds the real thing: DESIGN.md §9.1's amateur
-// wrapper — 6 formative moments (content/events/amateur.json), each
-// contributing one chosen option's statDeltas plus, on one moment, a
-// narrated weakness and the mentor gym. Budget conservation is enforced
-// structurally in state/schema.ts's AmateurMomentSchema, not here.
+// origin.ts — Loop 4.3 built the real amateur wrapper: DESIGN.md §9.1's 6
+// formative moments (content/events/amateur.json), each contributing one
+// chosen option's statDeltas plus, on one moment, a narrated weakness and
+// the mentor gym. Budget conservation is enforced structurally in
+// state/schema.ts's AmateurMomentSchema, not here. Loop 4.4 adds the §9.3
+// skip path (rollRandomOrigin) and deletes the Loop 3.5 stub Origin — both
+// paths now go through buildOriginFromChoices, so there is exactly one way
+// a valid Origin gets made.
 
+import type { RNG } from '../engine';
 import type { ArchetypeId, Attributes, Fighter, Origin, WeaknessId } from '../engine/types';
-import type { MomentOption } from '../state/schema';
+import type { AmateurMoment, MomentOption } from '../state/schema';
 
 // Every attribute starts here before origin.statDeltas are applied.
 const BASE_ATTRIBUTE_VALUE = 50;
 const DEFAULT_MENTOR_GYM_ID = 'neighborhood-gym';
-
-export const stubOrigin: Origin = {
-  statDeltas: { power: 8, technique: 10, speed: 6, cardio: 6, chin: 4, fightIQ: 6 },
-  archetype: 'allrounder',
-  weakness: null,
-  mentorGymId: 'iron-gate-gym',
-  hypeModifier: 5,
-  amateurRecord: { wins: 3, losses: 1 },
-};
 
 const STRIKING_ATTRIBUTES: (keyof Attributes)[] = ['power', 'technique', 'speed'];
 const GRAPPLING_ATTRIBUTES: (keyof Attributes)[] = ['wrestling', 'groundControl'];
@@ -73,20 +67,27 @@ export function buildOriginFromChoices(chosenOptions: readonly MomentOption[]): 
   return { statDeltas, archetype, weakness, mentorGymId, hypeModifier, amateurRecord };
 }
 
+// Skip path (DESIGN.md §9.3): "generate a valid Origin from the RNG and
+// hand it to the same pro-debut entry point." Reusing buildOriginFromChoices
+// is what makes that true — a random pick of one option per moment is fed
+// through the exact same fold the montage path uses, so there is no second
+// code path that could produce a differently-shaped Origin.
+export function rollRandomOrigin(moments: readonly AmateurMoment[], rng: RNG): Origin {
+  const chosen = moments.map((moment) => moment.options[Math.floor(rng.next() * moment.options.length)]);
+  return buildOriginFromChoices(chosen);
+}
+
 function clamp(value: number): number {
   return Math.max(0, Math.min(100, value));
 }
 
-// Pure: builds a schema-valid Fighter from an Origin — baseline attributes
-// plus the origin's deltas, clamped to the 0-100 range (DESIGN.md §4).
-export function fighterFromOrigin(
-  origin: Origin,
-  id: string,
-  name: string,
-  nationality: string,
-  weightClass: string,
-): Fighter {
-  const attributes: Attributes = {
+// Pure: baseline attributes plus the origin's deltas, clamped to the 0-100
+// range (DESIGN.md §4). Exported on its own (not just via fighterFromOrigin)
+// so the reveal screen (§9.2) can preview a fighter's stat spread without
+// needing an id/name/nationality/weightClass yet — those only exist once
+// the player commits to a pro debut.
+export function attributesFromOrigin(origin: Origin): Attributes {
+  return {
     power: clamp(BASE_ATTRIBUTE_VALUE + (origin.statDeltas.power ?? 0)),
     technique: clamp(BASE_ATTRIBUTE_VALUE + (origin.statDeltas.technique ?? 0)),
     speed: clamp(BASE_ATTRIBUTE_VALUE + (origin.statDeltas.speed ?? 0)),
@@ -96,14 +97,23 @@ export function fighterFromOrigin(
     cardio: clamp(BASE_ATTRIBUTE_VALUE + (origin.statDeltas.cardio ?? 0)),
     fightIQ: clamp(BASE_ATTRIBUTE_VALUE + (origin.statDeltas.fightIQ ?? 0)),
   };
+}
 
+// Pure: builds a schema-valid Fighter from an Origin.
+export function fighterFromOrigin(
+  origin: Origin,
+  id: string,
+  name: string,
+  nationality: string,
+  weightClass: string,
+): Fighter {
   return {
     id,
     name,
     nationality,
     weightClass,
     stance: 'orthodox',
-    attributes,
+    attributes: attributesFromOrigin(origin),
     archetype: origin.archetype,
     weakness: origin.weakness,
     traits: [],

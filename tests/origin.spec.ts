@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { buildOriginFromChoices, fighterFromOrigin } from '../src/career/origin';
+import { buildOriginFromChoices, fighterFromOrigin, rollRandomOrigin } from '../src/career/origin';
 import { OriginSchema, FighterSchema, type MomentOption } from '../src/state/schema';
 import { amateurMoments } from '../src/content';
+import { mulberry32 } from '../src/engine/rng';
 
 function option(id: string, statDeltas: Record<string, number>, extra: Partial<MomentOption> = {}): MomentOption {
   return { id, label: id, text: id, statDeltas, ...extra };
@@ -73,5 +74,34 @@ describe('buildOriginFromChoices', () => {
     const weaknessOptions = amateurMoments.flatMap((m) => m.options).filter((o) => o.weakness);
     expect(gymOptions.length).toBeGreaterThan(0);
     expect(weaknessOptions.length).toBeGreaterThan(0);
+  });
+});
+
+// DESIGN.md §9.3: the skip path rolls a seeded Origin and hands it to the
+// same pro-debut entry point the montage uses — these tests exist to prove
+// that handoff, not to re-test buildOriginFromChoices's folding logic.
+describe('rollRandomOrigin', () => {
+  it('produces a schema-valid Origin and Fighter from the real amateur.json content, across many seeds', () => {
+    for (let seed = 1; seed <= 30; seed++) {
+      const origin = rollRandomOrigin(amateurMoments, mulberry32(seed));
+      expect(OriginSchema.safeParse(origin).success).toBe(true);
+
+      const fighter = fighterFromOrigin(origin, 'p1', 'Random Prospect', 'USA', 'lightweight');
+      expect(FighterSchema.safeParse(fighter).success).toBe(true);
+    }
+  });
+
+  it('is deterministic for a given seed', () => {
+    const first = rollRandomOrigin(amateurMoments, mulberry32(42));
+    const second = rollRandomOrigin(amateurMoments, mulberry32(42));
+    expect(first).toEqual(second);
+  });
+
+  it('is not degenerate — different seeds roll different origins', () => {
+    const origins = Array.from({ length: 20 }, (_, i) => rollRandomOrigin(amateurMoments, mulberry32(i + 1)));
+    const distinctArchetypes = new Set(origins.map((o) => o.archetype));
+    const distinctStatDeltas = new Set(origins.map((o) => JSON.stringify(o.statDeltas)));
+    expect(distinctArchetypes.size).toBeGreaterThan(1);
+    expect(distinctStatDeltas.size).toBeGreaterThan(1);
   });
 });

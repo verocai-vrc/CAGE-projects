@@ -1,11 +1,19 @@
 import { describe, expect, it } from 'vitest';
 import { simulateFight } from '../src/engine/fight';
 import { mulberry32 } from '../src/engine/rng';
-import type { Attributes, Fighter, Tactics } from '../src/engine/types';
+import type { Attributes, Fighter, Origin, Tactics } from '../src/engine/types';
 import { applyAftermath, checkRetirement, startCareer } from '../src/career/progression';
-import { stubOrigin } from '../src/career/origin';
 import { initialCareerState } from '../src/state/store';
 import { archetypes, balance } from '../src/content';
+
+const testOrigin: Origin = {
+  statDeltas: { power: 8, technique: 10, speed: 6, cardio: 6, chin: 4, fightIQ: 6 },
+  archetype: 'allrounder',
+  weakness: null,
+  mentorGymId: 'iron-gate-gym',
+  hypeModifier: 5,
+  amateurRecord: { wins: 3, losses: 1 },
+};
 
 function fighterFromArchetype(id: string, archetypeId: string): Fighter {
   const archetype = archetypes.find((entry) => entry.id === archetypeId);
@@ -121,7 +129,7 @@ describe('applyAftermath', () => {
 
 describe('checkRetirement', () => {
   it('is false for a fresh career', () => {
-    const career = startCareer(stubOrigin, 'p1', 'Fresh Fighter');
+    const career = startCareer(testOrigin, 'p1', 'Fresh Fighter');
     expect(checkRetirement(career, balance)).toBe(false);
   });
 
@@ -151,19 +159,19 @@ describe('checkRetirement', () => {
 });
 
 describe('startCareer', () => {
-  it('builds a fresh, schema-valid career from the stub Origin', () => {
-    const career = startCareer(stubOrigin, 'p1', 'Fresh Fighter');
+  it('builds a fresh, schema-valid career from an Origin', () => {
+    const career = startCareer(testOrigin, 'p1', 'Fresh Fighter');
     expect(career.player).not.toBeNull();
     expect(career.player!.name).toBe('Fresh Fighter');
     expect(career.retired).toBe(false);
     expect(career.record).toEqual({ wins: 0, losses: 0, draws: 0, noContests: 0 });
     expect(career.ranking).toBeNull();
-    expect(career.origin).toEqual(stubOrigin);
+    expect(career.origin).toEqual(testOrigin);
   });
 
   it('applies origin statDeltas on top of the baseline, clamped to 0..100', () => {
-    const career = startCareer(stubOrigin, 'p1', 'Fresh Fighter');
-    for (const [key, delta] of Object.entries(stubOrigin.statDeltas)) {
+    const career = startCareer(testOrigin, 'p1', 'Fresh Fighter');
+    for (const [key, delta] of Object.entries(testOrigin.statDeltas)) {
       const attrKey = key as keyof Attributes;
       expect(career.player!.attributes[attrKey]).toBe(50 + (delta ?? 0));
     }

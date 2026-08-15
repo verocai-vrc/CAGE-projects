@@ -1,17 +1,19 @@
 // CareerScreen.tsx — Loop 3.5: the career hub that closes the M3 loop
 // (camp -> fight -> aftermath -> retire). Fight resolution here is
 // simulate-and-report, not the interactive round-by-round playback
-// (FightScreen, M2) — wiring the two together is a later concern; this
-// screen only has to prove the shell (numbers, not presentation) plays
-// start to finish with a stub Origin.
+// (FightScreen, M2) — wiring the two together is a later concern. Loop 4.4
+// replaced the Loop 3.5 stub Origin with the real §9.3 skip path: an
+// RNG-rolled Origin through the same buildOriginFromChoices fold the
+// amateur wrapper uses, so this entry point and #/chargen's are identical
+// from startCareer's point of view.
 
 import { useState } from 'preact/hooks';
 import { mulberry32, seedFromString, simulateFight } from '../../engine';
 import type { Fighter, Tactics } from '../../engine/types';
-import { archetypes, balance, namePools } from '../../content';
+import { amateurMoments, archetypes, balance, namePools } from '../../content';
 import { generateOpponent, offerQuality } from '../../career/matchmaking';
 import { applyAftermath, checkRetirement, startCareer } from '../../career/progression';
-import { stubOrigin } from '../../career/origin';
+import { rollRandomOrigin } from '../../career/origin';
 import { sponsorPurseMultiplier } from '../../career/life';
 import { classifyCut, initialCutProgress } from '../../career/weightcut';
 import { useCageStore } from '../../state/store';
@@ -21,8 +23,10 @@ export function CareerScreen() {
   const setCareer = useCageStore((s) => s.setCareer);
   const [lastFight, setLastFight] = useState<string | null>(null);
 
-  function begin() {
-    setCareer(startCareer(stubOrigin, 'player-1', 'Your Fighter'));
+  function skipToRandomProspect() {
+    const rng = mulberry32(seedFromString(`skip-${Date.now()}`));
+    const origin = rollRandomOrigin(amateurMoments, rng);
+    setCareer(startCareer(origin, 'player-1', 'Your Fighter'));
     setLastFight(null);
   }
 
@@ -57,8 +61,8 @@ export function CareerScreen() {
           <a href="#/chargen">
             <button type="button">Create your fighter</button>
           </a>
-          <button type="button" onClick={begin}>
-            Quick start
+          <button type="button" onClick={skipToRandomProspect}>
+            Skip: random prospect
           </button>
         </div>
       </div>
