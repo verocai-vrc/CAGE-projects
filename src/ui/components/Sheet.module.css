@@ -1,0 +1,56 @@
+/* Sheet — the NCR triplicate form section (§15.1, §15.8).
+ *
+ * White stock, goldenrod carbon, pink medical. In The File these are the three real
+ * carbon-copy colours; in The Broadcast they all collapse to the register's raised
+ * surface, because a paper sheet on arena black would blend the registers and §15.1
+ * forbids that on one screen.
+ *
+ * Screen already lays the page down as paper, so a Sheet needs an edge to read as a
+ * separate sheet on it: a ruled border, square corners (--radius-surface is 0
+ * because forms and lower-thirds both are). */
+
+.root {
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-surface);
+  padding: var(--sp-5) var(--sp-4);
+  margin-bottom: var(--sp-4);
+}
+
+.carbon {
+  background: var(--surface-alt);
+}
+
+/* Pink is medical / suspension only — §15.2. */
+.medical {
+  background: var(--surface-warn);
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: var(--t-4);
+  font-weight: 700;
+  letter-spacing: var(--track-display);
+  text-transform: uppercase;
+  color: var(--text);
+  margin-bottom: var(--sp-1);
+}
+
+.caption {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: var(--t-1);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+
+.head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  margin-bottom: var(--sp-4);
+  padding-bottom: var(--sp-3);
+  border-bottom: 1px solid var(--hairline);
+}

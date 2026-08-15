@@ -1,0 +1,42 @@
+/* FlagChip — geometry only this loop; the flag sprites land in Loop 6.3 (§15.5).
+ *
+ * 4:3 at 16px wide, hairline-ruled so a flag with a white field still has an edge
+ * against paper. Never an emoji flag: Windows does not render regional-indicator
+ * sequences and 🇧🇷 displays as the letters "BR" on the primary dev target. */
+
+.root {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-2);
+  vertical-align: baseline;
+}
+
+.chip {
+  display: block;
+  width: 16px;
+  height: 12px;
+  flex: none;
+  border: 1px solid var(--hairline);
+  border-radius: 1px;
+  background: var(--trough);
+  overflow: hidden;
+}
+
+/* The explicit neutral fallback §15.5 requires for the `lab` and `fixture`
+ * sentinels — a ruled empty field, never a broken or missing glyph. */
+.neutral {
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent,
+    transparent 2px,
+    var(--hairline) 2px,
+    var(--hairline) 3px
+  );
+}
+
+.label {
+  font-size: var(--t-1);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text-soft);
+}

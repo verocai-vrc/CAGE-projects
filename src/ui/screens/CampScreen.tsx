@@ -12,8 +12,9 @@ import { campFocusMultiplier, resolveLifeWeek, trainingPartnerQuality } from '..
 import { resolveWeightCutWeek } from '../../career/weightcut';
 import { balance } from '../../content';
 import { useCageStore } from '../../state/store';
-import { HudBar } from '../components/HudBar';
+import { Meter } from '../components/Meter';
 import { Screen } from '../components/Screen';
+import { Sheet } from '../components/Sheet';
 
 const PILLAR_LABELS: Record<keyof Required<CampAllocation>, string> = {
   training: 'Training',
@@ -89,13 +90,15 @@ export function CampScreen() {
       eyebrow={`Week ${career.week + 1} · ${career.player.name}`}
       title="Camp"
     >
-      <HudBar label="Training partners" value={career.lifeBars.trainingPartners} tone="stamina" />
-      <HudBar label="Personal life" value={career.lifeBars.partner} tone="stamina" />
-      <HudBar label="Sponsors" value={career.lifeBars.sponsors} tone="stamina" />
-      <HudBar label="Hype" value={career.hype} tone="stamina" />
-      <HudBar label="Cut discipline" value={career.weightCutProgress} tone="stamina" />
+      <Sheet title="Standing" caption={`Week ${career.week + 1}`}>
+        <Meter label="Training partners" value={career.lifeBars.trainingPartners} />
+        <Meter label="Personal life" value={career.lifeBars.partner} />
+        <Meter label="Sponsors" value={career.lifeBars.sponsors} />
+        <Meter label="Hype" value={career.hype} />
+        <Meter label="Cut discipline" value={career.weightCutProgress} />
+      </Sheet>
 
-      <HudBar label="Energy remaining" value={remaining} max={budget} tone="stamina" />
+      <Meter label="Energy remaining" value={remaining} max={budget} />
       {overBudget && (
         <p style={{ color: '#d64545', fontSize: '0.8rem' }}>
           Over budget — allocations will be scaled down when the week resolves.

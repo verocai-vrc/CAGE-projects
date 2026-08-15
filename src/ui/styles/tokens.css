@@ -134,6 +134,20 @@
   --mark-text: var(--stamp);       /* 4.64:1 — safe as text at body size */
   --mark-alt: var(--stamp-blue);
   --focus: var(--stamp-blue);
+
+  /* Primary action. Commission blue ink, not vermilion: §15.2 keeps --stamp for
+   * stamps, rules and marks rather than text, and --paper on --stamp is only
+   * 4.64:1 against 6.82:1 here. */
+  --action: var(--stamp-blue);
+  --action-text: var(--paper);
+
+  /* Meter troughs read as a ruled, unfilled box on the form. */
+  --trough: transparent;
+
+  /* A filled meter is a value written into a field, so it is ink — not vermilion.
+   * §15.2 keeps --stamp for stamps and marks; a life bar sitting at 100 should not
+   * read as an alarm. Corner colours still win wherever one is in play. */
+  --meter: var(--stamp-blue);
 }
 
 /* The Broadcast — fight night, corner decisions, moments. */
@@ -149,6 +163,20 @@
   --mark-text: var(--red-corner-text); /* 6.29:1 — the text-safe twin */
   --mark-alt: var(--amber);
   --focus: var(--amber);
+
+  /* Primary action. NOT a corner fill: --bone on --red-corner measures 4.21:1 and
+   * --canvas on it 4.07:1 — both fail AA for a button label. A lit bone bar with
+   * canvas text is 17.10:1 and reads as a broadcast graphic besides. Corner colours
+   * stay what §15.2 says they are: fighter identity, not chrome. */
+  --action: var(--bone);
+  --action-text: var(--canvas);
+
+  /* §15.2 names --canvas-lit as the meter trough colour. */
+  --trough: var(--canvas-lit);
+
+  /* An uncornered meter on fight night is neutral data, not a fighter — corner
+   * colours are reserved for fighter identity and must not leak onto anything else. */
+  --meter: var(--bone-soft);
 }
 
 /* Corner identity. The player is always red and the opponent always blue, in both

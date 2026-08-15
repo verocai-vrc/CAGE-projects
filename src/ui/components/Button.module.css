@@ -1,0 +1,77 @@
+/* Button — primary / ghost / stamp (§15.8). Controls carry --radius-control's 2px
+ * so they read as touchable; that 2px is a decision, not a default (§15.2). */
+
+.root {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  min-height: 44px; /* touch target — §15.9's mobile viewports are a real target */
+  padding: var(--sp-2) var(--sp-4);
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  font-size: var(--t-2);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color var(--dur-fast) var(--ease),
+    color var(--dur-fast) var(--ease),
+    transform var(--dur-fast) var(--ease);
+}
+
+.root:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.root:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+/* Primary — the register's action pair, never a corner colour. --bone on
+ * --red-corner measures 4.21:1 and fails AA for a label; the action pair measures
+ * 6.82:1 in The File and 17.10:1 in The Broadcast. See tokens.css. */
+.primary {
+  background: var(--action);
+  color: var(--action-text);
+  border-color: var(--action);
+}
+
+.primary:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--action) 86%, var(--ground));
+}
+
+/* Ghost — the secondary action. A ruled outline, which is what a form's optional
+ * field looks like and what a broadcast's inactive control looks like. */
+.ghost {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--hairline);
+}
+
+.ghost:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--text) 8%, transparent);
+  border-color: var(--text-soft);
+}
+
+/* Stamp — the destructive/consequential action, dressed as a rubber stamp. Display
+ * face, tracked out, --mark-text so it stays legible when --mark is a fill-only
+ * corner colour in The Broadcast (§15.2). */
+.stamp {
+  background: transparent;
+  color: var(--mark-text);
+  border: 2px solid var(--mark);
+  font-family: var(--font-display);
+  font-size: var(--t-3);
+  letter-spacing: var(--track-display);
+  text-transform: uppercase;
+}
+
+.stamp:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--mark) 12%, transparent);
+}
+
+.block {
+  display: flex;
+  width: 100%;
+}

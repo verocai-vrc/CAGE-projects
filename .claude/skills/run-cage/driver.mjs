@@ -118,6 +118,47 @@ await shot(page, 'fight-screen-start');
 await page.waitForTimeout(1500);
 await shot(page, 'fight-screen-playing');
 
+console.log('--- component kit (#/kit) ---');
+// Loop 6.2's verify: the kit must render correctly in both registers from the same
+// props, and Meter's value column must not jitter as it counts. Both registers are
+// on one page, handed one identical prop set, so a screenshot compares them directly.
+await page.goto(BASE_URL + '/#/kit');
+await page.waitForSelector('#kit-screen');
+await page.locator('#kit-file').screenshot({ path: path.join(SHOT_DIR, '15-kit-file.png') });
+console.log('SCREENSHOT', path.join(SHOT_DIR, '15-kit-file.png'));
+await page.locator('#kit-broadcast').screenshot({ path: path.join(SHOT_DIR, '16-kit-broadcast.png') });
+console.log('SCREENSHOT', path.join(SHOT_DIR, '16-kit-broadcast.png'));
+
+// The jitter check, measured rather than eyeballed. §15.3 requires every number to
+// be mono and tabular; if it is, the value box holds still while the digits change.
+const sweepValue = page.locator('#kit-sweep [role="meter"]').first();
+const sweepLabel = page.locator('#kit-sweep span').nth(1); // the numeric readout
+const samples = [];
+// 16 samples at a 7-per-tick step covers the full 0 → 100 sweep, so the column is
+// measured across all three digit widths (0, 70, 100) — the 2→3 character boundary
+// is where a non-tabular face jitters worst.
+for (let i = 0; i < 16; i++) {
+  const box = await sweepLabel.boundingBox();
+  const now = await sweepValue.getAttribute('aria-valuenow');
+  samples.push({ now, x: Math.round(box.x), w: Math.round(box.width) });
+  await page.waitForTimeout(420);
+}
+const distinctValues = new Set(samples.map((s) => s.now)).size;
+const distinctX = new Set(samples.map((s) => s.x));
+const distinctW = new Set(samples.map((s) => s.width ?? s.w));
+console.log('sweep samples:', JSON.stringify(samples));
+console.log('distinct meter values observed:', distinctValues, '(needs > 3 to be a real sweep)');
+console.log('distinct x positions:', [...distinctX], '| distinct widths:', [...distinctW]);
+if (distinctValues <= 3) {
+  console.error('METER JITTER CHECK INCONCLUSIVE: the meter did not sweep');
+  process.exitCode = 1;
+} else if (distinctX.size !== 1 || distinctW.size !== 1) {
+  console.error('METER JITTER FAIL: the value column moved as the number changed');
+  process.exitCode = 1;
+} else {
+  console.log('METER JITTER PASS: value column held still across', distinctValues, 'distinct readings');
+}
+
 console.log('--- lab screen ---');
 await page.goto(BASE_URL + '/#/lab');
 await page.waitForTimeout(500);

@@ -1,0 +1,65 @@
+/* Meter — replaces HudBar (§15.8). Register comes from the ancestor class, never a
+ * prop: every colour below resolves through a semantic role that .reg-file and
+ * .reg-broadcast bind differently, so one set of props renders correctly in both. */
+
+.root {
+  margin-bottom: var(--sp-2);
+}
+
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-1);
+}
+
+.label {
+  font-size: var(--t-1);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+
+/* §15.3: every number in the game is mono and tabular. `tabular-nums` is what
+ * stops the value column shifting horizontally as the meter counts — the failure
+ * this loop's verify screenshots for. */
+.value {
+  font-family: var(--font-mono);
+  font-size: var(--t-2);
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+  color: var(--text);
+  /* Reserve the width of the widest reading so the label never reflows either. */
+  min-width: 4ch;
+  text-align: right;
+}
+
+.trough {
+  position: relative;
+  height: 10px;
+  background: var(--trough);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-control);
+  overflow: hidden;
+}
+
+/* The fill inherits corner identity from a .corner-red / .corner-blue ancestor and
+ * falls back to the register's neutral meter ink when there is no corner in play
+ * (the camp screen's life bars). --corner-fill is the FILL twin by design: this is
+ * a bar, not text, so §15.2's -text rule does not apply here. */
+.fill {
+  width: var(--meter-fill, 0%);
+  height: 100%;
+  background: var(--corner-fill, var(--meter));
+  transition: width var(--dur-base) var(--ease);
+}
+
+/* §15.2: amber is rocked, gassed, injured. */
+.warn .fill {
+  background: var(--amber);
+}
+
+.warn .value {
+  color: var(--mark-alt);
+}

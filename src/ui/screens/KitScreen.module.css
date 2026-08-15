@@ -1,0 +1,16 @@
+/* KitScreen — layout for the gallery only. The components under test bring their
+ * own styling; this just spaces them out so the screenshots are readable. */
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-4);
+  margin-top: var(--sp-3);
+}

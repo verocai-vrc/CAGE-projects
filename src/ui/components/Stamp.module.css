@@ -1,0 +1,37 @@
+/* Stamp — the rubber-stamp mark (§15.8).
+ *
+ * Vermilion is exactly what --stamp is for: §15.2 keeps it off long text precisely
+ * so it can carry marks like this one. Rotated a degree or two, because a stamp
+ * pressed by hand never lands square. */
+
+.root {
+  display: inline-block;
+  padding: var(--sp-1) var(--sp-3);
+  border: 2px solid var(--mark);
+  border-radius: var(--radius-control);
+  color: var(--mark-text);
+  font-family: var(--font-display);
+  font-size: var(--t-2);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transform: rotate(-1.5deg);
+  /* Ink never covers the whole area evenly. */
+  opacity: 0.92;
+}
+
+.blue {
+  border-color: var(--mark-alt);
+  color: var(--mark-alt);
+  transform: rotate(1deg);
+}
+
+/* A stamp that has to sit inline in a run of text, with no rotation to disturb the
+ * line box — the DAILY · <date> marker Loop 8.3 puts on every File screen. */
+.flat {
+  transform: none;
+  font-family: var(--font-mono);
+  font-size: var(--t-1);
+  letter-spacing: var(--track-label);
+  border-width: 1px;
+}

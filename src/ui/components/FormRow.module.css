@@ -1,0 +1,55 @@
+/* FormRow — a labelled field on a commission form (§15.8).
+ *
+ * Label left in the small tracked caption voice, value right in mono. The rule
+ * under each row is the form's ruled line, and it is why the camp and career
+ * screens will read as paperwork rather than as a list of divs. */
+
+.root {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-4);
+  padding: var(--sp-2) 0;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.root:last-child {
+  border-bottom: none;
+}
+
+.label {
+  font-size: var(--t-1);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+
+/* §15.3: every value in the game is mono and tabular — purses, weights, hype,
+ * rankings, weeks. Tabular figures keep a column of them aligned. */
+.value {
+  font-family: var(--font-mono);
+  font-size: var(--t-2);
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+  color: var(--text);
+  text-align: right;
+}
+
+/* A value that is prose rather than data — an opponent's name, a verdict. */
+.prose .value {
+  font-family: var(--font-body);
+  font-variant-numeric: normal;
+}
+
+/* Stacked variant for a row whose control needs the full width (a slider, a split). */
+.stacked {
+  display: block;
+}
+
+.stacked .value {
+  text-align: left;
+}
+
+.control {
+  margin-top: var(--sp-2);
+}

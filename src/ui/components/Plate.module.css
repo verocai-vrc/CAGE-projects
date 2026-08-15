@@ -1,0 +1,52 @@
+/* Plate — the broadcast lower-third (§15.1, §15.8).
+ *
+ * Sheet's opposite number: where a Sheet is a filed document, a Plate is a graphic
+ * keyed over the arena. Square, hairline-ruled, raised off the canvas, and carrying
+ * a corner accent bar when it belongs to a fighter. */
+
+.root {
+  position: relative;
+  background: var(--surface);
+  border-radius: var(--radius-surface);
+  border-top: 1px solid var(--hairline);
+  border-bottom: 1px solid var(--hairline);
+  padding: var(--sp-4);
+  margin-bottom: var(--sp-4);
+}
+
+/* The corner assignment, as a bar down the leading edge. Falls back to the
+ * register's mark when the plate is not a fighter's (§15.2: the player is always
+ * red, the opponent always blue — a plate never has to say which it is). */
+.cornered {
+  padding-left: var(--sp-4);
+  border-left: 4px solid var(--corner-fill, var(--mark));
+}
+
+.title {
+  font-family: var(--font-display);
+  font-size: var(--t-4);
+  font-weight: 700;
+  letter-spacing: var(--track-display);
+  text-transform: uppercase;
+  color: var(--text);
+}
+
+/* Corner-coloured type uses the -text twin, never the fill. §15.2 names this as the
+ * single largest cause of unreadable text in the build this section replaced. */
+.cornered .eyebrow {
+  color: var(--corner-text, var(--mark-text));
+}
+
+.eyebrow {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: var(--t-1);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text-soft);
+  margin-bottom: var(--sp-1);
+}
+
+.body {
+  margin-top: var(--sp-3);
+}

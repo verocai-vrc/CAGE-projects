@@ -18,7 +18,8 @@ import type {
 } from '../../engine/types';
 import { archetypes, balance, judges } from '../../content';
 import { PlayByPlay } from '../components/PlayByPlay';
-import { HudBar } from '../components/HudBar';
+import { Meter } from '../components/Meter';
+import { Plate } from '../components/Plate';
 import { StatRadar } from '../components/StatRadar';
 import { CornerChoice } from '../components/CornerChoice';
 import { MomentBar } from '../components/MomentBar';
@@ -275,22 +276,21 @@ export function FightScreen() {
         />
       </div>
 
+      {/* §15.2: the player is always red, the opponent always blue. The corner
+          class is set once per side here and every Meter under it inherits the
+          fill — no component below takes a colour. */}
       <div style={{ display: 'flex', gap: '2rem' }}>
-        <div style={{ flex: 1 }}>
-          <strong>
-            {fighterA.name}
-            {hud.rockedA ? ' — HURT' : ''}
-          </strong>
-          <HudBar label="Health" value={hud.healthA} tone="health" />
-          <HudBar label="Stamina" value={hud.staminaA} tone="stamina" />
+        <div class="corner-red" style={{ flex: 1 }}>
+          <Plate eyebrow={hud.rockedA ? 'Hurt' : 'Red corner'} title={fighterA.name} corner>
+            <Meter label="Health" value={hud.healthA} tone={hud.rockedA ? 'warn' : 'default'} />
+            <Meter label="Stamina" value={hud.staminaA} />
+          </Plate>
         </div>
-        <div style={{ flex: 1 }}>
-          <strong>
-            {fighterB.name}
-            {hud.rockedB ? ' — HURT' : ''}
-          </strong>
-          <HudBar label="Health" value={hud.healthB} tone="health" />
-          <HudBar label="Stamina" value={hud.staminaB} tone="stamina" />
+        <div class="corner-blue" style={{ flex: 1 }}>
+          <Plate eyebrow={hud.rockedB ? 'Hurt' : 'Blue corner'} title={fighterB.name} corner>
+            <Meter label="Health" value={hud.healthB} tone={hud.rockedB ? 'warn' : 'default'} />
+            <Meter label="Stamina" value={hud.staminaB} />
+          </Plate>
         </div>
       </div>
 
