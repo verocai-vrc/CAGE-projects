@@ -51,5 +51,7 @@
   "injurySeverityMin": 10,
   "injurySeverityMax": 60,
   "injuryWeeksMin": 1,
-  "injuryWeeksMax": 8
+  "injuryWeeksMax": 8,
+  "maxCareerFights": 25,
+  "retirementHealthFloor": 20
 }

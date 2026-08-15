@@ -239,4 +239,6 @@ export const BalanceSchema = z.object({
   injurySeverityMax: z.number().min(0).max(100),
   injuryWeeksMin: z.number().int().min(0),
   injuryWeeksMax: z.number().int().min(0),
+  maxCareerFights: z.number().int().min(1),
+  retirementHealthFloor: z.number().min(0).max(100),
 });
