@@ -7,12 +7,13 @@
 
 import { useState } from 'preact/hooks';
 import { mulberry32, seedFromString, simulateFight } from '../../engine';
-import type { Fighter } from '../../engine/types';
+import type { Fighter, Tactics } from '../../engine/types';
 import { archetypes, balance, namePools } from '../../content';
 import { generateOpponent, offerQuality } from '../../career/matchmaking';
 import { applyAftermath, checkRetirement, startCareer } from '../../career/progression';
 import { stubOrigin } from '../../career/origin';
 import { sponsorPurseMultiplier } from '../../career/life';
+import { classifyCut, initialCutProgress } from '../../career/weightcut';
 import { useCageStore } from '../../state/store';
 
 export function CareerScreen() {
@@ -33,14 +34,18 @@ export function CareerScreen() {
       idPrefix: 'opp',
     });
     const offer = offerQuality(career.ranking, career.hype, balance, sponsorPurseMultiplier(career.lifeBars));
-    const result = simulateFight(career.player, opponent, {}, rng);
+    const cutQuality = classifyCut(career.weightCutProgress, balance);
+    const tactics: Tactics = { [career.player.id]: { cutQuality, rounds: {} } };
+    const result = simulateFight(career.player, opponent, tactics, rng);
     const after = applyAftermath(career, career.player, result, offer, balance, rng);
     const retired = checkRetirement(after, balance);
 
-    setCareer({ ...after, retired });
+    // The cut is a single-use camp-long resource — consumed on fight night,
+    // discipline has to be rebuilt from scratch for the next one.
+    setCareer({ ...after, retired, weightCutProgress: initialCutProgress });
     const outcome =
       result.winnerId === career.player.id ? 'won' : result.winnerId === opponent.id ? 'lost' : 'drew';
-    setLastFight(`You ${outcome} vs ${opponent.name} by ${result.method}.`);
+    setLastFight(`You ${outcome} vs ${opponent.name} by ${result.method} (${cutQuality} cut).`);
   }
 
   if (!career.player) {
@@ -66,6 +71,10 @@ export function CareerScreen() {
       </p>
       <p>
         Purse ${career.purse.toLocaleString('en-US')} · Hype {Math.round(career.hype)}
+      </p>
+      <p>
+        Cut discipline {Math.round(career.weightCutProgress)}/100 — would go in{' '}
+        <strong>{classifyCut(career.weightCutProgress, balance)}</strong>
       </p>
 
       {career.retired ? (

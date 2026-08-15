@@ -6,6 +6,7 @@
 import { create } from 'zustand';
 import type { Fighter, FightSummary, Origin } from '../engine/types';
 import { initialLifeBars, type LifeBars } from '../career/life';
+import { initialCutProgress } from '../career/weightcut';
 
 export interface CareerRecord {
   wins: number;
@@ -24,6 +25,7 @@ export interface CareerState {
   ranking: number | null; // null = unranked; 1 = champion
   record: CareerRecord;
   lifeBars: LifeBars; // DESIGN.md §8.3 — decays weekly (career/life.ts)
+  weightCutProgress: number; // 0..100, DESIGN.md §8.2 — camp-long diet/hydration discipline (career/weightcut.ts)
   fightHistory: FightSummary[]; // summaries only — full event logs are never persisted (DESIGN.md §2)
   retired: boolean;
 }
@@ -38,6 +40,7 @@ export const initialCareerState: CareerState = {
   ranking: null,
   record: { wins: 0, losses: 0, draws: 0, noContests: 0 },
   lifeBars: initialLifeBars,
+  weightCutProgress: initialCutProgress,
   fightHistory: [],
   retired: false,
 };

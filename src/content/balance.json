@@ -54,5 +54,7 @@
   "injuryWeeksMax": 8,
   "maxCareerFights": 25,
   "retirementHealthFloor": 20,
-  "lifeGainPerEnergy": 2.5
+  "lifeGainPerEnergy": 2.5,
+  "weightCutGainPerEnergy": 10,
+  "cutQualityThreshold": 60
 }

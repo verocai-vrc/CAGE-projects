@@ -1,12 +1,15 @@
 // CampScreen.tsx — Loop 3.2: the camp-week energy allocation screen (DESIGN.md
 // §8.1). Player splits the week's energy budget across training / weight
 // management / rest / life via sliders, then resolves the week — updating
-// the career store's player fighter, week, energy, life bars, and hype
-// (Loop 4.1 adds the life pillar and wires its decay/multipliers in).
+// the career store's player fighter, week, energy, life bars, hype, and cut
+// discipline (Loop 4.1 added the life pillar; Loop 4.2 gives weight
+// management a real effect — it accumulates into weightCutProgress, which
+// CareerScreen classifies into a CutQuality on fight week).
 
 import { useState } from 'preact/hooks';
 import { resolveCampWeek, type CampAllocation } from '../../career/camp';
 import { campFocusMultiplier, resolveLifeWeek, trainingPartnerQuality } from '../../career/life';
+import { resolveWeightCutWeek } from '../../career/weightcut';
 import { balance } from '../../content';
 import { useCageStore } from '../../state/store';
 import { HudBar } from '../components/HudBar';
@@ -54,12 +57,18 @@ export function CampScreen() {
       campFocusMultiplier(career.lifeBars),
     );
     const { bars, hype } = resolveLifeWeek(career.lifeBars, career.hype, result.energySpent.life, balance);
+    const weightCutProgress = resolveWeightCutWeek(
+      career.weightCutProgress,
+      result.energySpent.weightManagement,
+      balance,
+    );
     updateCareer({
       player: result.fighter,
       week: career.week + 1,
       energy: result.energyRemaining,
       lifeBars: bars,
       hype,
+      weightCutProgress,
     });
     setAllocation({ training: 0, weightManagement: 0, rest: 0, life: 0 });
   }
@@ -78,6 +87,7 @@ export function CampScreen() {
       <HudBar label="Personal life" value={career.lifeBars.partner} tone="stamina" />
       <HudBar label="Sponsors" value={career.lifeBars.sponsors} tone="stamina" />
       <HudBar label="Hype" value={career.hype} tone="stamina" />
+      <HudBar label="Cut discipline" value={career.weightCutProgress} tone="stamina" />
 
       <HudBar label="Energy remaining" value={remaining} max={budget} tone="stamina" />
       {overBudget && (

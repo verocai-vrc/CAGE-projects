@@ -147,6 +147,7 @@ export const CareerStateSchema = z.object({
   ranking: z.number().int().min(1).nullable(),
   record: CareerRecordSchema,
   lifeBars: LifeBarsSchema,
+  weightCutProgress: z.number().min(0).max(100),
   fightHistory: z.array(FightSummarySchema),
   retired: z.boolean(),
 }) satisfies z.ZodType<CareerState>;
@@ -249,4 +250,6 @@ export const BalanceSchema = z.object({
   maxCareerFights: z.number().int().min(1),
   retirementHealthFloor: z.number().min(0).max(100),
   lifeGainPerEnergy: z.number().min(0),
+  weightCutGainPerEnergy: z.number().min(0),
+  cutQualityThreshold: z.number().min(0).max(100),
 });

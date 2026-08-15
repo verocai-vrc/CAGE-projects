@@ -57,6 +57,7 @@ const fixtureCareer: CareerState = {
   ranking: 12,
   record: { wins: 3, losses: 1, draws: 0, noContests: 0 },
   lifeBars: { trainingPartners: 80, partner: 60, sponsors: 90 },
+  weightCutProgress: 45,
   fightHistory: [],
   retired: false,
 };
