@@ -52,6 +52,7 @@ A career is a **run**, not a save-file contract. Losing persistence costs one se
 - **The amateur wrapper is skippable.** First run: six formative moments (character creation disguised as a montage) resolve into a reveal screen (radar chart, archetype, weakness). Second run: auto-roll the origin and jump straight to a randomized pro debut — a harder, faster variant.
 - **A small, capped set of interactive fight mechanics, reskinned.** A timing bar and a push-your-luck risk ladder, reused across every player-controlled moment via one shared component. Building three-plus minigames is how this project dies.
 - **Balance by measurement.** A hidden `/lab` route runs 10,000 seeded simulations across archetype pairings and prints the win-rate matrix, finish distribution, and stamina-fade curves. All tunable constants live in `balance.json`. No balance change ships without re-running the lab.
+- **The fight narrates itself, and the engine stays pure.** Commentary is a selection layer over the event log the engine already emits — pre-authored line pools in `/content`, a pure selector in `/narration`, its own seeded stream. A replayed seed narrates identically. See `DESIGN.md` §16.6.
 - **Content is capped hard.** One weight class, ~20–30 procedurally generated opponents, ~60 life events. The engine is two weekends; a hand-authored content treadmill is six months.
 
 ---
@@ -64,7 +65,8 @@ A career is a **run**, not a save-file contract. Losing persistence costs one se
 | Build | Vite |
 | UI | Preact (React API, ~3KB runtime — memory-adequate for a HUD text game) |
 | State | Zustand (one store, sliced) |
-| Styling | CSS Modules + design-token CSS custom properties |
+| Styling | CSS Modules + design-token CSS custom properties (two registers — `DESIGN.md` §15) |
+| Art | Procedural SVG only. Zero raster assets, zero art pipeline. |
 | Content | JSON files validated by Zod at boot |
 | RNG | Custom `mulberry32` (seedable, ~10 lines, no deps) |
 | Persistence | `localStorage`, single versioned key, debounced writes |
@@ -100,6 +102,9 @@ The full architecture, data model, engine spec, and milestone plan are in [`DESI
 | M3 | Career shell | Camp weeks, energy, matchmaking, ranking, retirement card |
 | M4 | Life layer + wrapper | Decay bars, weight cut, amateur wrapper, reveal screen, skip path, first 60 events |
 | M5 | Daily prospect | Seeded daily run + shareable result |
+| M6 | Visual system | Two-register design system, procedural portraits with damage, flags, scene plates, one set piece — all inside the budgets in `DESIGN.md` §15.9 |
+| M7 | Identity and voice | A career is seeded and saved; opponents read as people (record, gym, nickname, style, scouted tendencies); a bout is narrated live by two commentators from the engine's own event log; the corner speaks |
+| M8 | Front of house | Every screen in `DESIGN.md` §16.3 exists at its route, with an empty state, an error state, and a back path — title screen to retirement card |
 
 ---
 
@@ -113,6 +118,9 @@ The full architecture, data model, engine spec, and milestone plan are in [`DESI
 - [x] M3 — Career shell
 - [x] M4 — Life layer + wrapper
 - [x] M5 — Daily prospect
+- [ ] M6 — Visual system *(planned, §15)*
+- [ ] M7 — Identity and voice *(planned, §16)*
+- [ ] M8 — Front of house *(planned, §16.3)*
 
 ---
 

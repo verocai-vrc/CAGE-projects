@@ -337,6 +337,593 @@ Keep loops small. If a loop's Build list grows past ~5 files, split it.
 
 ---
 
+## Milestone M6 — Visual system
+
+*Reference: DESIGN.md §15. Read it before starting — every loop here implements a part of it, and §15 wins on any conflict.*
+
+M5 closed the v1 feature set. The game is complete and unplayable-looking: a 90-byte stylesheet, browser-default serif headings and native form chrome, per-screen inline `style={{}}` objects, and no shared scale. This milestone is the pass that makes it a game someone finishes rather than closes.
+
+Sequencing rule: **6.1 and 6.2 come first and are not negotiable.** Screen-level polish on top of an absent token system produces a second layer of inline styles to tear out later.
+
+### Loop 6.1 — Tokens, type, and the shell
+
+**Goal:** a screen can be styled without inventing anything.
+
+**Build:**
+- `ui/styles/tokens.css` — the full token set from DESIGN.md §15.2, both registers plus the shared spine.
+- `ui/styles/fonts/` — three subsetted `.woff2` files per §15.3, `@font-face` declarations with `font-display: swap` and `size-adjust`-matched fallbacks, and a `README.md` recording the exact `pyftsubset` command.
+- `index.css` — reset, base element styles, `body` on `--desk`, focus-visible ring, `prefers-reduced-motion` block.
+- `ui/components/Screen.tsx` + module CSS — the layout primitive that applies a register class (`.reg-file` / `.reg-broadcast`), max-width, and page padding. Every screen roots in it.
+- Delete `public/icons.svg` — Vite template leftover (bluesky/discord/github/x symbols), 3.5KB shipped and referenced nowhere.
+
+**Verify:**
+- Contrast: measure `--ink`/`--paper`, `--ink-soft`/`--paper`, `--bone`/`--canvas`, `--bone-soft`/`--canvas` and both `-text` corner variants. All ≥ 4.5:1 at body size. Record the measured numbers in a comment in `tokens.css`.
+- Font files total ≤ 60KB; CSS ≤ 28KB raw. Both measured from a real `npm run build`, not estimated.
+- No network request for a font at runtime (check the network panel or assert no `fonts.googleapis.com` string in `dist/`).
+- Driver screenshots show the type scale live on at least one screen.
+
+**Exit artifact:** a token system with measured contrast, three self-hosted subsets, and a `Screen` primitive. `tokens.css` is no longer an empty `:root {}`.
+
+### Loop 6.2 — Component kit
+
+**Goal:** the vocabulary in DESIGN.md §15.8 exists, so screens stop styling themselves.
+
+**Build:** `Sheet`, `Plate`, `Button` (primary/ghost/stamp), `Meter` (replacing `HudBar`), `FormRow`, `Stamp`, `FlagChip` shell (geometry only — flags land in 6.3). CSS Modules, one per component, drawing only from tokens.
+
+**Verify:**
+- A grep for `style={{` across `src/ui/` returns zero hits in components built this loop.
+- `Meter` renders correctly in both registers from the same props (register comes from the ancestor class, never a prop).
+- Numbers inside `Meter` are mono and tabular — screenshot a meter animating 0→100 and confirm no horizontal jitter.
+
+**Exit artifact:** a component kit that makes the remaining loops mostly composition.
+
+### Loop 6.3 — Flags + fighter identity
+
+**Goal:** DESIGN.md §15.5 — a fighter reads as a person at a glance.
+
+**Build:**
+- Five inline SVG flags (Brazil, Ireland, Japan, Poland, USA) in a sprite defs block, plus an explicit neutral fallback.
+- `nationality` → flag lookup handling the `lab` and `fixture` sentinels without a broken glyph. Fix `FightScreen`'s fixture fighters, which currently carry `nationality: 'fixture'`.
+- `FighterIdentity` — corner bar, name, flag, record, archetype. Portrait slot left empty for 6.4. **The record field has no source for an opponent:** `generateOpponent` produces no record at all, and the player's lives on `CareerState`, not on `Fighter`. Render the player's record from career state here and leave the opponent's slot empty until Loop 7.4 puts `record` on `Fighter`.
+
+**Verify:**
+- Render all five flags plus both sentinels at 16px and screenshot; each is recognizable and none falls back to a missing glyph.
+- No emoji flag anywhere in the source (§15.5 — they render as letters on Windows).
+- Sprite total ≤ 1.5KB.
+
+**Exit artifact:** every fighter name in the game carries a flag.
+
+### Loop 6.4 — Procedural portraits
+
+**Goal:** DESIGN.md §15.4's face system, deterministic and asset-free.
+
+**Build:**
+- `ui/portrait/features.ts` — the feature path dictionary, ~40 small paths across nine slots.
+- `ui/portrait/faceCode.ts` — `FaceCode`, base36 serialize/parse, `faceFromSeed(rng)`.
+- `ui/components/Portrait.tsx` — renders ~9 `<use>` elements against the shared symbol defs.
+- `face: string` on `Fighter` (`engine/types.ts` + `state/schema.ts`), populated in `matchmaking.ts` from the same seeded stream. Bump `SAVE_VERSION` to 2 — `persist.ts` already falls back to a clean restart on an unknown version, and §14 accepts losing a save costs one session.
+
+**Verify:**
+- Determinism test: the same seed produces the same `FaceCode` twice, and a generated opponent's face is stable across re-renders.
+- Purity: `/engine` still never reads `face` — the Appendix B check must stay green.
+- Round-trip test: `parse(serialize(code))` is identity for 1,000 random codes.
+- Node budget: a screen rendering six portraits stays under the §15.9 ceiling.
+- Screenshot a grid of 24 seeded faces — confirm visible variety, no two identical, none broken.
+
+**Exit artifact:** an infinite roster with faces, zero asset bytes.
+
+### Loop 6.5 — Portrait editor
+
+**Goal:** the player authors their own fighter's face.
+
+**Build:** a portrait step as step 0 of `ChargenWrapper` ("who's in the mirror") — per-slot cyclers over the feature dictionary, a randomize control, and a confirm. The authored `FaceCode` flows through `buildOriginFromChoices` into `startCareer`. The §9.3 skip path rolls a face from its existing seed and shows no editor.
+
+**Verify:**
+- Manual playthrough: author a face, complete the six moments, confirm the same face appears on the reveal screen, the career hub, and fight night.
+- The editor renders no statline — §9.1's no-numbers rule still holds. Assert it in the driver by checking for absence of digits in the step's DOM.
+- Skip path and daily path both produce a valid face with no editor shown.
+- Save/reload round-trips the authored face. **Blocked as written:** `persist.ts` is complete and tested but no application code calls it — `loadCareer`/`saveCareer` appear only in `tests/persist.spec.ts`, so nothing is saved at runtime and this check cannot pass. Either pull Loop 7.1's persistence wiring forward into this loop, or verify the round-trip at the store level here and defer the reload check to 7.1.
+
+**Exit artifact:** a player-created fighter that persists.
+
+### Loop 6.6 — Damage accumulation
+
+**Goal:** DESIGN.md §15.4's signature — the face becomes the record.
+
+**Build:** `ui/portrait/wear.ts` — pure `faceWear(fighter, record, fightHistory) => WearLayers` producing cauliflower ear (0–2), brow scarring (0–3), nose break (bool), swelling (0–2, transient), and weathering. Overlay symbols in the sprite. If a needed signal is missing from `FightSummary`, add it there — never persist a wear object.
+
+**Verify:**
+- Monotonicity test: wear never decreases across a career except `swelling`, which must decay between camps.
+- A fighter with a nose injury in history renders the nose-break layer; one without does not.
+- Screenshot the same `FaceCode` at debut, mid-career, and after a brutal run — the three must be obviously distinguishable.
+- Wear is derived, not stored: assert no wear fields appear in the serialized save.
+
+**Exit artifact:** a face that tells you what the career cost.
+
+### Loop 6.7 — The File: career hub, camp, chargen
+
+**Goal:** DESIGN.md §15.1's paperwork register, applied.
+
+**Build:** `CareerScreen`, `CampScreen`, `ChargenWrapper` rebuilt on `Sheet`/`FormRow`/`Stamp`. Camp's four range inputs are replaced by `BudgetSplit` per §15.8 — one bar, four segments, draggable dividers, always summing to the budget, hatched tail for unspent. Delete the over-budget warning and its state; keep `clampAllocation` as an engine-side guard. Week resolution stamps the sheet and slides it away to the carbon copy beneath.
+
+**Verify:**
+- `BudgetSplit` cannot produce a total above the budget, by construction. Unit test it.
+- Keyboard: dividers move with arrow keys; the whole camp week is completable without a mouse.
+- Touch: dividers are draggable at 360px wide with ≥44px touch targets.
+- Driver screenshots of the camp screen at 360/768/1280 — all legible, none horizontally scrolling.
+- Regression: `tests/camp.spec.ts` still green.
+
+**Exit artifact:** the core scarcity loop finally looks like a zero-sum split, because it is one.
+
+### Loop 6.8 — The Broadcast: fight night
+
+**Goal:** DESIGN.md §15.1's broadcast register, applied.
+
+**Build:** `FightScreen` rebuilt on `Plate`. `TaleOfTheTape` and `Scorecard` (round-by-round grid, mono). Corner colors threaded through `Meter`, `StatRadar`, `PlayByPlay`, `CornerChoice`, and `MomentBar` — the player red, the opponent blue, everywhere, with the `-text` variants for any small corner-colored text.
+
+**Verify:**
+- Every corner-colored text run below 18.66px bold uses a `-text` variant. Audit it explicitly; this is §15.2's named failure mode.
+- Play all three finish types (KO, submission, decision) and screenshot each — HUD, scorecard, and log agree at every point, no drift from the event log.
+- `MomentBar` and `CornerChoice` remain fully playable by keyboard, and auto-resolve still works.
+- Node count on fight night is under the §15.9 ceiling.
+
+**Exit artifact:** a fight you can read at a glance without labels.
+
+### Loop 6.9 — Scene plates
+
+**Goal:** DESIGN.md §15.6 — place, cheaply.
+
+**Build:** six SVG plates (`gym`, `weigh-in`, `tunnel`, `cage`, `medical`, `home`), each ≤ 1KB, with the two CSS treatments. `ScenePlate` component. Placed behind screen headers only, never behind dense data.
+
+**Verify:**
+- Text over every plate still measures ≥ 4.5:1 in both treatments.
+- Combined plate weight ≤ 6KB.
+- Screenshot each plate in both registers.
+
+**Exit artifact:** the game has locations.
+
+### Loop 6.10 — The walkout
+
+**Goal:** DESIGN.md §15.7's one set piece.
+
+**Build:** the six-beat sequence at the File→Broadcast boundary, ~2.5s, CSS transforms and opacity only. Skippable by any input. Under `prefers-reduced-motion`, cut straight to the HUD.
+
+**Verify:**
+- Reduced-motion: the sequence does not play at all and the fight starts immediately. Test it with the media feature forced in the driver.
+- Skip works at every beat, leaving correct state.
+- Frame timing holds on a 4× CPU throttle profile — no dropped frames, no layout thrash (transform/opacity only).
+- It plays once per fight, not on every re-render.
+
+**Exit artifact:** the register boundary is the best moment in the run.
+
+### Loop 6.11 — Reveal and career card
+
+**Goal:** the two payoff screens earn their place.
+
+**Build:** `RevealScreen` — the authored portrait beside the radar, archetype and weakness as a stamped license. `CareerCardScreen` — the debut face beside the retirement face, full record, grade, and the M5 share text. Extend the share artifact to include the face, if it can be done without a raster export.
+
+**Verify:**
+- Debut face renders with zero wear from the stored `FaceCode`; retirement face renders full wear. Side by side they read as the same person, older.
+- Share text still copies cleanly with no leaked IDs or JSON (the Loop 5.2 check).
+- Screenshot both screens at three viewports.
+
+**Exit artifact:** a retirement card worth screenshotting.
+
+### Loop 6.12 — Accessibility and performance gate
+
+**Goal: this is the M6 exit gate.** Everything above holds up under measurement.
+
+**Build:** extend `.claude/skills/run-cage/driver.mjs` to capture at 360/768/1280, assert the §15.9 node ceiling, and run an axe pass on every screen. Add a CI budget check for CSS, font, and total gzip weight, and a rule failing the build on any `.png`/`.jpg`/`.webp` outside the favicon.
+
+**Verify (all must pass):**
+- Every §15.9 budget met, measured from a real build.
+- Zero axe violations at serious or critical severity.
+- Full career completable by keyboard alone, start to retirement.
+- Full career completable with `prefers-reduced-motion: reduce` — no motion, no missing state.
+- No horizontal scroll at 360px on any screen.
+- All existing tests green; determinism and purity checks untouched.
+
+**Exit artifact: M6 is done.** The game a player opens looks like a game.
+
+---
+
+## Milestone M7 — Identity and voice
+
+*Reference: DESIGN.md §16. Read it before starting — every loop here implements a part of it, and §16 wins on any conflict. §16.1's measurements are the reason several of these loops exist; do not skip it.*
+
+M6 makes the game look like a game. M7 makes a bout read like two people fighting each other, with someone calling it. Three things stand in the way and none of them are cosmetic:
+
+- **The career and the fight are not connected.** `CareerScreen.findFightAndResolve` simulates a bout headlessly and prints one sentence; `FightScreen` replays a hardcoded fixture matchup at a fixed seed. Narration on a screen the career never reaches is narration nobody hears.
+- **Nothing is saved.** `persist.ts` is complete, tested, and called by no application code. `loadCareer`/`saveCareer` appear only in `tests/persist.spec.ts`.
+- **A fighter never gets hurt.** §16.1: strike damage is 0.13, health never falls below 85.9, and `knockdown` fired 0 times in 400 seeded bouts.
+
+Sequencing rule: **7.1 through 7.3 come first and are not negotiable.** They are the seed, the save, and the damage curve — narration, ledger, and gym generation all read from them, and building on top of the current non-determinism means re-doing the work.
+
+**Dependency order across the four work packages:** foundations (7.1–7.3) → identity, package B (7.4–7.7) → gym and coach, package D (7.8–7.9) → narration, package C (7.10–7.15) → the fight-night wiring that makes any of it visible (7.16–7.17). Package A (screens and navigation) is **M8** — see the note before it for why.
+
+### Loop 7.1 — The career seed, and persistence that actually runs
+
+**Goal:** a career is reproducible from a seed, and closing the tab does not end it.
+
+**Build:**
+- `seed: string` on `CareerState` + `state/schema.ts`; set in `startCareer` (date string for daily runs, a rolled string otherwise).
+- `careerRng(seed, purpose, index)` helper per DESIGN.md §16.2. Replace all three `Date.now()` call sites in `CareerScreen`.
+- `loadCareer` returns `{ career, status: 'empty' | 'loaded' | 'discarded' }` per §16.2.
+- Wire persistence: load on app mount, `saveCareer` subscribed to store changes (debounced write already exists).
+- `SAVE_VERSION` → 3.
+
+**Verify:**
+- Test: two careers started from the same seed string produce identical opponents, identical offers, and identical event-deck order. Today they differ every run.
+- Test: `loadCareer` returns `status: 'discarded'` for a version-2 envelope, a malformed JSON blob, and a schema-invalid career — and returns `initialCareerState` without throwing in all three (extend `tests/persist.spec.ts`).
+- Driver: complete a camp week, reload the page, confirm week/attributes/life bars survive. This currently fails at every step.
+- Grep: zero `Date.now()` / `new Date()` under `src/` outside the daily-date helper.
+
+**Exit artifact:** a career that is both reproducible and survivable.
+
+### Loop 7.2 — Damage re-tune: make a fighter capable of being hurt
+
+**Goal:** DESIGN.md §6.4's promise — absorb punishment, then fold — is actually observable, so §16.6 has a `rocked` beat to narrate.
+
+**Build:** `content/balance.json` only. Raise `baseStrikeDamage` until health traverses a real range across a bout, then re-tune `kFinish` and `significantStrikeChance` against it so finish rates stay in the M1 band. **No engine code changes in this loop** — DESIGN.md §10: balancing is editing JSON and re-running the lab.
+
+**Verify:**
+- Over 400 seeded bouts: `knockdown` fires in a measurable share of bouts (target ≥15%), and `finish: TKO` becomes reachable. Both are currently exactly 0.
+- Lowest health reached across the sample is well below `knockdownHealthThreshold` (55). Currently 85.9.
+- The M1 gates still hold: no archetype above ~60% against the field, the matchup-over-rating property intact, finish distribution inside the documented band. Re-run `/lab` and record the numbers.
+- Determinism spot-check green (`tests/fight.spec.ts` byte-identical log test).
+- **Latent bug this loop will expose:** `FighterRuntime.rocked` is set once and never cleared, so the HUD's "HURT" state latches on for the rest of the bout. It has been invisible because it never fires. Decide the recovery rule here (clear at `roundEnd`, or decay with health) and test it — a fighter permanently "hurt" from round 1 would make the `rocked` beat in 7.13 nonsense.
+
+**Exit artifact:** a health bar that means something, and a knockdown that exists.
+
+### Loop 7.3 — `weakness` becomes real; opponents get one
+
+**Goal:** the "explicitly-called-out exploitable weakness" the reveal screen has been promising since Loop 4.4 finally does something. §16.5.
+
+**Build:**
+- `weaknessPenalty` in `balance.json`; applied in `round.ts`/`fight.ts` at the three contested rolls in §16.5's table. Deterministic, no new RNG.
+- `matchmaking.ts` draws a weakness (or `null`) from the opponent's seeded stream instead of hardcoding `null`.
+
+**Verify:**
+- Test: a fighter with `takedown-defense` loses to an identical opponent measurably more often over N seeded bouts than the same fighter with `weakness: null`; the other two ids each move their own roll and not the others'.
+- Purity check green — no `Math.random`, no clock, one new constant in `balance.json`.
+- Lab re-run: the M1 gates still hold with weaknesses live on both sides.
+
+**Exit artifact:** the weakness is a hole, not a caption.
+
+### Loop 7.4 — Records on `Fighter`, single-sourced
+
+**Goal:** an opponent has a record, and the player's record lives in exactly one place. §16.5.
+
+**Build:** `record: { wins, losses, draws }` on `Fighter` (+ schema); seeded and ladder-scaled in `matchmaking.ts`; **delete `CareerState.record`** and repoint `progression.ts`, `shareCard.ts`, `CareerScreen`, and `CareerCardScreen` at `career.player.record`.
+
+**Verify:**
+- Test: `applyAftermath` moves `player.record` correctly for win/loss/draw; `grep -rn "career.record" src/` returns zero hits.
+- Test: generated opponents at ladder position 1 carry better records than those at 15, and no opponent is 0-0.
+- Purity: `/engine` never reads `record` — audit the diff, the Appendix B check stays green.
+
+**Exit artifact:** every fighter in the game has a record behind their name.
+
+### Loop 7.5 — Style descriptors and scouting fidelity
+
+**Goal:** §16.5's descriptor predicates, and `fightIQ` becoming information per §6.6.
+
+**Build:** `career/identity.ts` — the predicate table exactly as tabulated in §16.5, plus `tendenciesFor(opponent, playerFightIQ, rng)` implementing the three-tier fidelity table (including the deliberately-wrong tendency below 45).
+
+**Verify:**
+- Test: every descriptor is reachable — construct an `Attributes` set satisfying each predicate and assert it is returned.
+- Test: at `fightIQ` 80 → 3 tendencies, all satisfied by the opponent; at 30 → 2 tendencies, exactly one of which the opponent does **not** satisfy.
+- Test: determinism — same seed, same opponent, same `fightIQ` gives the same tendency list.
+- Audit: no descriptor exists that is not a predicate over `Attributes` (§16.5's cut list).
+
+**Exit artifact:** `fightIQ` stops being inert.
+
+### Loop 7.6 — Nicknames
+
+**Goal:** a mnemonic handle that survives the fight. §16.5.
+
+**Build:** `content/names/nicknames.json` (adjective × noun pools + standalone), Zod schema, `nicknameFor(rng, archetype, nationality)` in `identity.ts`, ~65% assignment rate.
+
+**Verify:**
+- Test: 1,000 seeded fighters produce ≥200 distinct nicknames and a `null` rate within 5 points of the target.
+- Test: determinism across two runs of the same seed.
+- CI content lint (built here, extended in 7.15): the denylist rejects real fighters' monikers. Prove it fires by adding one temporarily, then remove it.
+
+**Exit artifact:** fighters you can refer to by name in a sentence.
+
+### Loop 7.7 — Portrait vocabulary extension
+
+**Goal:** §16.4 — three new slots and wider ranges, without breaking M6's contracts.
+
+**Build:** `build` (5), `marks` (12, `mk-*` namespace), `gear` (8) added to `FaceCode`; `hair` → 10, `facialHair` → 8, `hairColor` → 6. `<Portrait>` takes `stance` as a prop and reads it from `Fighter.stance` — **not** a face slot. Serialisation goes 9 → 12 chars.
+
+**Verify:**
+- Round-trip: `parse(serialize(code))` is identity for 1,000 random 12-char codes.
+- A southpaw always renders in the southpaw carriage — assert against `Fighter.stance`, not the code.
+- Marks and wear never occupy the same layer: render a heavily-worn tattooed face and confirm both are visible and neither clips the other.
+- **Measured** inline SVG for faces ≤ 6.5KB (§16.4). If over, cut `gear` in this loop, not later.
+- Screenshot a 24-face grid — visible variety, none broken.
+
+**Exit artifact:** faces that carry a build and a history before the first punch.
+
+### Loop 7.8 — Gym generation and camp bias
+
+**Goal:** §16.8 — a gym that changes how camp resolves, and the end of the dangling `mentorGymId`.
+
+**Build:**
+- `content/gyms.json` (currently the literal file `{}`) with the four ids the amateur wrapper already emits as authored anchors, plus procedural name parts.
+- `career/gym.ts` — `generateGym(rng, ...)`; `specialtyMultiplier`/`offSpecialtyMultiplier`/`gymDuesBase` in `balance.json`.
+- `camp.ts`: specialty biases per-attribute training gains; `gym.reputation / 100` replaces the flat `defaultTrainingPartnerQuality` ceiling; weekly `dues` deducted from purse.
+- `gymId` on `CareerState`, set from `origin.mentorGymId` in `startCareer`.
+
+**Verify:**
+- Test: identical camps at a striking gym vs a grappling gym produce measurably different attribute spreads from the same allocation.
+- Test: `gym.reputation` 100 vs 40 changes training gains at identical `trainingPartners`.
+- Test: dues reduce purse weekly; a broke fighter's purse floors at 0 rather than going negative.
+- Test: every `mentorGymId` the amateur wrapper can emit resolves to a real gym entry — all four, including the `neighborhood-gym` fallback.
+
+**Exit artifact:** where you train changes what you become.
+
+### Loop 7.9 — Coach generation, and the gym move
+
+**Goal:** §16.8's coach, and the agency that makes specialty a decision.
+
+**Build:** `content/coaches.json` (name parts, backgrounds, temperaments); `generateCoach(rng)` with `acuity`; `coach` on `CareerState`; a post-fight gym-move offer (costs money, resets `trainingPartners` to 50).
+
+**Verify:**
+- Test: seeded generation is deterministic and covers all four temperaments and all five backgrounds over N draws.
+- Test: accepting a gym move changes `gymId`, debits purse, resets the bar, and the next camp week resolves against the new specialty.
+- Test: a move is refused when the player cannot afford it, with a reason surfaced rather than a dead button.
+
+**Exit artifact:** a corner with a name, and a reason to leave it.
+
+### Loop 7.10 — Narration schema, content pipeline, reachability manifest
+
+**Goal:** the shape of a line pool exists and is provably validated, before a single line is written. §16.6.
+
+**Build:**
+- `NarrationLineSchema` in `state/schema.ts` per §16.6's interface.
+- `src/narration/` created; `/narration` added to the Loop 0 purity check (forbidden imports for `/engine`; no `Math.random`/`Date`/DOM inside `/narration`).
+- `REACHABLE_EVENT_VARIANTS` — the manifest from §16.1.
+- Lazy content loader for `content/narration/*.json` with build-time validation in CI.
+
+**Verify:**
+- **Two-directional reachability test:** run 500 seeded bouts *with corner tactics supplied*, collect the observed variant set, assert it equals the manifest exactly. It must fail if a variant is added and if one disappears — prove both by temporarily perturbing the manifest.
+- Purity check fails on a deliberate `Math.random()` in `/narration`, then passes once removed.
+- A malformed narration pool fails the CI validation test, not the runtime.
+
+**Exit artifact:** the contract, with a test that catches drift in both directions.
+
+### Loop 7.11 — Beat extraction
+
+**Goal:** 85 events become ~21 beats, deterministically and with no RNG. §16.6.
+
+**Build:** `narration/beats.ts` — the thirteen `BeatKind`s, strike-run aggregation into `exchange`, absorption of post-takedown `position` events, the synthetic `open` and `decision` beats, salience scoring, and the 7-per-round budget.
+
+**Verify:**
+- Test over 400 seeded bouts: mean beats per bout is 18–24; no round exceeds 7 beats.
+- Test: a decision bout produces exactly one `decision` beat and zero `finish` beats; a KO bout the reverse. (32% of bouts go to decision and emit no terminal event — §16.1.)
+- Test: extraction is a pure function — same `FightResult` in, identical `Beat[]` out, and no `rng` parameter exists in the signature at all.
+- Test: beats over a **prefix** of a diverged log are identical up to the divergence point (the property corner-call re-simulation depends on).
+
+**Exit artifact:** a fight compressed to its story.
+
+### Loop 7.12 — The selector
+
+**Goal:** a beat becomes a line, identically on every replay. §16.6.
+
+**Build:** `narration/select.ts` (priority tiers, weights, cooldowns, the 6-id anti-repeat window, the fixed relaxation order) and `narration/slots.ts` (total slot resolution, `needsNickname`/`needsGym` filtering).
+
+**Verify:**
+- **Replay test:** the same bout seed narrates byte-identically across two runs, and across a re-simulation triggered by a corner call at round 2 the narrated *prefix* is unchanged. This is the load-bearing test of the whole package.
+- Test: exactly one `rng.next()` is consumed per beat regardless of candidate-set size — instrument the RNG and count.
+- Test: the selector is total — with every pool artificially reduced to its single unconditional fallback line, 400 bouts narrate with zero exceptions and zero empty strings.
+- Test: a fighter with `nickname: null` never yields a line containing `{NICK_`; assert on rendered output across 400 bouts.
+
+**Exit artifact:** deterministic commentary.
+
+### Loop 7.13 — Line pools: action beats
+
+**Goal:** the content that carries 80% of the load. §16.6's floors.
+
+**Build:** `content/narration/action.json` — `exchange` (≥40, ≥6 per sub-condition), `takedown` (≥14), `stuffed` (≥12), `standup` (≥10), `ground` (≥10), `submission` (≥10), `rocked` (≥12), `moment` (≥18). Two voices per §16.6.
+
+**Verify:**
+- The coverage test from 7.10 passes at these floors, including every kind's unconditional fallback line.
+- Read 5 full narrated bouts end to end: no line repeats inside a bout; the `colour` voice never fires twice consecutively.
+- Content lint (trademark denylist) green.
+
+**Exit artifact:** the bout has a voice.
+
+### Loop 7.14 — Line pools: frame beats, and the corner
+
+**Goal:** the beats that open, punctuate, and close a bout, plus §16.7's corner.
+
+**Build:** `content/narration/frame.json` — `open` (≥14), `roundEnd` (≥24 across four sub-conditions), `finish` (≥18, ≥6 per method), `decision` (≥12, ≥3 per verdict). `content/narration/corner.json` — ~60 lines across 4 temperaments × 5 tactics + situational variants. `ChoiceCard` wiring so each tactic shows the coach's instruction plus an honest consequence chip.
+
+**Verify:**
+- Full coverage test green at every floor in §16.6's table, ≥60 lines tagged `voice: 'colour'`.
+- Corner: a `gambler` and a `calm` coach visibly differ in both recommendation and wording at identical fight state.
+- The recommendation is wrong at a rate consistent with low `acuity` + low `fightIQ`, and the consequence chip is misleading in exactly those cases (§16.7).
+- **Measured** narration + corner content ≤ 13KB gzip (§16.9). Measure from a real build, not from the JSON.
+
+**Exit artifact:** three neutral buttons are gone.
+
+### Loop 7.15 — `CommentaryFeed` and beat-paced playback
+
+**Goal:** narration on screen, at a readable pace, in the Broadcast register. §16.6.
+
+**Build:** `CommentaryFeed` (three-line window, fixed node count); `FightScreen`'s reveal clock re-paced from events to beats with `beatInterval = min(2600, 700 + 26 × length)`; `PlayByPlay` demoted to a collapsible "tape", off by default; finish-beat pre-emption; keyboard (space, `→`); whole-line reveal under `prefers-reduced-motion`.
+
+**Verify:**
+- A 3-round decision plays in 45–70s; a round-1 KO does not feel truncated.
+- All events belonging to a beat reveal together — the HUD never disagrees with the line on screen. Check at every beat of three fixture bouts (KO, submission, decision).
+- Node count on fight night still under the §15.9 ceiling with the feed live.
+- Reduced motion: no per-character reveal, no missing lines.
+- Contrast: the dimmed history lines measured at their **actual rendered opacity**, ≥4.5:1 (§16.9).
+- Keyboard: a full bout is completable with space and `→` alone.
+
+**Exit artifact:** you can watch a fight by reading it.
+
+### Loop 7.16 — The career fights the fight
+
+**Goal:** the career loop and the fight viewer become one thing.
+
+**Build:**
+- `career/bout.ts` — `runBout` owning the bout seed and stamping `FightSummary.seed` (currently always `''`).
+- `FightScreen` takes the real matchup from the store; delete the fixture fighters and `FIXTURE_SEED`.
+- `CareerScreen`'s `findFightAndResolve` is replaced by: accept offer → `#/fight` → `#/aftermath` → hub. Back paths on all three (fight night excepted, §16.3).
+- Active-bout inputs persisted per §16.2; resume at last completed round on reload.
+
+**Verify:**
+- Driver: hub → offer → fight night → aftermath → hub, entirely by clicking, no `page.goto`.
+- Test: no persisted `FightSummary` has an empty `seed`.
+- Test: reload mid-bout re-simulates from the seed and resumes at the last completed round with identical narration for the revealed prefix.
+- Test: the same career seed replays a whole career — same opponents, same bouts, same narration.
+
+**Exit artifact:** the fixture matchup is deleted, and fight night is where the career goes.
+
+### Loop 7.17 — The ledger
+
+**Goal:** §16.5 — the player remembers who they beat, and §8.5's long-unimplemented "rival you never beat" becomes real.
+
+**Build:** `opponentName`, `opponentFaceCode`, `opponentNickname`, `headline` on `FightSummary`; `headline` captured from the highest-salience beat's line; `Ledger` component on the hub and the career card; rival derivation.
+
+**Verify:**
+- Test: no `FightResult.events[]`, `Beat[]`, or `WearLayers` appears anywhere in the serialised save (§2 — extend the existing memory-audit assertions).
+- Test: ledger cost ≤ 150 bytes per fight, measured on a full 20-fight career.
+- Manual: play a 20-fight career and read the ledger back. Opponents from fight 3 should be recognisable at fight 20 — face, nickname, and the sentence that fired.
+- Share text still copies cleanly with no leaked ids or JSON (the Loop 5.2 check).
+
+**Exit artifact:** a career you can recount.
+
+### Loop 7.18 — M7 gate
+
+**Goal: this is the M7 exit gate.** Everything above holds under measurement.
+
+**Build:** extend the driver to walk hub → offers → scout → fight night → aftermath → ledger by clicking only, capture the commentary feed at three viewports, and assert the split budget checks (initial transfer ≤ 150KB gzip, narration chunk ≤ 13KB gzip). Add the trademark content lint to CI.
+
+**Verify (all must pass):**
+- Both gzip budgets met, measured from a real build. Every other §15.9 budget still met.
+- Coverage test green at every §16.6 floor; reachability manifest test green in both directions.
+- Replay determinism: a full career from one seed reproduces identical opponents, bouts, and narration, twice.
+- Purity: `/engine` and `/narration` checks green; zero `Math.random`/`Date` outside the daily-date helper.
+- Zero axe violations at serious or critical severity on every screen touched.
+- Full career completable by keyboard alone, and under `prefers-reduced-motion: reduce`.
+- Save survives a reload at every point in the loop, including mid-bout.
+- M1 lab gates still hold after 7.2's and 7.3's balance changes.
+
+**Exit artifact: M7 is done.** Two people fight, someone calls it, and the player remembers it afterwards.
+
+---
+
+## Milestone M8 — Front of house
+
+*Reference: DESIGN.md §16.3. The route table there is binding and complete; these loops implement it.*
+
+**Why this is a separate milestone.** The M7 planning pass scoped four work packages. Three of them (identity, narration, gym/coach) plus the foundations they need come to eighteen loops — already half again the size of M6. The fourth, the full screen inventory and navigation, is nine more. Twenty-seven loops behind one exit gate is not a gate, it is a quarter with a checkbox at the end. The split boundary is meaningful rather than arbitrary: **M7 is what happens inside a bout, M8 is everything around it.** M7 builds only the navigation spine its own screens need (hub → offers → fight → aftermath, Loop 7.16); M8 builds the rest and makes the whole surface coherent.
+
+### Loop 8.1 — `resolveRoute` and the end of dead ends
+
+**Goal:** DESIGN.md §16.3 — one derived-route rule, and a back path on every screen.
+
+**Build:** `resolveRoute(career, requested)` per §16.3; `app.tsx` routes through it; unknown routes go to the title instead of silently rendering the hub. A back affordance on `CampScreen`, `CareerCardScreen`, `RevealScreen`, and `LabScreen` — all four currently render no navigation of any kind.
+
+**Verify:**
+- Test: a table of (career state × requested route) pairs resolves as §16.3 specifies, including `#/fight` with no active bout and `#/camp` with no player.
+- Driver: reach and leave every screen by clicking only — zero `page.goto` calls remain in the driver except the initial load.
+- Test: `#/garbage` resolves to the title.
+
+**Exit artifact:** no screen you can get stuck on.
+
+### Loop 8.2 — Title screen and its branches
+
+**Goal:** §16.3's four cold-open states.
+
+**Build:** `TitleScreen` [File] on `#/`, branching on 7.1's `loadCareer` status: no save, save in progress (continue + record + week), career finished (view card + start new), save discarded (a plain explanation, not a stack trace).
+
+**Verify:** all four branches screenshot at three viewports; the discarded branch triggers from a hand-written version-2 envelope in `localStorage`; "continue" resumes at the correct screen via `resolveRoute`.
+
+**Exit artifact:** the game has a front door.
+
+### Loop 8.3 — New-run entry and the daily stamp
+
+**Goal:** §9.3's three entry paths as one screen, and §16.3's daily treatment.
+
+**Build:** `#/new` — full wrapper, skip path, today's prospect (all three currently live as bare buttons on the career hub). The `DAILY · <date>` `Stamp` on every File screen in a daily run; seed shown in the mono voice.
+
+**Verify:** all three paths produce a valid `Origin` and a playable career; the daily stamp appears on hub/camp/life/offers/card in a daily run and nowhere in a normal one; no new token or palette was introduced (grep the diff).
+
+**Exit artifact:** three ways in, one register.
+
+### Loop 8.4 — The life screen
+
+**Goal:** §8.3's life layer stops being four bars bolted to the hub — and the 60 life events finally reach a player.
+
+**Build:** `#/life` [File]; `events.ts`'s deck draw wired to camp-week resolution; `ChoiceCard` for options with honest consequence chips; `seenEventIds` in `CareerState` so the no-repeat deck works across a career; `buildDailySetup`'s `eventDeckOrder` consumed instead of discarded.
+
+**Verify:**
+- The M4 event pool is reachable in play: a 20-week career surfaces ≥15 distinct events, none twice. **This currently returns zero** — `drawLifeEvent` is called only by `daily.ts`, whose `eventDeckOrder` `CareerScreen` throws away.
+- Test: a daily run's event order matches `buildDailySetup`'s precomputed order exactly.
+- Test: choices move the bars they claim to, and the deck reshuffles rather than running dry.
+
+**Exit artifact:** the 60 events written in M4 are in the game.
+
+### Loop 8.5 — Offers and scouting
+
+**Goal:** §16.5's three-second read.
+
+**Build:** `#/offers` (a slate with purse, hype reward, ladder position) and `#/scout/:i` with the `ScoutCard` — portrait, flag, name, nickname, record, gym, style, tendencies at the player's `fightIQ` fidelity.
+
+**Verify:** six scout cards side by side are distinguishable at a glance in a screenshot; tendency count and honesty match `fightIQ` per §16.5's table; a bad `:i` resolves to `#/offers`; the empty state (retired or injured) says why and what fixes it.
+
+**Exit artifact:** you choose an opponent instead of being handed one.
+
+### Loop 8.6 — Aftermath and the ladder
+
+**Goal:** consequences get a screen, and the ranking becomes visible.
+
+**Build:** `#/aftermath` [Broadcast → File] — result, purse, hype, ranking move, injuries, the ledger entry, and any gym-move offer, with §15.7's numbers counting up. `#/ladder` [File] — the ~15-to-title ladder with the player's position marked.
+
+**Verify:** every value on the aftermath screen matches the store after `applyAftermath` (no recomputation, no drift); the register hand-back from Broadcast to File is visible in the screenshots; the ladder's unranked empty state explains what ranks you.
+
+**Exit artifact:** winning and losing look different.
+
+### Loop 8.7 — Retirement and the career card
+
+**Goal:** §8.5's full artifact.
+
+**Build:** the retirement flow (trigger → a retirement beat → card), the card carrying debut face beside retirement face (M6 Loop 6.11), the `Ledger`, the rival, three highlight headlines, grade, and the share text.
+
+**Verify:** debut and retirement faces read as the same person aged; the rival derivation picks the opponent a human would name; share text copies clean with no ids or JSON; screenshot at three viewports.
+
+**Exit artifact:** a retirement card worth screenshotting.
+
+### Loop 8.8 — Settings
+
+**Goal:** the affordances §15 and §16 already require, in one place.
+
+**Build:** `#/settings` — reduced motion (system / force on / force off), playback speed (beat interval), commentary on/off (falls back to the tape), text size, `?` key map, wipe save with confirmation.
+
+**Verify:** forcing reduced motion in-app produces the same result as the OS media feature (test both); commentary off leaves a fully playable fight on the tape alone; wipe save returns to the title's no-save branch; every control is reachable and operable by keyboard.
+
+**Exit artifact:** the accessibility promises are settings, not assumptions.
+
+### Loop 8.9 — M8 gate
+
+**Goal: this is the M8 exit gate.**
+
+**Verify (all must pass):**
+- Every screen in §16.3's table exists, at its route, in its register, with its empty and error states, and with a back path (fight night excepted).
+- `resolveRoute` handles reload at every screen; the driver reloads at each one and asserts the resolved route.
+- Full career, title to retirement, completable by keyboard alone and under `prefers-reduced-motion: reduce`.
+- No horizontal scroll at 360px on any screen; zero serious/critical axe violations.
+- All §15.9 and §16.9 budgets met, measured from a real build.
+- All existing tests green; determinism, purity, and the narration replay test untouched.
+
+**Exit artifact: M8 is done.** The game has a front of house, and a run has a shape from cold open to retirement.
+
+---
+
 ## Cross-cutting loops (run continuously, not once)
 
 These aren't milestone-gated — revisit them after every milestone closes.
@@ -345,3 +932,9 @@ These aren't milestone-gated — revisit them after every milestone closes.
 - **Purity audit:** after any `/engine` change, confirm the CI purity check (Loop 0) still passes — it's easy to accidentally reach for `Date.now()` for a "just this once" timestamp.
 - **Memory audit:** after any change touching fight playback or persistence, re-check DESIGN.md §2's memory rules — full event logs discarded after playback, content frozen not cloned, no per-screen stores.
 - **Determinism spot-check:** after any change to `fight.ts`/`round.ts`/`judging.ts`, re-run the Loop 1.7 determinism test before merging. This is the single most load-bearing test in the project.
+- **Visual regression:** after any UI change, re-run the driver and diff the screenshots. A screenshot set is the only honest verification for visual work — read the images, do not assume the CSS did what you meant.
+- **Contrast audit:** after any token or palette change, re-measure the ratios recorded in `tokens.css`. DESIGN.md §15.2's corner-color text rule is the one most likely to be violated by accident.
+- **Budget audit:** after any change adding a font, an SVG, or a component, re-check DESIGN.md §15.9 and §16.9. Budgets erode one reasonable addition at a time, and §16.9 shows the gzip ceiling is down to single-digit KB of headroom.
+- **Narration replay check:** after any change to `fight.ts`, `round.ts`, `beats.ts`, or `select.ts`, re-run the Loop 7.12 replay test. It is the determinism spot-check's twin — the fight log and the narration of it must both be reproducible, or the daily challenge is only half deterministic.
+- **Reachability audit:** after any change that adds or removes an emitted `FightEvent` variant, or any `balance.json` change that could make one unreachable, re-run Loop 7.10's two-directional manifest test. DESIGN.md §16.1 exists because an unreachable event went unnoticed through five milestones.
+- **Trademark lint:** after adding any content file, confirm the denylist check in CI covers it. DESIGN.md §13 is a legal constraint, not a style note.
