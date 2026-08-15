@@ -220,6 +220,57 @@ export const AmateurContentSchema = z.array(AmateurMomentSchema).length(6);
 export type MomentOption = z.infer<typeof MomentOptionSchema>;
 export type AmateurMoment = z.infer<typeof AmateurMomentSchema>;
 
+// Life event pool (DESIGN.md §12: ~60 events, templated — §1 pillar 3). Each
+// option's effects touch only the channels DESIGN.md §8.3's life-bar table
+// actually names: the three life bars, hype, purse (money/sponsors), and
+// fighter health (injury/wear). `template` groups the parameterized variants
+// that share one event's "shape" — content authoring is required to reuse
+// templates (checked below), not hand-author 60 unrelated one-offs.
+export const LifeEventEffectsSchema = z.object({
+  lifeBars: z
+    .object({
+      trainingPartners: z.number().optional(),
+      partner: z.number().optional(),
+      sponsors: z.number().optional(),
+    })
+    .optional(),
+  hype: z.number().optional(),
+  purse: z.number().optional(),
+  health: z.number().optional(),
+});
+
+export const LifeEventOptionSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  text: z.string(),
+  effects: LifeEventEffectsSchema,
+});
+
+export const LifeEventSchema = z.object({
+  id: z.string(),
+  template: z.string(),
+  prompt: z.string(),
+  options: z.array(LifeEventOptionSchema).min(2).max(3),
+});
+
+export const LifeEventContentSchema = z
+  .array(LifeEventSchema)
+  .min(60)
+  .superRefine((events, ctx) => {
+    // Event ids double as the deck's no-repeat key (career/events.ts) — a
+    // duplicate id would let the deck silently skip or collide entries.
+    const seen = new Set<string>();
+    for (const event of events) {
+      if (seen.has(event.id)) {
+        ctx.addIssue({ code: 'custom', message: `duplicate life event id '${event.id}'`, path: ['id'] });
+      }
+      seen.add(event.id);
+    }
+  });
+
+export type LifeEventOption = z.infer<typeof LifeEventOptionSchema>;
+export type LifeEvent = z.infer<typeof LifeEventSchema>;
+
 export const JudgeSchema = z.object({
   id: z.string(),
   name: z.string(),

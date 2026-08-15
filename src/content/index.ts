@@ -5,6 +5,7 @@ import {
   ArchetypeSchema,
   BalanceSchema,
   JudgeSchema,
+  LifeEventContentSchema,
   NamePoolSchema,
 } from '../state/schema';
 import { loadContent } from './load';
@@ -13,6 +14,7 @@ import attributesRaw from './attributes.json';
 import archetypesRaw from './archetypes.json';
 import judgesRaw from './judges.json';
 import amateurEventsRaw from './events/amateur.json';
+import lifeEventsRaw from './events/life.json';
 import namesUsaRaw from './names/usa.json';
 import namesBrazilRaw from './names/brazil.json';
 import namesJapanRaw from './names/japan.json';
@@ -24,6 +26,7 @@ export const attributeMeta = loadContent('attributes.json', attributesRaw, z.arr
 export const archetypes = loadContent('archetypes.json', archetypesRaw, z.array(ArchetypeSchema));
 export const judges = loadContent('judges.json', judgesRaw, z.array(JudgeSchema));
 export const amateurMoments = loadContent('events/amateur.json', amateurEventsRaw, AmateurContentSchema);
+export const lifeEvents = loadContent('events/life.json', lifeEventsRaw, LifeEventContentSchema);
 
 const namePoolFiles = [
   { name: 'names/usa.json', raw: namesUsaRaw },

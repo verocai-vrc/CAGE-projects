@@ -1,0 +1,553 @@
+[
+  {
+    "id": "sponsor-ask-1",
+    "template": "sponsor-ask",
+    "prompt": "Your sponsor wants you at a 6am photoshoot, right before the hardest training day of the week.",
+    "options": [
+      { "id": "go", "label": "Show up and smile for the cameras", "text": "You lose an hour of sleep, but the sponsor's rep can't stop talking about how easy you were to work with.", "effects": { "lifeBars": { "sponsors": 8, "partner": -4 } } },
+      { "id": "decline", "label": "Beg off, protect the training day", "text": "The rep doesn't say much on the call, but you can tell they noticed.", "effects": { "lifeBars": { "sponsors": -6, "partner": 3 } } }
+    ]
+  },
+  {
+    "id": "sponsor-ask-2",
+    "template": "sponsor-ask",
+    "prompt": "The apparel sponsor wants you wearing their (genuinely ugly) branded hat in every interview this camp.",
+    "options": [
+      { "id": "go", "label": "Wear the hat, every time", "text": "You look ridiculous in every clip, but the checks clear on time.", "effects": { "lifeBars": { "sponsors": 7, "partner": -3 } } },
+      { "id": "decline", "label": "\"Just this once\" your way out of it", "text": "You dodge the hat. The sponsor's enthusiasm cools a degree.", "effects": { "lifeBars": { "sponsors": -5, "partner": 3 } } }
+    ]
+  },
+  {
+    "id": "sponsor-ask-3",
+    "template": "sponsor-ask",
+    "prompt": "A supplement brand wants your name on a product you've genuinely never used.",
+    "options": [
+      { "id": "go", "label": "Sign it — it's just marketing", "text": "You never touch the stuff, but the deposit is real and the brand is thrilled.", "effects": { "lifeBars": { "sponsors": 9, "partner": -5 } } },
+      { "id": "decline", "label": "Pass — you won't shill for it", "text": "You explain you'd rather keep your name on things you actually believe in. Not everyone in the room loves the answer.", "effects": { "lifeBars": { "sponsors": -7, "partner": 4 } } }
+    ]
+  },
+  {
+    "id": "sponsor-ask-4",
+    "template": "sponsor-ask",
+    "prompt": "A same-day signing session at the mall lands right in the middle of your camp schedule.",
+    "options": [
+      { "id": "go", "label": "Rearrange the day and go", "text": "You sign a few hundred posters and eat lunch in the car on the way back to the gym.", "effects": { "lifeBars": { "sponsors": 8, "partner": -4 } } },
+      { "id": "decline", "label": "Send your apologies", "text": "The gym gets a call from an annoyed marketing coordinator. You get your afternoon back.", "effects": { "lifeBars": { "sponsors": -6, "partner": 3 } } }
+    ]
+  },
+  {
+    "id": "sponsor-ask-5",
+    "template": "sponsor-ask",
+    "prompt": "The sponsor offers a logo patch on your shorts — for less money than you were hoping.",
+    "options": [
+      { "id": "go", "label": "Take the deal anyway", "text": "It's not a great number, but a small check is still a check, and the relationship stays warm.", "effects": { "lifeBars": { "sponsors": 7, "partner": -3 } } },
+      { "id": "decline", "label": "Turn it down, hold out for better", "text": "You walk away from the table. It might pay off later. It might not.", "effects": { "lifeBars": { "sponsors": -5, "partner": 2 } } }
+    ]
+  },
+
+  {
+    "id": "training-partner-conflict-1",
+    "template": "training-partner-conflict",
+    "prompt": "A sparring partner starts going harder than the session called for, and everyone in the room notices.",
+    "options": [
+      { "id": "match-it", "label": "Match his intensity, no complaints", "text": "You take a beating for a round, but the room respects that you didn't back down.", "effects": { "lifeBars": { "trainingPartners": 7 }, "health": -3 } },
+      { "id": "call-it", "label": "Call it out and dial the pace back down", "text": "You're right to protect yourself this deep in camp, but it's an awkward silence walking to the water fountain.", "effects": { "lifeBars": { "trainingPartners": -6 }, "health": 2 } }
+    ]
+  },
+  {
+    "id": "training-partner-conflict-2",
+    "template": "training-partner-conflict",
+    "prompt": "Two guys are arguing over mat time again, and they both look at you to settle it.",
+    "options": [
+      { "id": "give-it-up", "label": "Give up your slot to keep the peace", "text": "You lose your window, but the gym stays functional and everyone owes you one.", "effects": { "lifeBars": { "trainingPartners": 6 }, "health": -1 } },
+      { "id": "hold-your-slot", "label": "Hold your slot — you booked it first", "text": "You get your round in. The mood in the room takes a day or two to reset.", "effects": { "lifeBars": { "trainingPartners": -5 }, "health": 1 } }
+    ]
+  },
+  {
+    "id": "training-partner-conflict-3",
+    "template": "training-partner-conflict",
+    "prompt": "A young hopeful at the gym won't stop asking you for pointers, right in the middle of your own session.",
+    "options": [
+      { "id": "coach-him", "label": "Take ten minutes and actually coach him", "text": "It costs you part of your own round, but the kid — and the room — remembers it.", "effects": { "lifeBars": { "trainingPartners": 8 }, "health": -2 } },
+      { "id": "brush-him-off", "label": "Politely brush him off, stay on your work", "text": "You get your full session in. He stops asking, eventually.", "effects": { "lifeBars": { "trainingPartners": -6 }, "health": 1 } }
+    ]
+  },
+  {
+    "id": "training-partner-conflict-4",
+    "template": "training-partner-conflict",
+    "prompt": "Your main sparring partner needs a ride across town in the middle of a training day.",
+    "options": [
+      { "id": "drive-him", "label": "Drive him yourself, eat the lost time", "text": "You lose an hour of the day, but he's the one who makes you better on fight night — that matters more than the hour.", "effects": { "lifeBars": { "trainingPartners": 7 }, "health": -2 } },
+      { "id": "cant-do-it", "label": "Tell him you can't spare the time", "text": "He figures it out on his own. It's fine. It's just a little colder between you two for a while.", "effects": { "lifeBars": { "trainingPartners": -6 }, "health": 1 } }
+    ]
+  },
+  {
+    "id": "training-partner-conflict-5",
+    "template": "training-partner-conflict",
+    "prompt": "The coach wants to bring in a partner who badly outclasses the current sparring crew, and the room isn't thrilled about it.",
+    "options": [
+      { "id": "back-the-coach", "label": "Back the coach's call publicly", "text": "The new partner makes everyone better, eventually, but a couple of the old guard feel replaced.", "effects": { "lifeBars": { "trainingPartners": -7 }, "health": -2 } },
+      { "id": "protect-the-crew", "label": "Push back, protect the crew you already trust", "text": "The gym stays the same room it's always been. Whether that's the right call for fight night is a different question.", "effects": { "lifeBars": { "trainingPartners": 8 }, "health": 1 } }
+    ]
+  },
+
+  {
+    "id": "partner-time-1",
+    "template": "partner-time",
+    "prompt": "Your anniversary dinner falls square in the middle of fight-week prep.",
+    "options": [
+      { "id": "go", "label": "Go, and make it count", "text": "You take the night off completely. It's worth every minute you don't spend visualizing the fight.", "effects": { "lifeBars": { "partner": 8, "trainingPartners": -4 } } },
+      { "id": "reschedule", "label": "Ask to push it back a week", "text": "The understanding is real, but so is the disappointment underneath it.", "effects": { "lifeBars": { "partner": -6, "trainingPartners": 3 } } }
+    ]
+  },
+  {
+    "id": "partner-time-2",
+    "template": "partner-time",
+    "prompt": "Your partner wants to spend the weekend apartment-hunting instead of watching you grind through two-a-days.",
+    "options": [
+      { "id": "go", "label": "Go look at apartments together", "text": "You spend the weekend picturing a life outside the gym for once. It's a good feeling.", "effects": { "lifeBars": { "partner": 7, "trainingPartners": -4 } } },
+      { "id": "stay", "label": "Stay in camp, promise to make time later", "text": "\"Later\" is doing a lot of work in that sentence, and you both know it.", "effects": { "lifeBars": { "partner": -6, "trainingPartners": 3 } } }
+    ]
+  },
+  {
+    "id": "partner-time-3",
+    "template": "partner-time",
+    "prompt": "Your partner's family is in town for the week, right in the thick of camp.",
+    "options": [
+      { "id": "host", "label": "Rearrange your schedule to host properly", "text": "Dinners run long and mornings start early, but everyone leaves happy.", "effects": { "lifeBars": { "partner": 8, "trainingPartners": -5 } } },
+      { "id": "stay-focused", "label": "Stay focused on camp, let them entertain themselves", "text": "You keep your training on schedule. The visit is a little quieter than anyone hoped.", "effects": { "lifeBars": { "partner": -7, "trainingPartners": 4 } } }
+    ]
+  },
+  {
+    "id": "partner-time-4",
+    "template": "partner-time",
+    "prompt": "Your partner asks you to skip a session for a doctor's appointment you'd otherwise miss together.",
+    "options": [
+      { "id": "go", "label": "Go — this one matters", "text": "You sit in a waiting room instead of a gym, and it turns out that was exactly the right call.", "effects": { "lifeBars": { "partner": 9, "trainingPartners": -4 } } },
+      { "id": "skip", "label": "Send your apologies, stay in the gym", "text": "You get the extra round in. The conversation that night is quieter than usual.", "effects": { "lifeBars": { "partner": -7, "trainingPartners": 3 } } }
+    ]
+  },
+  {
+    "id": "partner-time-5",
+    "template": "partner-time",
+    "prompt": "A late-night argument surfaces the same complaint again: camp is eating your whole life.",
+    "options": [
+      { "id": "listen", "label": "Actually stop and listen, clear tomorrow morning", "text": "You give up a session to just be present for once. It helps more than the missed reps hurt.", "effects": { "lifeBars": { "partner": 7, "trainingPartners": -3 } } },
+      { "id": "explain-the-stakes", "label": "Explain — again — why this camp has to come first", "text": "You're not wrong about the stakes. That doesn't make the conversation land any softer.", "effects": { "lifeBars": { "partner": -6, "trainingPartners": 2 } } }
+    ]
+  },
+
+  {
+    "id": "media-opportunity-1",
+    "template": "media-opportunity",
+    "prompt": "The local paper wants a sit-down interview about your rise up the rankings.",
+    "options": [
+      { "id": "do-it", "label": "Sit down and give them the real story", "text": "The piece runs above the fold. Your phone won't stop buzzing for two days.", "effects": { "hype": 7, "lifeBars": { "partner": -3 } } },
+      { "id": "pass", "label": "Pass, keep the week quiet", "text": "You stay off the radar. Nobody outside the gym is talking about you this week.", "effects": { "hype": -5, "lifeBars": { "partner": 3 } } }
+    ]
+  },
+  {
+    "id": "media-opportunity-2",
+    "template": "media-opportunity",
+    "prompt": "A regional MMA podcast invites you on for a full hour, unscripted.",
+    "options": [
+      { "id": "do-it", "label": "Take the full hour", "text": "You end up saying more than you planned to, and the clips travel further than the episode itself.", "effects": { "hype": 8, "lifeBars": { "partner": -4 } } },
+      { "id": "pass", "label": "Offer a short quote instead", "text": "You keep it brief and get your evening back. The hosts sound a little disappointed on air.", "effects": { "hype": -6, "lifeBars": { "partner": 3 } } }
+    ]
+  },
+  {
+    "id": "media-opportunity-3",
+    "template": "media-opportunity",
+    "prompt": "A reporter tries to bait you into trash-talking your next opponent on camera.",
+    "options": [
+      { "id": "take-the-bait", "label": "Take the bait — give them a real quote", "text": "The soundbite gets clipped everywhere by morning. It's exactly the kind of noise that sells a fight.", "effects": { "hype": 8, "lifeBars": { "partner": -3 } } },
+      { "id": "stay-classy", "label": "Stay diplomatic, refuse to bite", "text": "It's a boring quote and a smaller headline. Your corner appreciates the restraint anyway.", "effects": { "hype": -5, "lifeBars": { "partner": 3 } } }
+    ]
+  },
+  {
+    "id": "media-opportunity-4",
+    "template": "media-opportunity",
+    "prompt": "A clip from your last fight goes semi-viral overnight, and your phone is full of interview requests.",
+    "options": [
+      { "id": "ride-it", "label": "Ride the wave, do the rounds", "text": "You spend the next two days doing every interview that'll have you. It's exhausting and it works.", "effects": { "hype": 9, "lifeBars": { "partner": -5 } } },
+      { "id": "let-it-pass", "label": "Let it pass, stay in the gym", "text": "The clip fades from the timeline in a couple of days, same as everything else does.", "effects": { "hype": -6, "lifeBars": { "partner": 4 } } }
+    ]
+  },
+  {
+    "id": "media-opportunity-5",
+    "template": "media-opportunity",
+    "prompt": "Fans recognize you at the grocery store and ask for photos, right as you're trying to get home.",
+    "options": [
+      { "id": "stop", "label": "Stop and take every photo", "text": "It takes twenty minutes longer than it should, but every one of those people leaves grinning.", "effects": { "hype": 6, "lifeBars": { "partner": -3 } } },
+      { "id": "keep-moving", "label": "Smile, apologize, keep moving", "text": "You get home on time. Someone posts about how rude you seemed. Someone else defends you in the replies.", "effects": { "hype": -4, "lifeBars": { "partner": 3 } } }
+    ]
+  },
+
+  {
+    "id": "injury-scare-1",
+    "template": "injury-scare",
+    "prompt": "You tweak your knee awkwardly in live sparring, three weeks out.",
+    "options": [
+      { "id": "push-through", "label": "Push through, finish the session", "text": "It's sore for days afterward, but you don't lose a single round of camp to it.", "effects": { "health": -4, "lifeBars": { "trainingPartners": 3 } } },
+      { "id": "shut-it-down", "label": "Shut it down for the day", "text": "You ice it, rest it, and lose the rest of the session. It's the boring, correct choice.", "effects": { "health": 3, "lifeBars": { "trainingPartners": -2 } } }
+    ]
+  },
+  {
+    "id": "injury-scare-2",
+    "template": "injury-scare",
+    "prompt": "A nagging cough won't quit in the middle of a hard training block.",
+    "options": [
+      { "id": "push-through", "label": "Train through it anyway", "text": "You get the work in, wheezing through the last few rounds. Nobody in camp says anything about it directly.", "effects": { "health": -3, "lifeBars": { "trainingPartners": 2 } } },
+      { "id": "rest-up", "label": "Take a day to actually rest", "text": "You lose a day of camp but come back breathing clean.", "effects": { "health": 4, "lifeBars": { "trainingPartners": -3 } } }
+    ]
+  },
+  {
+    "id": "injury-scare-3",
+    "template": "injury-scare",
+    "prompt": "An old cut over your eyebrow reopens during a hard round of pads.",
+    "options": [
+      { "id": "push-through", "label": "Tape it up, keep going", "text": "It's ugly and it stings, but you finish the round like it never happened.", "effects": { "health": -4, "lifeBars": { "trainingPartners": 3 } } },
+      { "id": "get-it-looked-at", "label": "Stop and get it looked at properly", "text": "The cutman closes it up clean. You lose the rest of the session to be safe.", "effects": { "health": 3, "lifeBars": { "trainingPartners": -2 } } }
+    ]
+  },
+  {
+    "id": "injury-scare-4",
+    "template": "injury-scare",
+    "prompt": "Your hand goes numb after a long bag session, and it hasn't fully come back by morning.",
+    "options": [
+      { "id": "push-through", "label": "Wrap it tighter, keep hitting", "text": "The feeling comes back eventually. Whether that was the smart call is a question for later.", "effects": { "health": -5, "lifeBars": { "trainingPartners": 3 } } },
+      { "id": "get-it-checked", "label": "Get it checked before doing anything else", "text": "It turns out to be nothing serious, but you lose a day of camp finding that out.", "effects": { "health": 4, "lifeBars": { "trainingPartners": -3 } } }
+    ]
+  },
+  {
+    "id": "injury-scare-5",
+    "template": "injury-scare",
+    "prompt": "The coach spots you favoring one leg and asks, flatly, whether you should sit today out.",
+    "options": [
+      { "id": "push-through", "label": "Tell him you're fine, keep training", "text": "You finish the session on stubbornness alone. He doesn't look convinced.", "effects": { "health": -4, "lifeBars": { "trainingPartners": 2 } } },
+      { "id": "sit-out", "label": "Admit it and sit the session out", "text": "The camp loses a day, but you walk out of the gym in better shape than you walked in.", "effects": { "health": 5, "lifeBars": { "trainingPartners": -3 } } }
+    ]
+  },
+
+  {
+    "id": "money-crunch-1",
+    "template": "money-crunch",
+    "prompt": "The gym dues are due, and the number is bigger than you remembered.",
+    "options": [
+      { "id": "pay-yourself", "label": "Pay it out of your own pocket", "text": "It stings, but nobody has to know the number ever came close to a problem.", "effects": { "purse": -900, "lifeBars": { "partner": 4 } } },
+      { "id": "ask-sponsor", "label": "Ask the sponsor for an advance", "text": "They cover it without much fuss, but it's a favor now on the books.", "effects": { "purse": 700, "lifeBars": { "sponsors": -7 } } }
+    ]
+  },
+  {
+    "id": "money-crunch-2",
+    "template": "money-crunch",
+    "prompt": "Your car dies the week you need it most to get to the gym.",
+    "options": [
+      { "id": "pay-yourself", "label": "Pay for the repair yourself", "text": "It's an ugly bill, but the car's fixed by the next morning and camp doesn't miss a beat.", "effects": { "purse": -1100, "lifeBars": { "partner": 4 } } },
+      { "id": "ask-sponsor", "label": "Ask the sponsor to help cover it", "text": "They front the repair cost. It's a generous move, and everyone in the room knows it's not free.", "effects": { "purse": 850, "lifeBars": { "sponsors": -8 } } }
+    ]
+  },
+  {
+    "id": "money-crunch-3",
+    "template": "money-crunch",
+    "prompt": "Rent's due, and the purse from your last fight still hasn't cleared.",
+    "options": [
+      { "id": "pay-yourself", "label": "Dip into your reserves to cover it", "text": "It's not comfortable, but it's handled quietly and the landlord never even notices.", "effects": { "purse": -1000, "lifeBars": { "partner": 5 } } },
+      { "id": "ask-sponsor", "label": "Ask the sponsor for a short-term advance", "text": "The check arrives fast. The relationship gets a little more transactional in the process.", "effects": { "purse": 800, "lifeBars": { "sponsors": -7 } } }
+    ]
+  },
+  {
+    "id": "money-crunch-4",
+    "template": "money-crunch",
+    "prompt": "An unexpected medical bill lands in the mailbox mid-camp.",
+    "options": [
+      { "id": "pay-yourself", "label": "Cover it yourself, no complaints", "text": "The number is bad, but it's over and dealt with by the weekend.", "effects": { "purse": -1300, "lifeBars": { "partner": 4 } } },
+      { "id": "ask-sponsor", "label": "Lean on the sponsor's wellness fund", "text": "It's exactly what the fund is for, technically. It still feels like cashing in a chip you'll want later.", "effects": { "purse": 900, "lifeBars": { "sponsors": -8 } } }
+    ]
+  },
+  {
+    "id": "money-crunch-5",
+    "template": "money-crunch",
+    "prompt": "Travel costs for a title-eliminator bout are steeper than the purse alone can cover.",
+    "options": [
+      { "id": "pay-yourself", "label": "Eat the difference yourself", "text": "You book the flights and the hotel without asking anyone for help. It's the price of the opportunity.", "effects": { "purse": -1500, "lifeBars": { "partner": 5 } } },
+      { "id": "ask-sponsor", "label": "Ask the sponsor to pick up the travel budget", "text": "They say yes, and remind you — not for the first time — how much they've put into this camp.", "effects": { "purse": 1000, "lifeBars": { "sponsors": -9 } } }
+    ]
+  },
+
+  {
+    "id": "fan-encounter-1",
+    "template": "fan-encounter",
+    "prompt": "A kid in the neighborhood wants a photo before school and won't stop asking about it.",
+    "options": [
+      { "id": "stop", "label": "Stop and make his morning", "text": "You lose ten minutes and gain one lifelong fan, loudly, in front of his whole bus stop.", "effects": { "hype": 5, "lifeBars": { "trainingPartners": -3 } } },
+      { "id": "keep-moving", "label": "Wave, keep walking to the gym", "text": "You're not rude about it, just quick. He looks a little deflated.", "effects": { "hype": -3, "lifeBars": { "trainingPartners": 3 } } }
+    ]
+  },
+  {
+    "id": "fan-encounter-2",
+    "template": "fan-encounter",
+    "prompt": "A fan drives three hours just to catch you leaving the gym.",
+    "options": [
+      { "id": "stop", "label": "Stop and give him real time", "text": "You spend half an hour talking fight strategy with a total stranger who now tells everyone he knows about it.", "effects": { "hype": 7, "lifeBars": { "trainingPartners": -4 } } },
+      { "id": "keep-moving", "label": "Sign quickly and head inside", "text": "You keep the interaction short. He posts about it anyway, a little less enthusiastically than he'd hoped.", "effects": { "hype": -4, "lifeBars": { "trainingPartners": 3 } } }
+    ]
+  },
+  {
+    "id": "fan-encounter-3",
+    "template": "fan-encounter",
+    "prompt": "Someone at a bar recognizes you and insists on buying a round for the whole table.",
+    "options": [
+      { "id": "stop", "label": "Sit down, let them buy you a soda water", "text": "It's a good half hour of stories and handshakes. Word travels through the neighborhood by the weekend.", "effects": { "hype": 6, "lifeBars": { "trainingPartners": -3 } } },
+      { "id": "keep-moving", "label": "Thank them and head home early", "text": "You keep your night short and your morning intact. Nobody's mad, exactly, just a little let down.", "effects": { "hype": -4, "lifeBars": { "trainingPartners": 2 } } }
+    ]
+  },
+  {
+    "id": "fan-encounter-4",
+    "template": "fan-encounter",
+    "prompt": "Gifts from fans keep piling up at the front desk, and the coach wants you to acknowledge them publicly.",
+    "options": [
+      { "id": "stop", "label": "Film a proper thank-you and post it", "text": "It takes a chunk of the afternoon to get right, but it lands well and people notice the effort.", "effects": { "hype": 6, "lifeBars": { "trainingPartners": -3 } } },
+      { "id": "keep-moving", "label": "Send a quick private thanks instead", "text": "It's handled, but quietly. The gesture doesn't travel any further than the front desk.", "effects": { "hype": -4, "lifeBars": { "trainingPartners": 3 } } }
+    ]
+  },
+  {
+    "id": "fan-encounter-5",
+    "template": "fan-encounter",
+    "prompt": "A local youth league asks if you'll guest-coach a session, and word would definitely get around.",
+    "options": [
+      { "id": "stop", "label": "Say yes, give them the full session", "text": "You spend an afternoon with a gym full of twelve-year-olds. Someone's parent films the whole thing.", "effects": { "hype": 7, "lifeBars": { "trainingPartners": -4 } } },
+      { "id": "keep-moving", "label": "Politely decline, protect your own training time", "text": "You keep your schedule intact. The league finds someone else, and that's fine.", "effects": { "hype": -5, "lifeBars": { "trainingPartners": 4 } } }
+    ]
+  },
+
+  {
+    "id": "camp-drama-1",
+    "template": "camp-drama",
+    "prompt": "Two training partners are feuding over something small, and the coach wants you to pick a side publicly.",
+    "options": [
+      { "id": "engage", "label": "Pick a side, settle it out loud", "text": "It becomes gym gossip for a week, but at least the tension has somewhere to go.", "effects": { "hype": 5, "lifeBars": { "trainingPartners": -7 } } },
+      { "id": "stay-neutral", "label": "Stay out of it entirely", "text": "You keep the peace by refusing to engage. Both sides quietly resent that a little.", "effects": { "hype": -3, "lifeBars": { "trainingPartners": 8 } } }
+    ]
+  },
+  {
+    "id": "camp-drama-2",
+    "template": "camp-drama",
+    "prompt": "A rumor about your fight IQ — unflattering and half-true — is making the rounds at the gym.",
+    "options": [
+      { "id": "engage", "label": "Address it head-on, loudly", "text": "You kill the rumor by confronting it directly. It's a bit of a scene, and everyone's talking about it now.", "effects": { "hype": 6, "lifeBars": { "trainingPartners": -6 } } },
+      { "id": "stay-neutral", "label": "Ignore it, let it die on its own", "text": "It fades in a week or two, same as most gym gossip does. Nobody remembers who started it.", "effects": { "hype": -4, "lifeBars": { "trainingPartners": 7 } } }
+    ]
+  },
+  {
+    "id": "camp-drama-3",
+    "template": "camp-drama",
+    "prompt": "A longtime training partner announces he's leaving for a rival gym, mid-camp.",
+    "options": [
+      { "id": "engage", "label": "Make it a public falling-out", "text": "The gym takes a side, loudly, and the story travels well past the parking lot.", "effects": { "hype": 5, "lifeBars": { "trainingPartners": -8 } } },
+      { "id": "stay-neutral", "label": "Wish him well and move on quietly", "text": "It stings, but the room stays calm and everyone keeps their focus on camp.", "effects": { "hype": -3, "lifeBars": { "trainingPartners": 6 } } }
+    ]
+  },
+  {
+    "id": "camp-drama-4",
+    "template": "camp-drama",
+    "prompt": "A confident new hire at the gym starts openly angling for your spot as top dog.",
+    "options": [
+      { "id": "engage", "label": "Put him in his place in sparring", "text": "You make your point clearly, in front of everyone. It's effective and it's a little ugly.", "effects": { "hype": 6, "lifeBars": { "trainingPartners": -7 } } },
+      { "id": "stay-neutral", "label": "Let your results do the talking instead", "text": "You don't engage the posturing at all. The room notices the restraint more than you'd expect.", "effects": { "hype": -3, "lifeBars": { "trainingPartners": 7 } } }
+    ]
+  },
+  {
+    "id": "camp-drama-5",
+    "template": "camp-drama",
+    "prompt": "Someone at the gym leaks your fight-week weight to a rival's camp.",
+    "options": [
+      { "id": "engage", "label": "Call it out publicly, find who did it", "text": "It turns into a whole thing. You get your answer, and the gym spends a few tense days afterward.", "effects": { "hype": 6, "lifeBars": { "trainingPartners": -8 } } },
+      { "id": "stay-neutral", "label": "Let it go, focus on the fight instead", "text": "You don't chase it down. Whoever did it never gets called out, and camp stays calm.", "effects": { "hype": -4, "lifeBars": { "trainingPartners": 7 } } }
+    ]
+  },
+
+  {
+    "id": "family-obligation-1",
+    "template": "family-obligation",
+    "prompt": "Your sibling's wedding lands right in the middle of camp.",
+    "options": [
+      { "id": "help-out", "label": "Go, help pay for the flight, be fully present", "text": "It costs you time and money, but you're standing there when it matters, not making excuses over the phone.", "effects": { "purse": -700, "lifeBars": { "partner": 8 } } },
+      { "id": "stay-focused", "label": "Send your regrets, stay in camp", "text": "You keep every session on schedule. The family group chat is a little quieter around you for a while.", "effects": { "purse": 0, "lifeBars": { "partner": -7 } } }
+    ]
+  },
+  {
+    "id": "family-obligation-2",
+    "template": "family-obligation",
+    "prompt": "A parent calls, quietly asking for help covering a bill this month.",
+    "options": [
+      { "id": "help-out", "label": "Send the money without a second thought", "text": "It's not a huge amount, but it's exactly what was needed, and you can hear the relief in their voice.", "effects": { "purse": -600, "lifeBars": { "partner": 7 } } },
+      { "id": "stay-focused", "label": "Explain camp has you stretched thin right now", "text": "You're not wrong about the timing. It doesn't make the conversation feel any better.", "effects": { "purse": 0, "lifeBars": { "partner": -6 } } }
+    ]
+  },
+  {
+    "id": "family-obligation-3",
+    "template": "family-obligation",
+    "prompt": "A family reunion falls the week before the fight, and everyone's expecting you there.",
+    "options": [
+      { "id": "help-out", "label": "Go for the day, help cover the catering", "text": "It's a long day and an unplanned expense, but the whole family gets to see you before fight night.", "effects": { "purse": -500, "lifeBars": { "partner": 7 } } },
+      { "id": "stay-focused", "label": "Stay in camp, skip it entirely", "text": "You protect the final week completely. Someone records a video message for you to watch later.", "effects": { "purse": 0, "lifeBars": { "partner": -6 } } }
+    ]
+  },
+  {
+    "id": "family-obligation-4",
+    "template": "family-obligation",
+    "prompt": "Your kid's school play is the same night as a session you can't easily move.",
+    "options": [
+      { "id": "help-out", "label": "Skip the session, be in the front row", "text": "You miss a round of training you'll never notice was gone. The look on their face when they spot you is worth it.", "effects": { "purse": 0, "lifeBars": { "partner": 9 } } },
+      { "id": "stay-focused", "label": "Stay in the gym, catch the recording later", "text": "The session goes as planned. Watching it back on a phone screen isn't quite the same.", "effects": { "purse": 0, "lifeBars": { "partner": -7 } } }
+    ]
+  },
+  {
+    "id": "family-obligation-5",
+    "template": "family-obligation",
+    "prompt": "Family asks you to fly home for a holiday right in the middle of a demanding camp block.",
+    "options": [
+      { "id": "help-out", "label": "Book the flight, cover the cost yourself", "text": "It's an expensive detour, but being home, even briefly, resets something camp had been wearing down.", "effects": { "purse": -800, "lifeBars": { "partner": 8 } } },
+      { "id": "stay-focused", "label": "Stay put, call in for the holiday instead", "text": "You keep training uninterrupted. The call is warm, but it's not the same as being there.", "effects": { "purse": 0, "lifeBars": { "partner": -6 } } }
+    ]
+  },
+
+  {
+    "id": "rival-callout-1",
+    "template": "rival-callout",
+    "prompt": "A rival calls you out online, tagging every account that'll amplify it.",
+    "options": [
+      { "id": "clap-back", "label": "Clap back publicly, keep it sharp", "text": "The exchange goes semi-viral by evening. It's exactly the kind of noise that sells a future fight.", "effects": { "hype": 8, "lifeBars": { "sponsors": -6 } } },
+      { "id": "stay-classy", "label": "Stay silent, let the callout sit there unanswered", "text": "It's the boring, professional choice. The sponsor's marketing team is quietly relieved.", "effects": { "hype": -5, "lifeBars": { "sponsors": 5 } } }
+    ]
+  },
+  {
+    "id": "rival-callout-2",
+    "template": "rival-callout",
+    "prompt": "At a public weigh-in for another card, a rival starts talking trash directly at you from the crowd.",
+    "options": [
+      { "id": "clap-back", "label": "Fire back in front of everyone", "text": "It's a scene, and it's clipped and shared within the hour. Everyone's talking about the eventual matchup now.", "effects": { "hype": 9, "lifeBars": { "sponsors": -7 } } },
+      { "id": "stay-classy", "label": "Smile and walk past without a word", "text": "It reads as ice-cold on camera. Some people love it, some people wanted more fireworks.", "effects": { "hype": -5, "lifeBars": { "sponsors": 6 } } }
+    ]
+  },
+  {
+    "id": "rival-callout-3",
+    "template": "rival-callout",
+    "prompt": "A rival's team tries to bait you into a street confrontation outside a local event.",
+    "options": [
+      { "id": "clap-back", "label": "Engage — let it get heated", "text": "Nothing physical happens, but the shouting match ends up all over local sports pages by morning.", "effects": { "hype": 7, "lifeBars": { "sponsors": -8 } } },
+      { "id": "stay-classy", "label": "Walk away, refuse to take the bait", "text": "You leave without incident. It's not a dramatic story, but it's the smart one.", "effects": { "hype": -4, "lifeBars": { "sponsors": 6 } } }
+    ]
+  },
+  {
+    "id": "rival-callout-4",
+    "template": "rival-callout",
+    "prompt": "A rival's manager offers a \"friendly\" open sparring session that's obviously meant to bait a real confrontation.",
+    "options": [
+      { "id": "clap-back", "label": "Accept, on your own terms", "text": "The session goes exactly as hard as everyone expected. Footage of it ends up everywhere.", "effects": { "hype": 8, "lifeBars": { "sponsors": -7 } } },
+      { "id": "stay-classy", "label": "Decline the invitation entirely", "text": "You don't engage the setup at all. It's a quiet non-story, which is exactly the point.", "effects": { "hype": -5, "lifeBars": { "sponsors": 6 } } }
+    ]
+  },
+  {
+    "id": "rival-callout-5",
+    "template": "rival-callout",
+    "prompt": "A clip surfaces of a rival mocking your last performance in detail, tagged everywhere.",
+    "options": [
+      { "id": "clap-back", "label": "Post a sharp response of your own", "text": "The back-and-forth builds real heat for whenever this matchup actually happens.", "effects": { "hype": 8, "lifeBars": { "sponsors": -6 } } },
+      { "id": "stay-classy", "label": "Don't dignify it with a response", "text": "You let the clip run its course without adding fuel. It fades faster than a real feud would.", "effects": { "hype": -5, "lifeBars": { "sponsors": 5 } } }
+    ]
+  },
+
+  {
+    "id": "coach-advice-1",
+    "template": "coach-advice",
+    "prompt": "Your coach wants one more hard round out of you when you're already visibly gassed.",
+    "options": [
+      { "id": "push-through", "label": "Grind through the extra round", "text": "You finish it on fumes. The room clocks the effort, and it means something later.", "effects": { "health": -4, "lifeBars": { "trainingPartners": 6 } } },
+      { "id": "call-it", "label": "Tell him you're done for the day", "text": "You end the session early. It's the right call for recovery, even if it doesn't feel heroic.", "effects": { "health": 4, "lifeBars": { "trainingPartners": -4 } } }
+    ]
+  },
+  {
+    "id": "coach-advice-2",
+    "template": "coach-advice",
+    "prompt": "The coach suggests skipping tomorrow's session entirely to avoid burning out this deep in camp.",
+    "options": [
+      { "id": "push-through", "label": "Insist on training anyway", "text": "You get the extra work in. Whether your body thanks you for it later is an open question.", "effects": { "health": -3, "lifeBars": { "trainingPartners": 5 } } },
+      { "id": "call-it", "label": "Take the rest day he's offering", "text": "You come back the next day sharper than you'd have been otherwise.", "effects": { "health": 5, "lifeBars": { "trainingPartners": -3 } } }
+    ]
+  },
+  {
+    "id": "coach-advice-3",
+    "template": "coach-advice",
+    "prompt": "Your coach wants to try a new, unproven training method this deep into camp.",
+    "options": [
+      { "id": "push-through", "label": "Commit fully, trust the process", "text": "It's rough on your body while you adjust, but the crew respects that you didn't second-guess him out loud.", "effects": { "health": -4, "lifeBars": { "trainingPartners": 6 } } },
+      { "id": "call-it", "label": "Push back, stick with what's worked", "text": "You keep your routine intact. He drops it without much argument, but you can tell it landed a little.", "effects": { "health": 4, "lifeBars": { "trainingPartners": -4 } } }
+    ]
+  },
+  {
+    "id": "coach-advice-4",
+    "template": "coach-advice",
+    "prompt": "The coach wants to bring in a specialist for a weak spot in your game — it'll eat serious time this week.",
+    "options": [
+      { "id": "push-through", "label": "Clear the schedule and dive in", "text": "It's an exhausting few days of very specific, very necessary work.", "effects": { "health": -3, "lifeBars": { "trainingPartners": 5 } } },
+      { "id": "call-it", "label": "Push it to a later, less packed week", "text": "You protect this week's schedule. The weak spot stays exactly where it was.", "effects": { "health": 3, "lifeBars": { "trainingPartners": -3 } } }
+    ]
+  },
+  {
+    "id": "coach-advice-5",
+    "template": "coach-advice",
+    "prompt": "The coach asks you to mentor a younger fighter, which means splitting your own training time.",
+    "options": [
+      { "id": "push-through", "label": "Say yes and make real time for it", "text": "It costs you noticeable training time, and the gym takes real notice of the gesture.", "effects": { "health": -3, "lifeBars": { "trainingPartners": 7 } } },
+      { "id": "call-it", "label": "Decline, protect your own camp", "text": "You keep every minute for yourself this camp. The younger fighter finds guidance somewhere else.", "effects": { "health": 4, "lifeBars": { "trainingPartners": -5 } } }
+    ]
+  },
+
+  {
+    "id": "charity-appearance-1",
+    "template": "charity-appearance",
+    "prompt": "A local charity asks if you'll make an appearance at their fundraiser this weekend.",
+    "options": [
+      { "id": "attend", "label": "Go, give them the full afternoon", "text": "It eats a chunk of your weekend, but you leave the event genuinely glad you went.", "effects": { "hype": 6, "lifeBars": { "trainingPartners": -4 } } },
+      { "id": "skip", "label": "Send a signed item instead of showing up", "text": "It's a smaller gesture, but it protects the whole weekend for camp.", "effects": { "hype": -4, "lifeBars": { "trainingPartners": 4 } } }
+    ]
+  },
+  {
+    "id": "charity-appearance-2",
+    "template": "charity-appearance",
+    "prompt": "A children's hospital asks if you'd be willing to visit for an afternoon.",
+    "options": [
+      { "id": "attend", "label": "Clear the afternoon and go", "text": "It's the kind of afternoon that puts the rest of camp in perspective.", "effects": { "hype": 7, "lifeBars": { "trainingPartners": -5 } } },
+      { "id": "skip", "label": "Decline, stay locked into camp", "text": "You protect the training block. The hospital finds someone else for this one.", "effects": { "hype": -5, "lifeBars": { "trainingPartners": 4 } } }
+    ]
+  },
+  {
+    "id": "charity-appearance-3",
+    "template": "charity-appearance",
+    "prompt": "Your coach's old gym asks you to headline a benefit exhibition for the neighborhood.",
+    "options": [
+      { "id": "attend", "label": "Headline it, no hesitation", "text": "It's a long night in front of a crowd that means something to your coach personally.", "effects": { "hype": 7, "lifeBars": { "trainingPartners": -4 } } },
+      { "id": "skip", "label": "Pass, protect the training calendar", "text": "You keep the week intact. Your coach doesn't push, but you can tell he'd hoped for a yes.", "effects": { "hype": -5, "lifeBars": { "trainingPartners": 3 } } }
+    ]
+  },
+  {
+    "id": "charity-appearance-4",
+    "template": "charity-appearance",
+    "prompt": "A youth fundraiser wants a signed item for their auction and, ideally, you in person for an hour.",
+    "options": [
+      { "id": "attend", "label": "Show up for the full hour", "text": "The item sells for more than expected, and a room full of kids gets a photo with you.", "effects": { "hype": 6, "lifeBars": { "trainingPartners": -3 } } },
+      { "id": "skip", "label": "Ship the signed item, skip the appearance", "text": "The auction still goes fine without you there. It's a smaller story either way.", "effects": { "hype": -4, "lifeBars": { "trainingPartners": 3 } } }
+    ]
+  },
+  {
+    "id": "charity-appearance-5",
+    "template": "charity-appearance",
+    "prompt": "A community center asks you to speak to a room of teenagers about staying out of trouble.",
+    "options": [
+      { "id": "attend", "label": "Go and actually mean it", "text": "You end up staying longer than planned, answering questions nobody expected you to take seriously.", "effects": { "hype": 7, "lifeBars": { "trainingPartners": -4 } } },
+      { "id": "skip", "label": "Decline this time around", "text": "You keep the afternoon for training. The center understands, and asks again next camp.", "effects": { "hype": -5, "lifeBars": { "trainingPartners": 4 } } }
+    ]
+  }
+]
