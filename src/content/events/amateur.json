@@ -1,0 +1,158 @@
+[
+  {
+    "id": "first-steps",
+    "prompt": "You're twelve years old and your parents finally let you sign up somewhere. Where do you start?",
+    "points": 12,
+    "options": [
+      {
+        "id": "wrestling-club",
+        "label": "The wrestling club at the rec center",
+        "text": "You spend two years getting thrown around a mat by kids twice your size, and slowly stop minding it.",
+        "statDeltas": { "wrestling": 8, "groundControl": 4 }
+      },
+      {
+        "id": "boxing-gym",
+        "label": "The boxing gym above the laundromat",
+        "text": "The old man who runs it doesn't say much, but he watches your hands like they're the only thing that matters.",
+        "statDeltas": { "power": 5, "technique": 5, "speed": 2 }
+      },
+      {
+        "id": "martial-arts-dojo",
+        "label": "A martial arts dojo",
+        "text": "It's more bowing than fighting at first, but the patience it teaches you sticks around long after the belts stop mattering.",
+        "statDeltas": { "technique": 6, "fightIQ": 6 }
+      }
+    ]
+  },
+  {
+    "id": "school-years",
+    "prompt": "High school. Everyone has to be something. What are you?",
+    "points": 12,
+    "options": [
+      {
+        "id": "varsity-wrestling",
+        "label": "Varsity wrestling",
+        "text": "Two-a-days, cutting water weight before you know what a real cut even is, and a mat that never gets easier.",
+        "statDeltas": { "wrestling": 7, "cardio": 5 }
+      },
+      {
+        "id": "track-and-football",
+        "label": "Track in spring, football in fall",
+        "text": "You're not the biggest kid on the field, but nobody catches you either.",
+        "statDeltas": { "speed": 7, "power": 5 }
+      },
+      {
+        "id": "self-taught",
+        "label": "Skip the teams, study the tape instead",
+        "text": "While everyone else is at practice, you're rewinding old fights frame by frame, trying to understand why, not just what.",
+        "statDeltas": { "fightIQ": 8, "technique": 4 }
+      }
+    ]
+  },
+  {
+    "id": "choosing-a-gym",
+    "prompt": "You're eighteen and it's time to pick a real gym — the one that'll actually make you.",
+    "points": 12,
+    "options": [
+      {
+        "id": "ironside-mma",
+        "label": "Ironside MMA — grinders and wrestlers",
+        "text": "Nobody at Ironside cares how you look. They care whether you can survive top position for five straight rounds.",
+        "statDeltas": { "wrestling": 6, "groundControl": 6 },
+        "mentorGymId": "ironside-mma"
+      },
+      {
+        "id": "golden-gate-boxing",
+        "label": "Golden Gate Boxing — a striking pedigree",
+        "text": "The walls are covered in fight posters going back decades. They teach you to hit like it's a craft, not a tantrum.",
+        "statDeltas": { "power": 6, "technique": 6 },
+        "mentorGymId": "golden-gate-boxing"
+      },
+      {
+        "id": "apex-grappling",
+        "label": "Apex Grappling Academy — a jiu-jitsu factory",
+        "text": "You lose. Constantly. For months. And then one day you don't, and you understand why they made you lose so much.",
+        "statDeltas": { "groundControl": 8, "cardio": 4 },
+        "mentorGymId": "apex-grappling"
+      }
+    ]
+  },
+  {
+    "id": "training-focus",
+    "prompt": "You're in the gym six days a week now. What's actually getting the work?",
+    "points": 12,
+    "options": [
+      {
+        "id": "striking-camp",
+        "label": "Pads, bag work, sparring — striking, striking, striking",
+        "text": "Your hands and feet start moving before you consciously decide to throw anything.",
+        "statDeltas": { "power": 4, "technique": 4, "speed": 4 }
+      },
+      {
+        "id": "grappling-camp",
+        "label": "Live grappling rounds, every single day",
+        "text": "You start to feel positions before you see them — a hand on the hip that means a takedown is coming.",
+        "statDeltas": { "wrestling": 6, "groundControl": 6 }
+      },
+      {
+        "id": "strength-and-conditioning",
+        "label": "The weight room and the conditioning coach",
+        "text": "Nobody claps for a good conditioning session. You do it anyway, because you've seen what round three does to people who don't.",
+        "statDeltas": { "cardio": 8, "chin": 4 }
+      }
+    ]
+  },
+  {
+    "id": "first-adversity",
+    "prompt": "Your first real amateur loss. The one that actually teaches you something.",
+    "points": 12,
+    "options": [
+      {
+        "id": "caught-in-a-submission",
+        "label": "Caught in a submission you never saw developing",
+        "text": "You tapped, and then you watched the tape forty times trying to find the exact moment you gave your neck away.",
+        "statDeltas": { "technique": 6, "fightIQ": 6 },
+        "weakness": "submission-defense"
+      },
+      {
+        "id": "ground-and-pounded",
+        "label": "Taken down and ground out for three rounds",
+        "text": "You never got hurt badly, but you never got up, either. That gap between 'tough' and 'effective' becomes personal.",
+        "statDeltas": { "chin": 6, "cardio": 6 },
+        "weakness": "takedown-defense"
+      },
+      {
+        "id": "out-boxed",
+        "label": "Out-boxed by someone with half your athleticism",
+        "text": "He never looked fast. He was always exactly one step ahead of where you swung.",
+        "statDeltas": { "speed": 6, "fightIQ": 6 },
+        "weakness": "striking-defense"
+      }
+    ]
+  },
+  {
+    "id": "final-tune-up",
+    "prompt": "The last camp before you turn pro. Where do you put the final push?",
+    "points": 12,
+    "options": [
+      {
+        "id": "fight-camp-intensity",
+        "label": "Turn the intensity up and stop holding back",
+        "text": "You spend the camp getting hit harder than you ever have, on purpose, so fight night doesn't surprise you.",
+        "statDeltas": { "power": 5, "cardio": 5, "chin": 2 }
+      },
+      {
+        "id": "injury-prevention",
+        "label": "Recovery, mobility, staying in one piece",
+        "text": "You've watched too many prospects get hurt in camp and never get their shot. You're not going to be one of them.",
+        "statDeltas": { "chin": 8, "cardio": 4 }
+      },
+      {
+        "id": "mental-preparation",
+        "label": "A sports psychologist, twice a week",
+        "text": "Half of it feels ridiculous. The other half is the only reason you're not panicking backstage anymore.",
+        "statDeltas": { "fightIQ": 9, "technique": 3 }
+      }
+    ]
+  }
+]

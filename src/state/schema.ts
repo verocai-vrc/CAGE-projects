@@ -181,6 +181,45 @@ export const NamePoolSchema = z.object({
   lastNames: z.array(z.string()).min(1),
 });
 
+// The amateur wrapper's 6 formative moments (DESIGN.md §9.1). statDeltas is
+// the only numeric surface — the wrapper UI never renders it, but content
+// authoring needs real numbers to enforce budget conservation against.
+export const MomentOptionSchema = z.object({
+  id: z.string(),
+  label: z.string(),
+  text: z.string(),
+  statDeltas: AttributesSchema.partial(),
+  weakness: z.string().optional(),
+  mentorGymId: z.string().optional(),
+});
+
+export const AmateurMomentSchema = z
+  .object({
+    id: z.string(),
+    prompt: z.string(),
+    points: z.number().int().positive(),
+    options: z.array(MomentOptionSchema).min(2).max(3),
+  })
+  .superRefine((moment, ctx) => {
+    // Budget conservation is structural (§9.1): every option at a moment
+    // must sum to the same total — enforced here, not by authoring promise.
+    for (const option of moment.options) {
+      const total = Object.values(option.statDeltas).reduce((sum: number, v) => sum + (v ?? 0), 0);
+      if (total !== moment.points) {
+        ctx.addIssue({
+          code: 'custom',
+          message: `moment '${moment.id}' option '${option.id}' sums to ${total}, expected ${moment.points}`,
+          path: ['options'],
+        });
+      }
+    }
+  });
+
+export const AmateurContentSchema = z.array(AmateurMomentSchema).length(6);
+
+export type MomentOption = z.infer<typeof MomentOptionSchema>;
+export type AmateurMoment = z.infer<typeof AmateurMomentSchema>;
+
 export const JudgeSchema = z.object({
   id: z.string(),
   name: z.string(),

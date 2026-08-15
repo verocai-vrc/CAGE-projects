@@ -4,6 +4,7 @@ import { FightScreen } from './ui/screens/FightScreen';
 import { CampScreen } from './ui/screens/CampScreen';
 import { CareerScreen } from './ui/screens/CareerScreen';
 import { CareerCardScreen } from './ui/screens/CareerCardScreen';
+import { ChargenWrapper } from './ui/screens/ChargenWrapper';
 
 export function App() {
   const route = useHashRoute();
@@ -12,6 +13,7 @@ export function App() {
   if (route === '/fight') return <FightScreen />;
   if (route === '/camp') return <CampScreen />;
   if (route === '/card') return <CareerCardScreen />;
+  if (route === '/chargen') return <ChargenWrapper />;
 
   return <CareerScreen />;
 }

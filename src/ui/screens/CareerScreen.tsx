@@ -53,9 +53,14 @@ export function CareerScreen() {
       <div id="career-screen" style={{ padding: '1rem' }}>
         <h2>CAGE</h2>
         <p>No active career.</p>
-        <button type="button" onClick={begin}>
-          Start career
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem' }}>
+          <a href="#/chargen">
+            <button type="button">Create your fighter</button>
+          </a>
+          <button type="button" onClick={begin}>
+            Quick start
+          </button>
+        </div>
       </div>
     );
   }
