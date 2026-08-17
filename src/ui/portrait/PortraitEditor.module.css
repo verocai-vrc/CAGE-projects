@@ -1,0 +1,51 @@
+/* PortraitEditor — Loop 6.5: step 0 of the amateur wrapper ("who's in the
+ * mirror"). A filed form, same as every other chargen step (§15.1) — per-slot
+ * cyclers stacked as FormRow controls, a large preview, and a randomize/confirm
+ * pair. No statline anywhere in this file (§9.1's no-numbers rule extends here). */
+
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-5);
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-5);
+}
+
+.preview {
+  --portrait-size: 96px;
+  flex: none;
+}
+
+.hint {
+  color: var(--text-soft);
+  font-size: var(--t-2);
+}
+
+.slots {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--sp-3) var(--sp-4);
+}
+
+.cycler {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.cyclerValue {
+  flex: 1;
+  text-align: center;
+  font-family: var(--font-mono);
+  letter-spacing: 1px;
+  color: var(--text-soft);
+}
+
+.actions {
+  display: flex;
+  gap: var(--sp-3);
+}

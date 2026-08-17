@@ -3,7 +3,11 @@
 // statDelta, a point total, or a running attribute number. Loop 4.4 adds
 // the payoff: once the montage is done, RevealScreen takes over with the
 // numbers the montage withheld, and only then does the player commit to a
-// pro debut.
+// pro debut. Loop 6.5 adds step 0 ahead of the six moments — "who's in the
+// mirror" — where the player authors their own FaceCode via PortraitEditor
+// before the montage begins; that authored face is what flows into
+// startCareer, replacing the seeded-but-unedited roll this screen used to make
+// on its own.
 
 import { useMemo, useState } from 'preact/hooks';
 import type { MomentOption } from '../../state/schema';
@@ -12,17 +16,19 @@ import { buildOriginFromChoices } from '../../career/origin';
 import { startCareer } from '../../career/progression';
 import { mulberry32, seedFromString } from '../../engine';
 import { Screen } from '../components/Screen';
-import { faceFromSeed, serializeFaceCode } from '../portrait/faceCode';
+import { PortraitEditor } from '../portrait/PortraitEditor';
 import { useCageStore } from '../../state/store';
 import { RevealScreen } from './RevealScreen';
 
 export function ChargenWrapper() {
   const setCareer = useCageStore((s) => s.setCareer);
+  const [face, setFace] = useState<string | null>(null);
   const [chosen, setChosen] = useState<MomentOption[]>([]);
+  const faceRng = useMemo(() => mulberry32(seedFromString(`chargen-face-${Date.now()}`)), []);
 
   const momentIndex = chosen.length;
-  const done = momentIndex >= amateurMoments.length;
-  const moment = done ? null : amateurMoments[momentIndex];
+  const done = face !== null && momentIndex >= amateurMoments.length;
+  const moment = face !== null && !done ? amateurMoments[momentIndex] : null;
   const origin = useMemo(() => (done ? buildOriginFromChoices(chosen) : null), [done, chosen]);
 
   function choose(option: MomentOption) {
@@ -30,19 +36,21 @@ export function ChargenWrapper() {
   }
 
   function beginProCareer() {
-    if (!origin) return;
-    // Loop 6.5 adds step 0 ("who's in the mirror") — a real portrait editor whose
-    // authored FaceCode flows in here instead of this roll. Until then the full
-    // wrapper path gets a real, varied face rather than the all-zero default, seeded
-    // off the six moment choices so it's at least stable for a given playthrough.
-    const rng = mulberry32(seedFromString(chosen.map((c) => c.id).join('-')));
-    const face = serializeFaceCode(faceFromSeed(rng));
+    if (!origin || !face) return;
     setCareer(startCareer(origin, 'player-1', 'Your Fighter', undefined, undefined, face));
     window.location.hash = '#/';
   }
 
-  if (done && origin) {
+  if (done && origin && face) {
     return <RevealScreen origin={origin} onBeginCareer={beginProCareer} />;
+  }
+
+  if (face === null) {
+    return (
+      <Screen register="file" id="chargen-wrapper" title="Who's in the mirror">
+        <PortraitEditor rng={faceRng} onConfirm={setFace} />
+      </Screen>
+    );
   }
 
   return (

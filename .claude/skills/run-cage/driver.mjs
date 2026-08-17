@@ -39,6 +39,26 @@ await shot(page, 'career-start');
 console.log('--- chargen wrapper flow ---');
 await page.click('a[href="#/chargen"]');
 await page.waitForSelector('#chargen-wrapper');
+await shot(page, 'chargen-portrait-editor');
+
+// Loop 6.5's verify: the portrait editor step renders no statline — §9.1's
+// no-numbers rule extends to it. The cycler shows dot glyphs, not digits.
+const portraitStepText = await page.textContent('#chargen-wrapper');
+const hasDigits = /\d/.test(portraitStepText);
+console.log('portrait editor step contains a digit:', hasDigits);
+if (hasDigits) {
+  console.error('PORTRAIT EDITOR NO-NUMBERS CHECK FAIL: found a digit in the step DOM');
+  process.exitCode = 1;
+} else {
+  console.log('PORTRAIT EDITOR NO-NUMBERS CHECK PASS');
+}
+
+// Cycle a couple of features and randomize once, then confirm the face.
+await page.click('#chargen-wrapper button[aria-label^="Next"]');
+await page.click('#chargen-wrapper button:has-text("Randomize")');
+await shot(page, 'chargen-portrait-edited');
+await page.click('#chargen-wrapper button:has-text("Confirm face")');
+await page.waitForSelector('#chargen-wrapper p:has-text("Moment")');
 await shot(page, 'chargen-moment-1');
 
 for (let i = 0; i < 6; i++) {
