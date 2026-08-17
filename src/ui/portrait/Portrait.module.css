@@ -1,0 +1,37 @@
+/* Portrait — §15.4's rendering contract: ~9 <use> elements against the shared
+ * symbol defs, zero raster bytes. The frame is square (--radius-surface) because
+ * §15.2 makes surfaces square across both registers; a portrait is a filed
+ * photograph in The File and a broadcast headshot plate in The Broadcast, and
+ * both of those are square-cornered in their real-world references. */
+
+.root {
+  display: block;
+  width: var(--portrait-size, 64px);
+  height: var(--portrait-size, 64px);
+  flex: none;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-surface);
+  background: var(--trough);
+  overflow: hidden;
+}
+
+.svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Default ink for the linework slots (brow/eyes/nose/mouth) and the head/skin
+ * outline where no per-layer tone is set — the register's text color, so a
+ * portrait never needs its own palette to read against paper or arena black. */
+.svg {
+  color: var(--text);
+}
+
+.skin {
+  color: var(--portrait-skin, var(--text-soft));
+}
+
+.hair {
+  color: var(--portrait-hair, var(--text));
+}

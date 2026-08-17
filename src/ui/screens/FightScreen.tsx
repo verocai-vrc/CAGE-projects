@@ -25,6 +25,7 @@ import { StatRadar } from '../components/StatRadar';
 import { CornerChoice } from '../components/CornerChoice';
 import { MomentBar } from '../components/MomentBar';
 import { Screen } from '../components/Screen';
+import { faceFromSeed, serializeFaceCode } from '../portrait/faceCode';
 
 const REVEAL_INTERVAL_MS = 220;
 const FIXTURE_SEED = 2026;
@@ -40,6 +41,7 @@ function fighterFromArchetype(
   name: string,
   archetypeId: string,
   nationality: string,
+  face: string,
 ): Fighter {
   const archetype = archetypes.find((entry) => entry.id === archetypeId);
   if (!archetype) throw new Error(`FightScreen fixture: missing archetype '${archetypeId}'`);
@@ -47,6 +49,7 @@ function fighterFromArchetype(
     id,
     name,
     nationality,
+    face,
     weightClass: 'lightweight',
     stance: 'orthodox',
     attributes: { ...archetype.attributes },
@@ -57,8 +60,18 @@ function fighterFromArchetype(
   };
 }
 
-const fighterA = fighterFromArchetype('fighter-a', 'Riko Tanaka', 'striker', 'Japan');
-const fighterB = fighterFromArchetype('fighter-b', 'Deshawn Cole', 'wrestler', 'USA');
+// Faces drawn once at module load from a fixed, dedicated RNG stream — not
+// FIXTURE_SEED, which seeds the fight simulation and must stay untouched or the
+// Loop 1.7 determinism test this fixture matches would drift.
+const fixtureFaceRng = mulberry32(424242);
+const fighterA = fighterFromArchetype(
+  'fighter-a', 'Riko Tanaka', 'striker', 'Japan',
+  serializeFaceCode(faceFromSeed(fixtureFaceRng)),
+);
+const fighterB = fighterFromArchetype(
+  'fighter-b', 'Deshawn Cole', 'wrestler', 'USA',
+  serializeFaceCode(faceFromSeed(fixtureFaceRng)),
+);
 const emptyTactics: Tactics = {};
 
 // Corner choices are precomputed into `tactics` (DESIGN.md §6.7 / Loop 2.3

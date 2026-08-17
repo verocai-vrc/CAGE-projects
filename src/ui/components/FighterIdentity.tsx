@@ -1,22 +1,22 @@
-// FighterIdentity.tsx — Loop 6.3: DESIGN.md §15.5, a fighter reads as a person at
-// a glance. Corner bar, portrait slot, name, flag, record, archetype.
+// FighterIdentity.tsx — Loop 6.3 built the corner bar, name, flag, record and
+// archetype (DESIGN.md §15.5). Loop 6.4 fills the portrait slot with the real
+// procedural face (§15.4) — the empty div reserved in 6.3 is now a <Portrait>, so
+// nothing here reflows relative to that loop.
 //
-// TWO DELIBERATE GAPS, both documented in DEVELOPMENT_LOOPS.md Loop 6.3:
+// ONE GAP REMAINS, documented in DEVELOPMENT_LOOPS.md Loop 6.3:
 //
-// 1. The portrait slot is empty. Loop 6.4 builds the procedural faces. The slot
-//    reserves its space now so landing them does not reflow every screen.
-//
-// 2. `record` is optional, and an opponent has none. `generateOpponent` produces no
-//    record at all, and the player's lives on CareerState rather than on Fighter,
-//    so there is nothing to render for an opponent that would not be invented.
-//    Loop 7.4 puts `record` on Fighter and single-sources it; until then the slot
-//    stays empty rather than showing a fabricated 0-0-0, which would read as a
-//    debutant and mislead the player about who they are being matched with.
+// `record` is optional, and an opponent has none. `generateOpponent` produces no
+// record at all, and the player's lives on CareerState rather than on Fighter, so
+// there is nothing to render for an opponent that would not be invented. Loop 7.4
+// puts `record` on Fighter and single-sources it; until then the slot stays empty
+// rather than showing a fabricated 0-0-0, which would read as a debutant and
+// mislead the player about who they are being matched with.
 
 import type { Fighter } from '../../engine/types';
 import type { CareerRecord } from '../../state/store';
 import { archetypes } from '../../content';
 import { FlagChip } from './FlagChip';
+import { Portrait } from '../portrait/Portrait';
 import styles from './FighterIdentity.module.css';
 
 interface FighterIdentityProps {
@@ -58,7 +58,7 @@ export function FighterIdentity({ fighter, record, corner, compact }: FighterIde
 
   return (
     <div class={classes}>
-      <div class={styles.portrait} aria-hidden="true" />
+      <Portrait face={fighter.face} size={compact ? '32px' : '48px'} />
       <div class={styles.body}>
         <div class={styles.nameRow}>
           <FlagChip nationality={fighter.nationality} />

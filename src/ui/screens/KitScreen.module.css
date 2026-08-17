@@ -14,3 +14,9 @@
   gap: var(--sp-4);
   margin-top: var(--sp-3);
 }
+
+.portraitGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}

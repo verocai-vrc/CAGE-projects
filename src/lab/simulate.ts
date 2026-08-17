@@ -24,6 +24,10 @@ function fighterFromArchetype(id: string, archetypeId: string): Fighter {
     id,
     name: archetype.label,
     nationality: 'lab',
+    // Never rendered as a Portrait — the lab is a headless batch runner — so a
+    // fixed placeholder is correct here rather than importing ui/portrait for no
+    // visual gain. See fighterFromArchetype's counterpart in FightScreen.tsx.
+    face: '000000000',
     weightClass: 'lab',
     stance: 'orthodox',
     attributes: { ...archetype.attributes },

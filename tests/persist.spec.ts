@@ -29,6 +29,7 @@ const fixtureFighter: Fighter = {
   id: 'f1',
   name: 'Test Fighter',
   nationality: 'USA',
+    face: '000000000',
   weightClass: 'lightweight',
   stance: 'orthodox',
   attributes: {

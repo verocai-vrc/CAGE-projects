@@ -14,16 +14,8 @@
   border-left: 4px solid var(--corner-fill, var(--mark));
 }
 
-/* Portrait slot, left empty until Loop 6.4's procedural faces land. It reserves its
- * own space now so adding the face does not reflow every screen that shows a
- * fighter. */
-.portrait {
-  width: 48px;
-  height: 48px;
-  flex: none;
-  border: 1px solid var(--hairline);
-  background: var(--trough);
-}
+/* Portrait size is passed as a prop (see FighterIdentity.tsx) rather than styled
+ * here — <Portrait> owns its own frame (ui/portrait/Portrait.module.css). */
 
 .body {
   min-width: 0;
@@ -70,12 +62,8 @@
   color: var(--text-soft);
 }
 
-/* Small — for a slate of opponents or a ledger row. */
-.compact .portrait {
-  width: 32px;
-  height: 32px;
-}
-
+/* Small — for a slate of opponents or a ledger row. Portrait's own size shrinks via
+ * the `size` prop above; only the name needs a rule here. */
 .compact .name {
   font-size: var(--t-3);
 }

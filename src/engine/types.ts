@@ -35,6 +35,7 @@ export interface Fighter {
   id: string;
   name: string;
   nationality: string; // drives name pool + flavor only
+  face: string; // serialized FaceCode (ui/portrait) — flavor only, engine never reads it
   weightClass: WeightClass; // single class in v1 (see §12)
   stance: 'orthodox' | 'southpaw';
   attributes: Attributes;

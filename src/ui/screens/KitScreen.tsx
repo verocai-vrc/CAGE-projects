@@ -11,12 +11,15 @@
 
 import { useEffect, useState } from 'preact/hooks';
 import type { Fighter } from '../../engine/types';
+import { mulberry32 } from '../../engine/rng';
 import { Button } from '../components/Button';
 import { FighterIdentity } from '../components/FighterIdentity';
 import { FlagChip } from '../components/FlagChip';
 import { FormRow } from '../components/FormRow';
 import { Meter } from '../components/Meter';
 import { Plate } from '../components/Plate';
+import { Portrait } from '../portrait/Portrait';
+import { faceFromSeed, serializeFaceCode } from '../portrait/faceCode';
 import { Screen, type Register } from '../components/Screen';
 import { Sheet } from '../components/Sheet';
 import { Stamp } from '../components/Stamp';
@@ -26,11 +29,12 @@ import styles from './KitScreen.module.css';
 // screenshots at 16px to confirm none falls back to a missing glyph.
 const NATIONALITIES = ['Brazil', 'Ireland', 'Japan', 'Poland', 'USA', 'lab', 'fixture'];
 
-function kitFighter(name: string, nationality: string, archetype: string): Fighter {
+function kitFighter(name: string, nationality: string, archetype: string, face: string): Fighter {
   return {
     id: `kit-${name}`,
     name,
     nationality,
+    face,
     weightClass: 'lightweight',
     stance: 'orthodox',
     attributes: {
@@ -44,9 +48,17 @@ function kitFighter(name: string, nationality: string, archetype: string): Fight
   };
 }
 
-const KIT_PLAYER = kitFighter('Wanderlei Nascimento', 'Brazil', 'striker');
-const KIT_OPPONENT = kitFighter('Kamil Wisniewski', 'Poland', 'wrestler');
+const KIT_PLAYER = kitFighter('Wanderlei Nascimento', 'Brazil', 'striker', '412030201');
+const KIT_OPPONENT = kitFighter('Kamil Wisniewski', 'Poland', 'wrestler', '203142310');
 const KIT_RECORD = { wins: 12, losses: 3, draws: 0, noContests: 1 };
+
+// A 4x6 grid of faces drawn from consecutive seeds — this loop's verify calls for
+// "a grid of 24 seeded faces, confirm visible variety, no two identical, none
+// broken". The kit is where that lives, alongside everything else this loop's
+// screenshots check.
+const FACE_GRID = Array.from({ length: 24 }, (_, i) =>
+  serializeFaceCode(faceFromSeed(mulberry32(1000 + i))),
+);
 
 /** The identical prop set both registers are handed. */
 function KitBody({ sweep }: { sweep: number }) {
@@ -114,6 +126,14 @@ function KitBody({ sweep }: { sweep: number }) {
         <FighterIdentity fighter={KIT_PLAYER} record={KIT_RECORD} corner="red" />
         <FighterIdentity fighter={KIT_OPPONENT} corner="blue" />
         <FighterIdentity fighter={KIT_OPPONENT} compact />
+      </Sheet>
+
+      <Sheet title="Portraits" caption="24 seeded faces — no two identical">
+        <div class={styles.portraitGrid}>
+          {FACE_GRID.map((face, i) => (
+            <Portrait key={i} face={face} size="40px" />
+          ))}
+        </div>
       </Sheet>
 
       {/* `corner` is meaningless without a corner ancestor to inherit from — the

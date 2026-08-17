@@ -8,6 +8,7 @@ const player: Fighter = {
   id: 'player-1',
   name: 'Your Fighter',
   nationality: 'USA',
+    face: '000000000',
   weightClass: 'lightweight',
   stance: 'orthodox',
   attributes: {

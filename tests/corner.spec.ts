@@ -16,6 +16,7 @@ function fighterFromArchetype(id: string, archetypeId: string): Fighter {
     id,
     name: id,
     nationality: 'testland',
+    face: '000000000',
     weightClass: 'lightweight',
     stance: 'orthodox',
     attributes: { ...archetype.attributes },

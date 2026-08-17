@@ -61,11 +61,18 @@ export interface GenerateOpponentOptions {
 // pick + a weighted nationality/name pick. No engine content is imported
 // directly — callers pass in the archetype/name pools (from content/index.ts
 // in real use, fixtures in tests) so this file stays testable in isolation.
+//
+// `drawFace` follows the same pattern for Loop 6.4's face: matchmaking.ts stays
+// decoupled from ui/portrait by taking the draw function as a parameter rather
+// than importing it, exactly like archetypes/namePools above. Callers pass
+// `faceFromSeed` + `serializeFaceCode` composed together (career/progression.ts
+// does, for the real app); tests can pass a fixed stub.
 export function generateOpponent(
   archetypes: readonly ArchetypeTemplate[],
   namePools: readonly NamePool[],
   rng: RNG,
   options: GenerateOpponentOptions,
+  drawFace: (rng: RNG) => string,
 ): Fighter {
   const archetype = weightedPick(archetypes, rng);
   const namePool = weightedPick(namePools, rng);
@@ -73,11 +80,16 @@ export function generateOpponent(
   const lastName = namePool.lastNames[Math.floor(rng.next() * namePool.lastNames.length)];
   const stance = rng.next() < 0.85 ? 'orthodox' : 'southpaw';
   const idSuffix = Math.floor(rng.next() * 1e9).toString(36);
+  // Drawn from the same seeded stream as everything else about this opponent, in
+  // the same fixed order every time, so a given seed always reproduces the same
+  // face alongside the same name and attributes (§15.4's determinism promise).
+  const face = drawFace(rng);
 
   return {
     id: `${options.idPrefix ?? 'opp'}-${idSuffix}`,
     name: `${firstName} ${lastName}`,
     nationality: namePool.nationality,
+    face,
     weightClass: options.weightClass,
     stance,
     attributes: jitterAttributes(archetype.attributes, rng),
@@ -139,6 +151,7 @@ export function generateMatchSlate(
   count: number,
   options: GenerateOpponentOptions & { ranking: number | null; hype: number; sponsorMultiplier?: number },
   balance: MatchmakingBalance,
+  drawFace: (rng: RNG) => string,
 ): MatchOffer[] {
   const offers: MatchOffer[] = [];
   const usedNames = new Set<string>();
@@ -148,7 +161,7 @@ export function generateMatchSlate(
   const maxAttempts = count * 50;
   while (offers.length < count && attempts < maxAttempts) {
     attempts++;
-    const opponent = generateOpponent(archetypes, namePools, rng, options);
+    const opponent = generateOpponent(archetypes, namePools, rng, options, drawFace);
     if (usedNames.has(opponent.name)) continue;
     usedNames.add(opponent.name);
     offers.push({ opponent, purse, hypeReward });

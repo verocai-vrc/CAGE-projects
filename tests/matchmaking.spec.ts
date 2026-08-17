@@ -53,17 +53,24 @@ const matchBalance: MatchmakingBalance = {
   baseHypeReward: 5,
 };
 
+// matchmaking.ts takes the face-drawing function as a parameter rather than
+// importing ui/portrait (career/ stays decoupled from ui/, same as archetypes and
+// namePools already flow in as parameters). This stub still consumes the rng it's
+// handed, so a test asserting determinism would still catch a caller that forgot to
+// thread the stream through.
+const drawFace = (rng: { next: () => number }) => Math.floor(rng.next() * 1e9).toString(36);
+
 describe('generateOpponent', () => {
   it('produces a schema-valid Fighter', () => {
     const rng = mulberry32(1);
-    const opponent = generateOpponent(archetypeTemplates, namePools, rng, { weightClass: 'lightweight' });
+    const opponent = generateOpponent(archetypeTemplates, namePools, rng, { weightClass: 'lightweight' }, drawFace);
     expect(FighterSchema.safeParse(opponent).success).toBe(true);
   });
 
   it('N generated opponents are all schema-valid', () => {
     const rng = mulberry32(42);
     for (let i = 0; i < 200; i++) {
-      const opponent = generateOpponent(archetypeTemplates, namePools, rng, { weightClass: 'lightweight' });
+      const opponent = generateOpponent(archetypeTemplates, namePools, rng, { weightClass: 'lightweight' }, drawFace);
       const result = FighterSchema.safeParse(opponent);
       expect(result.success).toBe(true);
     }
@@ -74,7 +81,7 @@ describe('generateOpponent', () => {
     const counts: Record<string, number> = { striker: 0, wrestler: 0 };
     const N = 4000;
     for (let i = 0; i < N; i++) {
-      const opponent = generateOpponent(archetypeTemplates, namePools, rng, { weightClass: 'lightweight' });
+      const opponent = generateOpponent(archetypeTemplates, namePools, rng, { weightClass: 'lightweight' }, drawFace);
       counts[opponent.archetype]++;
     }
     // weights are 1:3 (striker:wrestler) => expect roughly 25%/75%
@@ -91,7 +98,7 @@ describe('generateMatchSlate', () => {
       weightClass: 'lightweight',
       ranking: 10,
       hype: 20,
-    }, matchBalance);
+    }, matchBalance, drawFace);
 
     expect(slate.length).toBe(4);
     const names = slate.map((offer) => offer.opponent.name);
@@ -107,7 +114,7 @@ describe('generateMatchSlate', () => {
       weightClass: 'lightweight',
       ranking: 5,
       hype: 50,
-    }, matchBalance);
+    }, matchBalance, drawFace);
     const purses = new Set(slate.map((offer) => offer.purse));
     expect(purses.size).toBe(1);
   });
@@ -128,5 +135,40 @@ describe('offerQuality', () => {
     const unranked = offerQuality(null, 0, matchBalance);
     expect(unranked.purse).toBeGreaterThanOrEqual(0);
     expect(unranked.purse).toBe(matchBalance.baseOfferPurse);
+  });
+});
+
+describe('generateOpponent face (Loop 6.4, DESIGN.md §15.4)', () => {
+  it('the same seed produces the same opponent with the same face', () => {
+    const rngA = mulberry32(2024);
+    const opponentA = generateOpponent(archetypeTemplates, namePools, rngA, { weightClass: 'lightweight' }, drawFace);
+
+    const rngB = mulberry32(2024);
+    const opponentB = generateOpponent(archetypeTemplates, namePools, rngB, { weightClass: 'lightweight' }, drawFace);
+
+    expect(opponentA).toEqual(opponentB);
+    expect(opponentA.face).toBe(opponentB.face);
+  });
+
+  it("an opponent's face is stable across repeated reads (re-rendering never perturbs it)", () => {
+    const rng = mulberry32(31);
+    const opponent = generateOpponent(archetypeTemplates, namePools, rng, { weightClass: 'lightweight' }, drawFace);
+    const faceAtRenderOne = opponent.face;
+    const faceAtRenderTwo = opponent.face;
+    expect(faceAtRenderOne).toBe(faceAtRenderTwo);
+  });
+
+  it('draws the face from the same seeded stream as name/attributes, not a fresh one', () => {
+    // Two independent RNGs seeded the same way must diverge identically whether or
+    // not a face is drawn in between — proving drawFace consumes from the passed
+    // stream rather than reaching for its own source.
+    let calls = 0;
+    const countingDraw = (rng: { next: () => number }) => {
+      calls++;
+      return drawFace(rng);
+    };
+    const rng = mulberry32(8);
+    generateOpponent(archetypeTemplates, namePools, rng, { weightClass: 'lightweight' }, countingDraw);
+    expect(calls).toBe(1);
   });
 });

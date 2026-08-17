@@ -70,6 +70,7 @@ describe('resolveLifeEventChoice', () => {
     id: 'p1',
     name: 'Test Fighter',
     nationality: 'USA',
+    face: '000000000',
     weightClass: 'lightweight',
     stance: 'orthodox',
     attributes: {

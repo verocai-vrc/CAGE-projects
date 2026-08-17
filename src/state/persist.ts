@@ -6,7 +6,12 @@ import { CareerStateSchema } from './schema';
 import { initialCareerState, type CareerState } from './store';
 
 const STORAGE_KEY = 'cage:save';
-const SAVE_VERSION = 1;
+// Loop 6.4: Fighter gained a required `face` field. A v1 envelope has no such
+// field on its saved player/opponent, and CareerStateSchema now requires it, so a
+// v1 save would fail validation anyway — bumping the version makes that a clean,
+// intentional "discard and restart" instead of a schema-validation surprise
+// (§14 accepts losing a save costs one session).
+const SAVE_VERSION = 2;
 const DEBOUNCE_MS = 500;
 
 interface SaveEnvelope {

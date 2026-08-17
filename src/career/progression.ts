@@ -124,16 +124,24 @@ export function checkRetirement(career: CareerState, balance: ProgressionBalance
 
 // Fresh CareerState from an Origin (Loop 3.5: stub Origin only, real
 // wrapper is M4). Pure aside from the id it's handed.
+//
+// `face` defaults to an empty FaceCode (all-zero, base36 "000000000") rather than
+// requiring every existing call site to pick one — parseFaceCode already treats a
+// malformed/short string as clamp-to-zero, so this is a real, renderable face
+// (bald, clean-shaven, the first skin/head/feature variant), just not a rolled
+// one. Loop 6.5's portrait editor and the skip path's own seed are the callers
+// that pass a real one.
 export function startCareer(
   origin: Origin,
   playerId: string,
   playerName: string,
   nationality = 'USA',
   weightClass = 'lightweight',
+  face = '000000000',
 ): CareerState {
   return {
     ...initialCareerState,
-    player: fighterFromOrigin(origin, playerId, playerName, nationality, weightClass),
+    player: fighterFromOrigin(origin, playerId, playerName, nationality, weightClass, face),
     origin,
     hype: Math.max(0, Math.min(100, origin.hypeModifier)),
   };

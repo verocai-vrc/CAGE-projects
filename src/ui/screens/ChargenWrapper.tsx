@@ -10,7 +10,9 @@ import type { MomentOption } from '../../state/schema';
 import { amateurMoments } from '../../content';
 import { buildOriginFromChoices } from '../../career/origin';
 import { startCareer } from '../../career/progression';
+import { mulberry32, seedFromString } from '../../engine';
 import { Screen } from '../components/Screen';
+import { faceFromSeed, serializeFaceCode } from '../portrait/faceCode';
 import { useCageStore } from '../../state/store';
 import { RevealScreen } from './RevealScreen';
 
@@ -29,7 +31,13 @@ export function ChargenWrapper() {
 
   function beginProCareer() {
     if (!origin) return;
-    setCareer(startCareer(origin, 'player-1', 'Your Fighter'));
+    // Loop 6.5 adds step 0 ("who's in the mirror") — a real portrait editor whose
+    // authored FaceCode flows in here instead of this roll. Until then the full
+    // wrapper path gets a real, varied face rather than the all-zero default, seeded
+    // off the six moment choices so it's at least stable for a given playthrough.
+    const rng = mulberry32(seedFromString(chosen.map((c) => c.id).join('-')));
+    const face = serializeFaceCode(faceFromSeed(rng));
+    setCareer(startCareer(origin, 'player-1', 'Your Fighter', undefined, undefined, face));
     window.location.hash = '#/';
   }
 

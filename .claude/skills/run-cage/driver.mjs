@@ -159,6 +159,25 @@ if (distinctValues <= 3) {
   console.log('METER JITTER PASS: value column held still across', distinctValues, 'distinct readings');
 }
 
+// Loop 6.4's node-budget verify: "a screen rendering six portraits stays under the
+// §15.9 ceiling" (1200 DOM nodes on the busiest screen). The portrait grid in the
+// kit has 24 — well past six — so this counts every node under a syntheic six-up
+// row rather than trusting the whole kit page (which also has to hold buttons,
+// meters and everything else built in 6.1-6.3) to stand in for a bare portrait
+// screen.
+const sixPortraitNodes = await page.evaluate(() => {
+  const grid = document.querySelector('[class*="portraitGrid"]');
+  const portraits = Array.from(grid.children).slice(0, 6);
+  return portraits.reduce((sum, el) => sum + el.querySelectorAll('*').length + 1, 0);
+});
+console.log('DOM nodes for 6 portraits:', sixPortraitNodes, '(§15.9 ceiling for a full screen is 1200)');
+if (sixPortraitNodes >= 1200) {
+  console.error('PORTRAIT NODE BUDGET FAIL:', sixPortraitNodes, '>= 1200 for six portraits alone');
+  process.exitCode = 1;
+} else {
+  console.log('PORTRAIT NODE BUDGET PASS');
+}
+
 console.log('--- lab screen ---');
 await page.goto(BASE_URL + '/#/lab');
 await page.waitForTimeout(500);

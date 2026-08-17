@@ -65,7 +65,7 @@ describe('buildOriginFromChoices', () => {
     const origin = buildOriginFromChoices(chosen);
     expect(OriginSchema.safeParse(origin).success).toBe(true);
 
-    const fighter = fighterFromOrigin(origin, 'p1', 'Test Fighter', 'USA', 'lightweight');
+    const fighter = fighterFromOrigin(origin, 'p1', 'Test Fighter', 'USA', 'lightweight', '000000000');
     expect(FighterSchema.safeParse(fighter).success).toBe(true);
   });
 
@@ -86,7 +86,7 @@ describe('rollRandomOrigin', () => {
       const origin = rollRandomOrigin(amateurMoments, mulberry32(seed));
       expect(OriginSchema.safeParse(origin).success).toBe(true);
 
-      const fighter = fighterFromOrigin(origin, 'p1', 'Random Prospect', 'USA', 'lightweight');
+      const fighter = fighterFromOrigin(origin, 'p1', 'Random Prospect', 'USA', 'lightweight', '000000000');
       expect(FighterSchema.safeParse(fighter).success).toBe(true);
     }
   });

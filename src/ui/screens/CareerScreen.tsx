@@ -12,6 +12,7 @@ import { mulberry32, seedFromString, simulateFight } from '../../engine';
 import type { Fighter, Tactics } from '../../engine/types';
 import { amateurMoments, archetypes, balance, lifeEvents, namePools } from '../../content';
 import { generateOpponent, offerQuality } from '../../career/matchmaking';
+import { faceFromSeed, serializeFaceCode } from '../portrait/faceCode';
 import { applyAftermath, checkRetirement, startCareer } from '../../career/progression';
 import { rollRandomOrigin } from '../../career/origin';
 import { buildDailySetup } from '../../career/daily';
@@ -37,7 +38,10 @@ export function CareerScreen() {
   function skipToRandomProspect() {
     const rng = mulberry32(seedFromString(`skip-${Date.now()}`));
     const origin = rollRandomOrigin(amateurMoments, rng);
-    setCareer(startCareer(origin, 'player-1', 'Your Fighter'));
+    // §9.3/§15.4: the skip path rolls a face from its own seed and shows no
+    // editor — this is that roll, drawn after the origin from the same stream.
+    const face = serializeFaceCode(faceFromSeed(rng));
+    setCareer(startCareer(origin, 'player-1', 'Your Fighter', undefined, undefined, face));
     setLastFight(null);
   }
 
@@ -46,17 +50,24 @@ export function CareerScreen() {
   // buildDailySetup derives both from today's date string alone.
   function startTodaysProspect() {
     const { origin } = buildDailySetup(todayDateString(), amateurMoments, lifeEvents);
-    setCareer(startCareer(origin, 'player-1', 'Your Fighter'));
+    // Same seed as the origin (the date string), so today's prospect has the same
+    // face for every player — Loop 5.1's determinism contract extended to faces.
+    const rng = mulberry32(seedFromString(todayDateString()));
+    const face = serializeFaceCode(faceFromSeed(rng));
+    setCareer(startCareer(origin, 'player-1', 'Your Fighter', undefined, undefined, face));
     setLastFight(null);
   }
 
   function findFightAndResolve() {
     if (!career.player) return;
     const rng = mulberry32(seedFromString(`${career.player.id}-${career.fightHistory.length}-${Date.now()}`));
-    const opponent: Fighter = generateOpponent(archetypes, namePools, rng, {
-      weightClass: career.player.weightClass,
-      idPrefix: 'opp',
-    });
+    const opponent: Fighter = generateOpponent(
+      archetypes,
+      namePools,
+      rng,
+      { weightClass: career.player.weightClass, idPrefix: 'opp' },
+      (faceRng) => serializeFaceCode(faceFromSeed(faceRng)),
+    );
     const offer = offerQuality(career.ranking, career.hype, balance, sponsorPurseMultiplier(career.lifeBars));
     const cutQuality = classifyCut(career.weightCutProgress, balance);
     const tactics: Tactics = { [career.player.id]: { cutQuality, rounds: {} } };

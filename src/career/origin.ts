@@ -100,17 +100,25 @@ export function attributesFromOrigin(origin: Origin): Attributes {
 }
 
 // Pure: builds a schema-valid Fighter from an Origin.
+//
+// `face` is a parameter, not rolled here, matching nationality/weightClass:
+// fighterFromOrigin stays free of RNG so it composes cleanly wherever it's
+// called from. Loop 6.5 puts a real portrait editor in the amateur wrapper and
+// the §9.3 skip path rolls one from its own seed; both are callers passing in an
+// already-decided face, same as they already decide nationality today.
 export function fighterFromOrigin(
   origin: Origin,
   id: string,
   name: string,
   nationality: string,
   weightClass: string,
+  face: string,
 ): Fighter {
   return {
     id,
     name,
     nationality,
+    face,
     weightClass,
     stance: 'orthodox',
     attributes: attributesFromOrigin(origin),

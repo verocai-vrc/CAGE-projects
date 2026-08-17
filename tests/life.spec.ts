@@ -36,6 +36,7 @@ function makeFighter(): Fighter {
     id: 'f1',
     name: 'Test Fighter',
     nationality: 'fixture',
+    face: '000000000',
     weightClass: 'lightweight',
     stance: 'orthodox',
     attributes: {

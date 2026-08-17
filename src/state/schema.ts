@@ -24,6 +24,7 @@ export const FighterSchema = z.object({
   id: z.string(),
   name: z.string(),
   nationality: z.string(),
+  face: z.string(),
   weightClass: z.string(),
   stance: z.enum(['orthodox', 'southpaw']),
   attributes: AttributesSchema,
