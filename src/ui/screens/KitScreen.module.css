@@ -20,3 +20,10 @@
   flex-wrap: wrap;
   gap: var(--sp-2);
 }
+
+.wearLabel {
+  margin-top: var(--sp-2);
+  text-align: center;
+  font-size: var(--t-2);
+  color: var(--text-soft);
+}

@@ -111,6 +111,8 @@ export const FightSummarySchema = z.object({
   method: FightMethodSchema,
   endRound: z.number().int().min(1),
   scorecardTotals: z.array(z.object({ judgeId: z.string(), a: z.number(), b: z.number() })),
+  knockdownsA: z.number().int().min(0),
+  knockdownsB: z.number().int().min(0),
 });
 
 export const FightResultSchema = z.object({

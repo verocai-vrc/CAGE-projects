@@ -198,6 +198,40 @@ if (sixPortraitNodes >= 1200) {
   console.log('PORTRAIT NODE BUDGET PASS');
 }
 
+// Loop 6.6's verify: "the same FaceCode at debut, mid-career, and after a
+// brutal run — the three must be obviously distinguishable." The kit's Wear
+// sheet holds all three side by side; a close-up crop for the screenshot
+// record, plus an automated check on which wr-* overlay symbols each
+// portrait actually references (not just eyeballing pixels).
+const wearSheet = page.locator('#kit-file section', { hasText: 'one FaceCode, three points' });
+await wearSheet.screenshot({ path: path.join(SHOT_DIR, '17-kit-wear.png') });
+console.log('SCREENSHOT', path.join(SHOT_DIR, '17-kit-wear.png'));
+
+const wearOverlayIds = await page.evaluate(() => {
+  const sheets = Array.from(document.querySelectorAll('#kit-file section'));
+  const sheet = sheets.find((s) => s.textContent.includes('one FaceCode, three points'));
+  const portraits = Array.from(sheet.querySelectorAll('svg'));
+  return portraits.map((svg) =>
+    Array.from(svg.querySelectorAll('use'))
+      .map((u) => u.getAttribute('href'))
+      .filter((href) => href.startsWith('#wr-')),
+  );
+});
+console.log('wear overlay ids (debut/mid/brutal):', JSON.stringify(wearOverlayIds));
+const [debutWear, midWear, brutalWear] = wearOverlayIds;
+if (debutWear.length !== 0) {
+  console.error('WEAR DEBUT CHECK FAIL: expected zero overlays at debut, got', debutWear);
+  process.exitCode = 1;
+} else if (midWear.length === 0 || brutalWear.length === 0) {
+  console.error('WEAR PROGRESSION CHECK FAIL: mid-career and brutal-run must both carry overlays');
+  process.exitCode = 1;
+} else if (brutalWear.length <= midWear.length) {
+  console.error('WEAR PROGRESSION CHECK FAIL: brutal run should carry at least as many overlay layers as mid-career, and more of at least one severity');
+  process.exitCode = 1;
+} else {
+  console.log('WEAR PROGRESSION CHECK PASS: debut has none, mid < brutal in overlay count');
+}
+
 console.log('--- lab screen ---');
 await page.goto(BASE_URL + '/#/lab');
 await page.waitForTimeout(500);

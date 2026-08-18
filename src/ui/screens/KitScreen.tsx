@@ -20,10 +20,12 @@ import { Meter } from '../components/Meter';
 import { Plate } from '../components/Plate';
 import { Portrait } from '../portrait/Portrait';
 import { faceFromSeed, serializeFaceCode } from '../portrait/faceCode';
+import { faceWear, NO_WEAR } from '../portrait/wear';
 import { Screen, type Register } from '../components/Screen';
 import { Sheet } from '../components/Sheet';
 import { Stamp } from '../components/Stamp';
 import styles from './KitScreen.module.css';
+import type { FightSummary } from '../../engine/types';
 
 // §15.5's five real values plus both sentinels — the set this loop's verify
 // screenshots at 16px to confirm none falls back to a missing glyph.
@@ -51,6 +53,69 @@ function kitFighter(name: string, nationality: string, archetype: string, face: 
 const KIT_PLAYER = kitFighter('Wanderlei Nascimento', 'Brazil', 'striker', '412030201');
 const KIT_OPPONENT = kitFighter('Kamil Wisniewski', 'Poland', 'wrestler', '203142310');
 const KIT_RECORD = { wins: 12, losses: 3, draws: 0, noContests: 1 };
+
+// --- Loop 6.6's wear demonstration: one FaceCode, three points in a career.
+// This is the loop's own screenshot verify — "the same FaceCode at debut,
+// mid-career, and after a brutal run — the three must be obviously
+// distinguishable" — with nowhere else in the app yet to show it (that's
+// Loop 6.11's job, once the career/retirement screens are rebuilt).
+const WEAR_FACE = '531420310';
+const WEAR_FIGHTER = kitFighter('Dusan Kovac', 'Poland', 'wrestler', WEAR_FACE);
+
+function wearFixtureSummary(overrides: Partial<FightSummary>): FightSummary {
+  return {
+    seed: '',
+    fighterAId: WEAR_FIGHTER.id,
+    fighterBId: 'kit-opponent',
+    winnerId: WEAR_FIGHTER.id,
+    method: 'UD',
+    endRound: 3,
+    scorecardTotals: [],
+    knockdownsA: 0,
+    knockdownsB: 0,
+    ...overrides,
+  };
+}
+
+const WEAR_MID_RECORD = { wins: 4, losses: 2, draws: 0, noContests: 0 };
+const WEAR_BRUTAL_RECORD = { wins: 9, losses: 6, draws: 0, noContests: 0 };
+
+// A nose injury so the debut/mid/brutal grid also proves the noseBreak layer
+// — the fixture fighter carries it from mid-career onward, same as a real
+// career's condition.injuries only ever grows.
+const NOSE_INJURY = { id: 'kit-nose', bodyPart: 'nose', severity: 40, weeksRemaining: 3 };
+
+const WEAR_MID_FIGHTER = {
+  ...WEAR_FIGHTER,
+  condition: { ...WEAR_FIGHTER.condition, injuries: [NOSE_INJURY] },
+};
+// knockdownsB is knockdowns scored BY the opponent AGAINST the kit fighter
+// (fighterAId) — that is the signal that shows up as wear on this fighter's
+// own face, per engine/types.ts's FightSummary convention.
+const WEAR_MID_HISTORY: FightSummary[] = [
+  wearFixtureSummary({ knockdownsB: 1 }),
+  wearFixtureSummary({}),
+  wearFixtureSummary({ winnerId: 'kit-opponent', method: 'UD' }),
+  wearFixtureSummary({ winnerId: 'kit-opponent', method: 'TKO' }),
+  wearFixtureSummary({}),
+  wearFixtureSummary({}),
+];
+
+const WEAR_BRUTAL_FIGHTER = WEAR_MID_FIGHTER;
+const WEAR_BRUTAL_HISTORY: FightSummary[] = [
+  ...WEAR_MID_HISTORY,
+  wearFixtureSummary({ knockdownsB: 1 }),
+  wearFixtureSummary({ winnerId: 'kit-opponent', method: 'TKO' }),
+  wearFixtureSummary({ knockdownsB: 1 }),
+  wearFixtureSummary({}),
+  wearFixtureSummary({}),
+  wearFixtureSummary({}),
+  wearFixtureSummary({}),
+  // The most recent fight: a brutal TKO loss — this is what makes swelling
+  // present at the "brutal run" point but absent at "mid-career", proving the
+  // transient/recency behaviour, not just the cumulative layers.
+  wearFixtureSummary({ winnerId: 'kit-opponent', method: 'TKO' }),
+];
 
 // A 4x6 grid of faces drawn from consecutive seeds — this loop's verify calls for
 // "a grid of 24 seeded faces, confirm visible variety, no two identical, none
@@ -133,6 +198,27 @@ function KitBody({ sweep }: { sweep: number }) {
           {FACE_GRID.map((face, i) => (
             <Portrait key={i} face={face} size="40px" />
           ))}
+        </div>
+      </Sheet>
+
+      <Sheet title="Wear" caption="one FaceCode, three points in a career">
+        <div class={styles.row}>
+          <div>
+            <Portrait face={WEAR_FACE} wear={NO_WEAR} size="72px" />
+            <p class={styles.wearLabel}>Debut</p>
+          </div>
+          <div>
+            <Portrait face={WEAR_FACE} wear={faceWear(WEAR_MID_FIGHTER, WEAR_MID_RECORD, WEAR_MID_HISTORY)} size="72px" />
+            <p class={styles.wearLabel}>Mid-career</p>
+          </div>
+          <div>
+            <Portrait
+              face={WEAR_FACE}
+              wear={faceWear(WEAR_BRUTAL_FIGHTER, WEAR_BRUTAL_RECORD, WEAR_BRUTAL_HISTORY)}
+              size="72px"
+            />
+            <p class={styles.wearLabel}>After a brutal run</p>
+          </div>
         </div>
       </Sheet>
 

@@ -556,6 +556,9 @@ export function simulateFight(
     return { judgeId: sc.judgeId, a: total.a, b: total.b };
   });
 
+  const knockdownsA = tapes.reduce((sum, tape) => sum + tape.knockdownsA, 0);
+  const knockdownsB = tapes.reduce((sum, tape) => sum + tape.knockdownsB, 0);
+
   return {
     seed: '',
     winnerId,
@@ -571,6 +574,8 @@ export function simulateFight(
       method,
       endRound,
       scorecardTotals,
+      knockdownsA,
+      knockdownsB,
     },
   };
 }

@@ -136,6 +136,13 @@ export interface FightSummary {
   method: FightMethod;
   endRound: number;
   scorecardTotals: { judgeId: string; a: number; b: number }[];
+  // Total knockdowns scored BY each side across the whole fight — the signal
+  // ui/portrait/wear.ts needs to tell "took a beating but survived" apart
+  // from "won clean," which the other summary fields can't distinguish for a
+  // fight that goes to a decision (DESIGN.md §15.4/§16 wear is derived only
+  // from FightSummary + condition.injuries, never a persisted wear object).
+  knockdownsA: number;
+  knockdownsB: number;
 }
 
 // simulateFight's return value — the engine's public output (DESIGN.md §4.4).

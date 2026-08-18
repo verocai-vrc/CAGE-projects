@@ -28,7 +28,10 @@ export interface ProgressionBalance {
 
 export type FightOutcome = 'win' | 'loss' | 'draw';
 
-const INJURY_BODY_PARTS = ['hand', 'foot', 'knee', 'shoulder', 'ribs', 'eye'];
+// 'nose' is a real, reachable body part specifically so ui/portrait/wear.ts
+// has an injury signal to gate the nose-break layer on (Loop 6.6/DESIGN.md
+// §15.4) — every other value here is flavor text, this one is load-bearing.
+const INJURY_BODY_PARTS = ['hand', 'foot', 'knee', 'shoulder', 'ribs', 'eye', 'nose'];
 
 function resolveOutcome(playerId: string, result: FightResult): FightOutcome {
   if (result.winnerId === null) return 'draw';

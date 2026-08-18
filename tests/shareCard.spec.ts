@@ -36,6 +36,8 @@ function fightSummary(overrides: Partial<FightSummary>): FightSummary {
     method: 'UD',
     endRound: 3,
     scorecardTotals: [],
+    knockdownsA: 0,
+    knockdownsB: 0,
     ...overrides,
   };
 }
