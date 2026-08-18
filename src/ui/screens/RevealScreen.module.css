@@ -1,0 +1,35 @@
+/* RevealScreen — Loop 6.11: the portrait/radar pair and the stamped
+ * archetype/weakness license, on the component kit. */
+
+.body {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-5);
+  margin-bottom: var(--sp-4);
+}
+
+.portraitCol {
+  flex-shrink: 0;
+}
+
+.radarCol {
+  flex: 1;
+  min-width: 0;
+}
+
+.license {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  margin-bottom: var(--sp-3);
+}
+
+.overall {
+  font-family: var(--font-mono);
+  font-size: var(--t-2);
+  color: var(--text-soft);
+}
+
+.weakness {
+  color: var(--text-soft);
+}

@@ -11,7 +11,7 @@ import styles from './Scorecard.module.css';
 
 interface ScorecardProps {
   scorecards: ScorecardData[];
-  judges: Judge[];
+  judges: readonly Judge[];
   roundsScored: number;
   fighterAName: string;
   fighterBName: string;

@@ -14,9 +14,14 @@ import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { FLAG_SYMBOLS, flagSymbolId, hasFlag } from '../src/ui/sprite/flags';
+import { SCENE_PLATES, scenePlateSymbolId } from '../src/ui/sprite/scenePlates';
 
 const SRC = fileURLToPath(new URL('../src', import.meta.url));
 const SPRITE = readFileSync(fileURLToPath(new URL('../src/ui/sprite/Sprite.tsx', import.meta.url)), 'utf-8');
+const PLATE_SPRITE = readFileSync(
+  fileURLToPath(new URL('../src/ui/sprite/PlateSprite.tsx', import.meta.url)),
+  'utf-8',
+);
 
 function sourceFiles(dir: string): string[] {
   return readdirSync(dir).flatMap((entry) => {
@@ -83,6 +88,26 @@ describe('the nationality lookup is total (§15.5: never a broken glyph)', () =>
     const { namePools } = await import('../src/content');
     for (const pool of namePools) {
       expect(hasFlag(pool.nationality)).toBe(true);
+    }
+  });
+});
+
+describe('scene plate budget (§15.6: ≤6KB for all six plates)', () => {
+  it('keeps the combined plate markup under 6KB', () => {
+    const markup = PLATE_SPRITE.slice(
+      PLATE_SPRITE.indexOf('<symbol'),
+      PLATE_SPRITE.lastIndexOf('</symbol>') + 9,
+    )
+      .replace(/\{\/\*[\s\S]*?\*\/\}/g, '')
+      .replace(/>\s+</g, '><')
+      .replace(/\s+/g, ' ')
+      .trim();
+    expect(markup.length).toBeLessThanOrEqual(6144);
+  });
+
+  it('never returns a symbol the plate sprite does not define', () => {
+    for (const plate of SCENE_PLATES) {
+      expect(PLATE_SPRITE).toContain(`id="${scenePlateSymbolId(plate)}"`);
     }
   });
 });

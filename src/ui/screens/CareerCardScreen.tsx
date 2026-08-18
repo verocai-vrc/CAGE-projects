@@ -1,13 +1,24 @@
 // CareerCardScreen.tsx — Loop 3.5 built the retirement payoff (DESIGN.md
 // §8.5): record/finishes/grade from real accumulated career state. Loop 5.2
-// adds the shareable-text half — computeCareerCardData (career/shareCard.ts)
-// is now the single source for these numbers, and a copy button turns them
-// into Wordle-style text via formatShareText.
+// added the shareable-text half — computeCareerCardData (career/shareCard.ts)
+// is the single source for these numbers, and a copy button turns them into
+// Wordle-style text via formatShareText. Loop 6.11 rebuilds the screen on
+// the component kit and adds the debut/retirement face pair §15.4 promises:
+// the same FaceCode rendered with NO_WEAR beside itself rendered through
+// faceWear(player, record, fightHistory) — the only difference is the wear
+// layers, so side by side they read as the same person, older.
 
 import { useState } from 'preact/hooks';
 import { computeCareerCardData, formatShareText } from '../../career/shareCard';
 import { useCageStore } from '../../state/store';
+import { faceWear } from '../portrait/wear';
+import { Portrait } from '../portrait/Portrait';
+import { Button } from '../components/Button';
+import { FormRow } from '../components/FormRow';
 import { Screen } from '../components/Screen';
+import { Sheet } from '../components/Sheet';
+import { Stamp } from '../components/Stamp';
+import styles from './CareerCardScreen.module.css';
 
 export function CareerCardScreen() {
   const career = useCageStore((s) => s.career);
@@ -17,15 +28,18 @@ export function CareerCardScreen() {
   if (!card || !career.player) {
     return (
       <Screen register="file" id="career-card-screen" title="Career card">
-        <p>No career on record — start one first.</p>
+        <Sheet>
+          <p>No career on record — start one first.</p>
+        </Sheet>
       </Screen>
     );
   }
 
-  const { player } = career;
+  const { player, record, fightHistory } = career;
+  const wear = faceWear(player, record, fightHistory);
 
   async function copyShareText() {
-    const text = formatShareText(card!, player.name);
+    const text = formatShareText(card!, player!.name);
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
@@ -39,55 +53,40 @@ export function CareerCardScreen() {
 
   return (
     <Screen register="file" id="career-card-screen" eyebrow="Career card" title={player.name}>
-      <p style={{ color: 'var(--text-soft)' }}>
-        {card.retired ? 'Retired' : 'Active'} · {card.archetype}
-      </p>
+      <Sheet title={player.name} caption={card.archetype}>
+        <div class={styles.faces}>
+          <div class={styles.face}>
+            <Portrait face={player.face} size="7rem" />
+            <span class={styles.faceLabel}>Debut</span>
+          </div>
+          <div class={styles.face}>
+            <Portrait face={player.face} wear={wear} size="7rem" />
+            <span class={styles.faceLabel}>{card.retired ? 'Retirement' : 'Current'}</span>
+          </div>
+        </div>
 
-      <table>
-        <tbody>
-          <tr>
-            <td>Record</td>
-            <td>
-              {card.wins}-{card.losses}-{card.draws}
-              {card.noContests > 0 ? ` (${card.noContests} NC)` : ''}
-            </td>
-          </tr>
-          <tr>
-            <td>Finishes</td>
-            <td>
-              {card.finishes} ({Math.round(card.finishRate * 100)}%)
-            </td>
-          </tr>
-          <tr>
-            <td>Final ranking</td>
-            <td>{card.ranking === null ? 'Unranked' : `#${card.ranking}`}</td>
-          </tr>
-          <tr>
-            <td>Career purse</td>
-            <td>${card.purse.toLocaleString('en-US')}</td>
-          </tr>
-          <tr>
-            <td>Grade</td>
-            <td>{card.grade}</td>
-          </tr>
-        </tbody>
-      </table>
+        <p class={styles.status}>
+          <Stamp tone={card.retired ? 'mark' : 'blue'} flat>
+            {card.retired ? 'Retired' : 'Active'}
+          </Stamp>
+        </p>
 
-      <pre
-        style={{
-          whiteSpace: 'pre-wrap',
-          background: '#1a1a1a',
-          padding: '0.75rem',
-          borderRadius: '4px',
-          fontSize: '0.9rem',
-        }}
-      >
-        {formatShareText(card, player.name)}
-      </pre>
+        <FormRow
+          label="Record"
+          value={`${card.wins}-${card.losses}-${card.draws}${card.noContests > 0 ? ` (${card.noContests} NC)` : ''}`}
+        />
+        <FormRow label="Finishes" value={`${card.finishes} (${Math.round(card.finishRate * 100)}%)`} />
+        <FormRow label="Final ranking" value={card.ranking === null ? 'Unranked' : `#${card.ranking}`} />
+        <FormRow label="Career purse" value={`$${card.purse.toLocaleString('en-US')}`} />
+        <FormRow label="Grade" value={card.grade} />
+      </Sheet>
 
-      <button type="button" onClick={copyShareText}>
-        {copied ? 'Copied!' : 'Copy shareable result'}
-      </button>
+      <Sheet title="Shareable result" variant="carbon">
+        <pre class={styles.shareText}>{formatShareText(card, player.name)}</pre>
+        <Button variant="primary" block onClick={copyShareText}>
+          {copied ? 'Copied!' : 'Copy shareable result'}
+        </Button>
+      </Sheet>
     </Screen>
   );
 }

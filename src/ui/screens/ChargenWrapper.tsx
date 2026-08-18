@@ -49,7 +49,7 @@ export function ChargenWrapper() {
   }
 
   if (done && origin && face) {
-    return <RevealScreen origin={origin} onBeginCareer={beginProCareer} />;
+    return <RevealScreen origin={origin} face={face} onBeginCareer={beginProCareer} />;
   }
 
   if (face === null) {
