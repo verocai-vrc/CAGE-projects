@@ -1,0 +1,10 @@
+/* CornerChoice — the between-round tactic prompt (§6.7), rebuilt on Plate
+ * in Loop 6.8 so it reads as part of the red corner's panel rather than a
+ * floating box. The tactic buttons are the shared Button kit. */
+
+.choices {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  margin-top: var(--sp-3);
+}

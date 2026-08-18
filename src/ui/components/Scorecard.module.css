@@ -1,0 +1,47 @@
+/* Scorecard — round-by-round judge grid (§15.3: every number is mono and
+ * tabular). Column headers for each fighter tint via --corner-text so the
+ * grid reads without a legend (§15.2). */
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: var(--t-2);
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+}
+
+.table th,
+.table td {
+  padding: var(--sp-1) var(--sp-2);
+  border-bottom: 1px solid var(--hairline);
+  text-align: right;
+}
+
+.judgeCol {
+  text-align: left !important;
+  color: var(--text-soft);
+  font-variant-numeric: normal;
+  font-feature-settings: normal;
+}
+
+.headA,
+.headB {
+  text-transform: uppercase;
+  letter-spacing: var(--track-label);
+  font-size: var(--t-1);
+}
+
+.headA {
+  color: var(--red-corner-text);
+}
+
+.headB {
+  color: var(--blue-corner-text);
+}
+
+.total td {
+  font-weight: 700;
+  border-bottom: none;
+  border-top: 2px solid var(--hairline);
+}

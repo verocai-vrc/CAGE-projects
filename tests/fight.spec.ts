@@ -3,7 +3,7 @@ import { simulateFight } from '../src/engine/fight';
 import { mulberry32 } from '../src/engine/rng';
 import type { Fighter, Tactics } from '../src/engine/types';
 import { FightResultSchema, FightSummarySchema } from '../src/state/schema';
-import { archetypes } from '../src/content';
+import { archetypes, balance } from '../src/content';
 
 function fighterFromArchetype(id: string, archetypeId: string): Fighter {
   const archetype = archetypes.find((entry) => entry.id === archetypeId);
@@ -119,6 +119,92 @@ describe('simulateFight sanity', () => {
     const finishEvents = finishResult!.events.filter((e) => e.t === 'finish');
     expect(finishEvents).toHaveLength(1);
     expect(finishResult!.events[finishResult!.events.length - 1].t).toBe('finish');
+  });
+});
+
+describe('checkEnd per-minute reports (DESIGN.md §6.6a)', () => {
+  it('checkEnd indices are contiguous from 1 within a round, and their summed deltas equal the round-end totals', () => {
+    // Search for a seed that completes at least one full round without an
+    // early finish, same pattern as the roundEnd tests above.
+    let result = simulateFight(fighterA, fighterB, emptyTactics, mulberry32(0));
+    for (let seed = 0; seed < 50; seed++) {
+      const candidate = simulateFight(fighterA, fighterB, emptyTactics, mulberry32(seed));
+      if (candidate.events.some((e) => e.t === 'roundEnd')) {
+        result = candidate;
+        break;
+      }
+    }
+
+    const roundEnds = result.events.filter((e) => e.t === 'roundEnd');
+    expect(roundEnds.length).toBeGreaterThan(0);
+
+    for (const roundEnd of roundEnds) {
+      if (roundEnd.t !== 'roundEnd') continue;
+      const checks = result.events.filter((e) => e.t === 'checkEnd' && e.round === roundEnd.round);
+      expect(checks.length).toBeGreaterThan(0);
+
+      checks.forEach((check, i) => {
+        if (check.t !== 'checkEnd') return;
+        expect(check.check).toBe(i + 1);
+      });
+
+      const summed = checks.reduce(
+        (acc, c) => {
+          if (c.t !== 'checkEnd') return acc;
+          return { strikesA: acc.strikesA + c.strikesA, strikesB: acc.strikesB + c.strikesB };
+        },
+        { strikesA: 0, strikesB: 0 },
+      );
+      expect(summed.strikesA).toBe(roundEnd.scoreA);
+      expect(summed.strikesB).toBe(roundEnd.scoreB);
+    }
+  });
+
+  it('checkEnd.winner agrees with which side had more strikes+control in that slice', () => {
+    let found = false;
+    for (let seed = 0; seed < 50 && !found; seed++) {
+      const result = simulateFight(fighterA, fighterB, emptyTactics, mulberry32(seed));
+      for (const event of result.events) {
+        if (event.t !== 'checkEnd') continue;
+        found = true;
+        const marginA = event.strikesA + event.controlA;
+        const marginB = event.strikesB + event.controlB;
+        if (marginA === marginB) {
+          expect(event.winner).toBe('even');
+        } else if (marginA > marginB) {
+          expect(event.winner).toBe('a');
+        } else {
+          expect(event.winner).toBe('b');
+        }
+      }
+    }
+    expect(found).toBe(true);
+  });
+
+  it('a fight ends immediately after its finish event, with the finish event last (mirrors roundEnd\'s own skip-on-early-finish precedent, which checkEnd follows)', () => {
+    let finishResult: ReturnType<typeof simulateFight> | null = null;
+    for (let seed = 0; seed < 50; seed++) {
+      const result = simulateFight(fighterA, fighterB, emptyTactics, mulberry32(seed));
+      if (result.method === 'KO' || result.method === 'TKO' || result.method === 'SUB') {
+        finishResult = result;
+        break;
+      }
+    }
+    expect(finishResult).not.toBeNull();
+
+    // finish is always the last event (existing assertion, tests/fight.spec.ts
+    // above) — so no checkEnd (partial or otherwise) can follow it, and any
+    // checkEnd in the finish round must count only whole ticksPerCheck
+    // windows that completed strictly before the finishing tick.
+    const finishRound = finishResult!.endRound;
+    expect(finishResult!.events[finishResult!.events.length - 1].t).toBe('finish');
+
+    const checksInFinishRound = finishResult!.events.filter(
+      (e): e is Extract<typeof e, { t: 'checkEnd' }> => e.t === 'checkEnd' && e.round === finishRound,
+    );
+    for (const check of checksInFinishRound) {
+      expect(check.check).toBeLessThanOrEqual(Math.floor(balance.ticksPerRound / balance.ticksPerCheck));
+    }
   });
 });
 

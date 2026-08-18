@@ -1,0 +1,129 @@
+/* Walkout — the one choreographed set piece (§15.7), the six-beat sequence
+ * at the File->Broadcast register boundary. Transform + opacity only, per
+ * the loop's own constraint — nothing here ever animates width/height/top/
+ * left, which is what keeps this off the layout thread.
+ *
+ * Beats are additive, not exclusive: once red enters (beat 2) it stays
+ * visible through beats 3-6. So Walkout.tsx sets one boolean data attribute
+ * per beat reached so far (data-file-gone, data-red-in, data-blue-in,
+ * data-vs-in, data-tape-in), and each attribute independently gates its own
+ * element's "revealed" CSS — no need to chain against every later beat's
+ * data-beat value. */
+
+.root {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  overflow: hidden;
+  background: var(--canvas);
+  opacity: 1;
+  transition: opacity var(--dur-fast) var(--ease);
+}
+
+.root.exiting {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Beat 1 — the file curls away. A paper-toned panel covers the arena ground
+ * until it rotates/scales/fades out, revealing the tunnel plate and arena
+ * black beneath it (already present, just occluded). */
+.filePanel {
+  position: absolute;
+  inset: 0;
+  background: var(--paper);
+  transform-origin: 50% 100%;
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+  transition:
+    transform calc(var(--dur-slow) * 1.3) var(--ease),
+    opacity calc(var(--dur-slow) * 1.3) var(--ease);
+}
+
+.root[data-file-gone] .filePanel {
+  transform: rotate(-8deg) scale(0.85) translateY(-30%);
+  opacity: 0;
+}
+
+.tunnel {
+  position: absolute;
+  inset: 0;
+}
+
+/* Corner identity entrances (beats 2/3). Each fighter block starts fully off
+ * to its own side and slides in — mirrored via the .left/.right modifier —
+ * fading in at the same time so the motion doesn't outrun the read. */
+.corners {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--sp-8);
+}
+
+.cornerBlock {
+  opacity: 0;
+  transition:
+    transform var(--dur-slow) var(--ease),
+    opacity var(--dur-slow) var(--ease);
+}
+
+.cornerBlock.left {
+  transform: translateX(-140%);
+}
+
+.cornerBlock.right {
+  transform: translateX(140%);
+}
+
+.root[data-red-in] .cornerBlock.left {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+.root[data-blue-in] .cornerBlock.right {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+/* Beat 4 — VS strikes the center. Scales in fast and a touch past 1 before
+ * settling, the one place allowed a snappier curve than --ease ("spend the
+ * boldness here"). */
+.vsGlyph {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0.4);
+  opacity: 0;
+  font-family: var(--font-display);
+  font-size: var(--t-8);
+  font-weight: 700;
+  letter-spacing: var(--track-display);
+  color: var(--bone);
+  transition:
+    transform var(--dur-base) cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity var(--dur-fast) var(--ease);
+}
+
+.root[data-vs-in] .vsGlyph {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+}
+
+/* Beat 5 — tale of the tape. Mounted throughout (so its own row stagger,
+ * TaleOfTheTape.module.css's .animated, only starts counting from the
+ * moment this wrapper itself becomes visible), just invisible until beat 5. */
+.tape {
+  position: absolute;
+  bottom: var(--sp-8);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(560px, calc(100% - var(--sp-8)));
+  opacity: 0;
+  transition: opacity var(--dur-fast) var(--ease);
+}
+
+.root[data-tape-in] .tape {
+  opacity: 1;
+}

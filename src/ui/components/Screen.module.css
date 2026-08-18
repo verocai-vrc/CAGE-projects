@@ -44,7 +44,17 @@
 }
 
 .header {
+  position: relative;
   margin-bottom: var(--sp-6);
+}
+
+/* The scene plate (§15.6) sits behind the header's own text, never behind
+ * the body content below — ScenePlate.module.css positions itself absolute
+ * within this relative anchor and stays at z-index 0. */
+.eyebrow,
+.title {
+  position: relative;
+  z-index: 1;
 }
 
 .eyebrow {

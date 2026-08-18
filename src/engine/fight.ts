@@ -359,6 +359,12 @@ export function simulateFight(
     const mods: Record<Side, TacticModifiers> = { a: modsA, b: modsB };
     const tactic: Record<Side, TacticId> = { a: tacticA, b: tacticB };
 
+    // Snapshot of the tape at the start of the current check window (§6.6a) —
+    // checkEnd reports the DELTA since this snapshot, not the round's
+    // running total. Pure bookkeeping: never read by any roll function.
+    let checkSnapshot = { ...tape };
+    let checkIndex = 0;
+
     for (let tick = 0; tick < balance.ticksPerRound; tick++) {
       runtime.a.stamina = tickStamina(
         runtime.a.stamina,
@@ -523,6 +529,27 @@ export function simulateFight(
             }
           }
         }
+      }
+
+      // Per-minute check report (§6.6a) — a pure read of the tape's delta
+      // since the last check, appended after this tick's own event pushes so
+      // it can never shift what the next tick's rollLogistic calls consume.
+      // Skipped (not emitted partial) if the round ends before a full
+      // ticksPerCheck window completes — the break roundLoop sites above
+      // return before reaching here, matching roundEnd's own skip-on-early-
+      // finish behavior.
+      if ((tick + 1) % balance.ticksPerCheck === 0) {
+        checkIndex++;
+        const strikesA = tape.strikesLandedA - checkSnapshot.strikesLandedA;
+        const strikesB = tape.strikesLandedB - checkSnapshot.strikesLandedB;
+        const controlA = tape.controlTimeA - checkSnapshot.controlTimeA;
+        const controlB = tape.controlTimeB - checkSnapshot.controlTimeB;
+        const marginA = strikesA + controlA;
+        const marginB = strikesB + controlB;
+        const winner: 'a' | 'b' | 'even' = marginA === marginB ? 'even' : marginA > marginB ? 'a' : 'b';
+
+        events.push({ t: 'checkEnd', round, check: checkIndex, strikesA, strikesB, controlA, controlB, winner });
+        checkSnapshot = { ...tape };
       }
     }
 

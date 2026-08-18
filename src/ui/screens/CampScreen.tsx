@@ -74,7 +74,7 @@ export function CampScreen() {
 
   if (!career.player) {
     return (
-      <Screen register="file" id="camp-screen" title="Camp">
+      <Screen register="file" id="camp-screen" title="Camp" plate="gym">
         <Sheet>
           <p>No active fighter — start a career first.</p>
         </Sheet>
@@ -88,6 +88,7 @@ export function CampScreen() {
       id="camp-screen"
       eyebrow={`Week ${career.week + 1} · ${career.player.name}`}
       title="Camp"
+      plate="gym"
     >
       <Sheet title="Standing" caption={`Week ${career.week + 1}`}>
         <Meter label="Training partners" value={career.lifeBars.trainingPartners} />

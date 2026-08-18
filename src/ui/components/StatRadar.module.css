@@ -1,0 +1,30 @@
+/* StatRadar — pillar comparison chart (§15.8's secondary fight-night
+ * visualization; TaleOfTheTape is primary). Chart chrome (rings, axis
+ * lines, labels) reads as neutral data, so it uses --hairline/--text-soft
+ * rather than any corner colour. Only the two fighter polygons carry
+ * identity, via --corner-fill on the wrapping .corner-red/.corner-blue <g>
+ * — the same mechanism Plate and Meter already use. */
+
+.ring {
+  fill: none;
+  stroke: var(--hairline);
+  stroke-width: 1;
+}
+
+.axis {
+  stroke: var(--hairline);
+  stroke-width: 1;
+}
+
+.series {
+  fill: var(--corner-fill);
+  fill-opacity: 0.25;
+  stroke: var(--corner-fill);
+  stroke-width: 2;
+}
+
+.axisLabel {
+  font-family: var(--font-mono);
+  font-size: var(--t-1);
+  fill: var(--text-soft);
+}

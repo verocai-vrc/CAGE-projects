@@ -27,3 +27,32 @@
   font-size: var(--t-2);
   color: var(--text-soft);
 }
+
+.plateGrid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-3);
+}
+
+/* ScenePlate positions itself absolute — this swatch gives it a bounded,
+ * relatively-positioned box to sit inside so it's visible on its own
+ * outside a Screen header (§15.6's own auditing, not player-facing). */
+.plateSwatch {
+  position: relative;
+  width: 220px;
+  height: 100px;
+  overflow: hidden;
+  border: 1px solid var(--hairline);
+  background: var(--surface);
+}
+
+.plateSwatch span {
+  position: relative;
+  z-index: 1;
+  display: block;
+  padding: var(--sp-2);
+  font-size: var(--t-1);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text-soft);
+}

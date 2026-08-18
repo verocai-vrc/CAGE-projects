@@ -19,6 +19,8 @@ import { FlagChip } from '../components/FlagChip';
 import { FormRow } from '../components/FormRow';
 import { Meter } from '../components/Meter';
 import { Plate } from '../components/Plate';
+import { ScenePlate } from '../components/ScenePlate';
+import { SCENE_PLATES } from '../sprite/scenePlates';
 import { Portrait } from '../portrait/Portrait';
 import { faceFromSeed, serializeFaceCode } from '../portrait/faceCode';
 import { faceWear, NO_WEAR } from '../portrait/wear';
@@ -207,6 +209,17 @@ function KitBody({
         <div class={styles.chips}>
           {NATIONALITIES.map((n) => (
             <FlagChip key={n} nationality={n} showLabel />
+          ))}
+        </div>
+      </Sheet>
+
+      <Sheet title="Scene plates" caption="all six, both registers — §15.6">
+        <div class={styles.plateGrid}>
+          {SCENE_PLATES.map((plate) => (
+            <div key={plate} class={styles.plateSwatch}>
+              <ScenePlate plate={plate} />
+              <span>{plate}</span>
+            </div>
           ))}
         </div>
       </Sheet>

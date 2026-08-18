@@ -2,8 +2,16 @@
 // §6.7). Presents the fixed TacticId set; the pick is precomputed into the
 // next round's FighterPlan entry rather than pausing the engine mid-sim
 // (see DESIGN.md front matter — engine call-signature stays pure).
+//
+// Loop 6.8: rebuilt on Plate/Button. This prompt is always the player's
+// corner — fight.ts's PLAYER_SIDE is fixed to 'a', and FightScreen never
+// offers a corner call for the opponent — so it renders inside a
+// .corner-red wrapper the same way the fighter panels above it do.
 
+import { Plate } from './Plate';
+import { Button } from './Button';
 import type { TacticId } from '../../engine/types';
+import styles from './CornerChoice.module.css';
 
 const TACTIC_LABELS: Record<TacticId, string> = {
   pressPace: 'Press the pace',
@@ -23,17 +31,16 @@ interface CornerChoiceProps {
 
 export function CornerChoice({ fighterName, nextRound, onChoose }: CornerChoiceProps) {
   return (
-    <div style={{ border: '1px solid #3a3a3a', borderRadius: '0.4rem', padding: '0.75rem', margin: '0.75rem 0' }}>
-      <p>
-        Corner call for {fighterName} — round {nextRound}
-      </p>
-      <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-        {TACTIC_IDS.map((id) => (
-          <button key={id} type="button" onClick={() => onChoose(id)}>
-            {TACTIC_LABELS[id]}
-          </button>
-        ))}
-      </div>
+    <div class="corner-red">
+      <Plate eyebrow={`Round ${nextRound}`} title={`Corner call — ${fighterName}`} corner>
+        <div class={styles.choices}>
+          {TACTIC_IDS.map((id) => (
+            <Button key={id} variant="ghost" onClick={() => onChoose(id)}>
+              {TACTIC_LABELS[id]}
+            </Button>
+          ))}
+        </div>
+      </Plate>
     </div>
   );
 }

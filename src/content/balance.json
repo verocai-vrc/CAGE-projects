@@ -12,6 +12,7 @@
   "dominantRoundThreshold": 15,
   "roundsPerFight": 3,
   "ticksPerRound": 40,
+  "ticksPerCheck": 8,
   "takedownAttemptChance": 0.04,
   "takedownAttemptChanceAggressive": 0.15,
   "submissionAttemptChance": 0.013,

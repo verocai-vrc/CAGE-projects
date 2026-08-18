@@ -91,7 +91,7 @@ export function CareerScreen() {
 
   if (!career.player) {
     return (
-      <Screen register="file" id="career-screen" title="CAGE">
+      <Screen register="file" id="career-screen" title="CAGE" plate="home">
         <Sheet>
           <p>No active career.</p>
           <div style={{ display: 'flex', gap: 'var(--sp-3)', flexWrap: 'wrap', marginTop: 'var(--sp-3)' }}>
@@ -113,7 +113,7 @@ export function CareerScreen() {
   const totalFights = career.record.wins + career.record.losses + career.record.draws;
 
   return (
-    <Screen register="file" id="career-screen" eyebrow="Career file" title={career.player.name}>
+    <Screen register="file" id="career-screen" eyebrow="Career file" title={career.player.name} plate="home">
       {/* The player is the one fighter whose record has a real source today — it
           lives on CareerState. An opponent's stays empty until Loop 7.4 moves
           `record` onto Fighter. */}
@@ -152,6 +152,15 @@ export function CareerScreen() {
             >
               Find opponent &amp; fight
             </Button>
+            {/* Not the player's real next fight — #/fight still plays the Loop
+                2.1 fixture matchup (Loop 7.16 wires the career's own opponent
+                in). This is the walkout's (§15.7) and the interactive
+                playback's (M2) only reachable entry point today, so it's
+                labelled as a preview rather than implying it resolves
+                anything on the career. */}
+            <a href="#/fight">
+              <Button variant="ghost">Watch a demo bout</Button>
+            </a>
           </div>
         </Sheet>
       )}

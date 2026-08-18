@@ -1,0 +1,29 @@
+/* ScenePlate — low-opacity full-bleed backdrop behind a screen header only
+ * (§15.6). One geometry, two treatments, entirely from the register class
+ * already on the Screen root — never a prop, never a per-component branch
+ * (§15.2's rule, same as Plate/Meter). currentColor plus opacity is the
+ * whole mechanism: no second copy of the artwork. */
+
+.root {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* --text-soft resolves to --ink-soft in .reg-file and --bone-soft in
+ * .reg-broadcast (tokens.css) — that one semantic role IS both treatments;
+ * this component never branches on register itself (§15.2's rule). A flat
+ * duotone at low opacity satisfies "duotone... on paper"/"lit silhouette...
+ * on black" without a literal halftone dot grid, which would cost real CSS
+ * weight against §15.9's budget for a texture this opacity mostly hides. */
+.svg {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: min(70%, 640px);
+  height: 100%;
+  color: var(--text-soft);
+  opacity: 0.1;
+}

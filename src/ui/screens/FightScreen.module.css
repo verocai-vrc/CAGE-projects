@@ -1,0 +1,16 @@
+/* FightScreen — the Broadcast register's fight-night layout (§15.1, §15.8). */
+
+.corners {
+  display: flex;
+  gap: var(--sp-5);
+}
+
+.corners > div {
+  flex: 1;
+}
+
+.controls {
+  display: flex;
+  gap: var(--sp-2);
+  margin: var(--sp-4) 0;
+}

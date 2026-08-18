@@ -1,0 +1,25 @@
+/* PlayByPlay — the tape (§15.3): every number and every logged line is mono.
+ * A line naming one fighter tints that name via --corner-text (never the
+ * fill — this is type, and raw corner fills fail AA below 18.66px bold,
+ * §15.2). Lines with no single actor (roundEnd, position) stay neutral. */
+
+.root {
+  max-height: 20rem;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid var(--hairline);
+  padding: var(--sp-3);
+  font-family: var(--font-mono);
+  font-size: var(--t-2);
+  line-height: var(--lh-data);
+  color: var(--text-soft);
+}
+
+.line {
+  padding: 2px 0;
+}
+
+.actor {
+  color: var(--corner-text, var(--text));
+  font-weight: 600;
+}

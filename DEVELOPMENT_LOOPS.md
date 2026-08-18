@@ -90,6 +90,8 @@ Keep loops small. If a loop's Build list grows past ~5 files, split it.
 
 **Goal:** `effectiveChin` and the KO/finish probability curve (DESIGN.md §6.2, §6.4) work in isolation.
 
+**Design amendment (DESIGN.md §6.6a):** rounds must report to the player as one explicit **check** per in-fiction minute, aggregated from this tick loop rather than left as a silent continuous simulation. Build the finer tick loop here as planned; the per-minute aggregation/report step is in scope for this loop or 1.5 (whichever ends up owning `RoundTape` assembly) — do not let it slip into a separate milestone.
+
 **Build:** extend `round.ts` with strike resolution (`rollLogistic` on striking pillar deltas), position changes (grappling pillar deltas), and `effectiveChin`-gated finish rolls per §6.4. Submissions reuse the same form on the grappling delta.
 
 **Verify:**
@@ -696,6 +698,8 @@ Sequencing rule: **7.1 through 7.3 come first and are not negotiable.** They are
 ### Loop 7.11 — Beat extraction
 
 **Goal:** 85 events become ~21 beats, deterministically and with no RNG. §16.6.
+
+**Design amendment (DESIGN.md §16.6a):** per-minute checks (§6.6a) are events/event-runs that fold into beats through this same extraction, not a second pipeline. Before building this loop, re-measure the beat budget and salience constants against a fight that includes check-beats (up to 5/round) — the 7-per-round budget and ~21-beat/bout target predate this amendment and may need retuning so check-beats don't crowd out mandatory beats.
 
 **Build:** `narration/beats.ts` — the thirteen `BeatKind`s, strike-run aggregation into `exchange`, absorption of post-takedown `position` events, the synthetic `open` and `decision` beats, salience scoring, and the 7-per-round budget.
 

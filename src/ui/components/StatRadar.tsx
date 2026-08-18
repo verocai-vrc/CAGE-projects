@@ -1,11 +1,17 @@
 // StatRadar.tsx — generic labeled radar/spider chart over 0..max axes.
-// Built for the FightScreen pillar comparison HUD (Loop 2.2) but kept
-// series-generic so the amateur wrapper's reveal screen (DESIGN.md §9.2)
-// can reuse it unchanged for a single fighter's attribute spread.
+// Built for the FightScreen pillar comparison HUD (Loop 2.2), rethemed onto
+// corner identity in Loop 6.8 (§15.2): a series carries a `corner`, not a raw
+// colour, and its polygon reads --corner-fill from a wrapping <g class=
+// "corner-red"/"corner-blue"> exactly the way Plate and Meter already do —
+// CSS custom properties inherit through SVG <g> like any other element.
+// Kept series-generic enough for the amateur wrapper's reveal screen
+// (DESIGN.md §9.2) to reuse for a single fighter's attribute spread.
+
+import styles from './StatRadar.module.css';
 
 export interface RadarSeries {
   name: string;
-  color: string;
+  corner: 'red' | 'blue';
   values: number[]; // aligned with `axes`, same length
 }
 
@@ -45,26 +51,21 @@ export function StatRadar({ axes, series, max = 100, size = 240 }: StatRadarProp
   return (
     <svg width={size} height={size} style={{ overflow: 'visible' }} role="img" aria-label="attribute radar chart">
       {rings.map((scale) => (
-        <polygon key={scale} points={ringPoints(scale)} fill="none" stroke="#3a3a3a" strokeWidth={1} />
+        <polygon key={scale} points={ringPoints(scale)} class={styles.ring} />
       ))}
       {axes.map((_, i) => {
         const [x, y] = pointOnAxis(i, axes.length, radius, center);
-        return <line key={i} x1={center} y1={center} x2={x} y2={y} stroke="#3a3a3a" strokeWidth={1} />;
+        return <line key={i} x1={center} y1={center} x2={x} y2={y} class={styles.axis} />;
       })}
       {series.map((s) => (
-        <polygon
-          key={s.name}
-          points={seriesPoints(s.values)}
-          fill={s.color}
-          fillOpacity={0.25}
-          stroke={s.color}
-          strokeWidth={2}
-        />
+        <g key={s.name} class={`corner-${s.corner}`}>
+          <polygon points={seriesPoints(s.values)} class={styles.series} />
+        </g>
       ))}
       {axes.map((label, i) => {
         const [x, y] = pointOnAxis(i, axes.length, radius + 16, center);
         return (
-          <text key={label} x={x} y={y} fill="#ccc" fontSize={11} textAnchor={labelAnchor(x, center)} dominantBaseline="middle">
+          <text key={label} x={x} y={y} class={styles.axisLabel} textAnchor={labelAnchor(x, center)} dominantBaseline="middle">
             {label}
           </text>
         );

@@ -117,6 +117,24 @@ export type FightEvent =
   // player rather than the engine's own roll.
   | { t: 'playerMoment'; round: number; index: number; kind: MomentKind; outcome: MomentOutcome; played: boolean }
   | { t: 'roundEnd'; round: number; scoreA: number; scoreB: number; staminaA: number; staminaB: number }
+  // Emitted every balance.ticksPerCheck ticks (DESIGN.md §6.6a) — a
+  // player-legible "what happened this minute" report over the round's
+  // ongoing RoundTape. strikesA/B and controlA/B are the DELTA accumulated
+  // since the previous checkEnd (or round start), not the round's running
+  // total — this is a read of the tape at a point in time, never a second
+  // scoring input. Skipped (not emitted partial) when a round ends before a
+  // full check window completes, matching roundEnd's existing behavior on
+  // an early finish.
+  | {
+      t: 'checkEnd';
+      round: number;
+      check: number; // 1-based, resets each round
+      strikesA: number;
+      strikesB: number;
+      controlA: number;
+      controlB: number;
+      winner: 'a' | 'b' | 'even';
+    }
   | { t: 'finish'; who: string; method: string; round: number };
 
 export interface Scorecard {

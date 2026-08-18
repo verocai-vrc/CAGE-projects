@@ -1,0 +1,98 @@
+/* MomentBar — the player-moment mechanics (§7), rebuilt on Plate in Loop 6.8.
+ * Always the red corner: PLAYER_SIDE is fixed to 'a' in fight.ts, so every
+ * MomentBar instance belongs to the player. The marker (once locked) and the
+ * risk ladder's climbed rungs use --corner-fill — the player's own
+ * execution. The timing bar's target zone and the ladder's busted state
+ * both reuse --amber: §15.2 defines it as the broadcast register's danger/
+ * threat accent (rocked, gassed, injured), and there is no separate
+ * "success target" or "failure" token in the palette — reusing --amber for
+ * both keeps this loop from inventing one. */
+
+.prompt {
+  margin: 0 0 var(--sp-3);
+  font-size: var(--t-2);
+  color: var(--text-soft);
+}
+
+.actions {
+  display: flex;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+  margin-top: var(--sp-3);
+}
+
+/* --- Timing bar --- */
+
+.track {
+  position: relative;
+  height: 1.4rem;
+  background: var(--trough);
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-control);
+  overflow: hidden;
+  margin: var(--sp-3) 0;
+}
+
+.targetZone {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: color-mix(in srgb, var(--amber) 25%, transparent);
+  border-left: 1px solid var(--amber);
+  border-right: 1px solid var(--amber);
+}
+
+.marker {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  margin-left: -1.5px;
+  background: var(--text);
+}
+
+.marker.locked {
+  background: var(--corner-fill, var(--amber));
+}
+
+/* --- Risk ladder --- */
+
+.rungs {
+  display: flex;
+  gap: var(--sp-1);
+  margin: var(--sp-3) 0;
+}
+
+.rung {
+  flex: 1;
+  height: 0.9rem;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--hairline);
+  background: var(--trough);
+  transition: background var(--dur-fast) linear;
+}
+
+.rung.risky {
+  border-color: var(--amber);
+}
+
+.rung.climbed {
+  background: var(--corner-fill, var(--amber));
+}
+
+.rung.busted {
+  background: var(--amber);
+}
+
+.outcome {
+  margin: var(--sp-2) 0;
+  font-size: var(--t-2);
+}
+
+.outcome.bad {
+  color: var(--amber);
+}
+
+.outcome.good {
+  color: var(--corner-text, var(--amber));
+}

@@ -19,6 +19,7 @@
 
 import { FaceSprite } from '../portrait/FaceSprite';
 import { WearSprite } from '../portrait/WearSprite';
+import { PlateSprite } from './PlateSprite';
 import styles from './Sprite.module.css';
 
 export function Sprite() {
@@ -27,6 +28,7 @@ export function Sprite() {
       <defs>
         <FaceSprite />
         <WearSprite />
+        <PlateSprite />
         <symbol id="flag-brazil" viewBox="0 0 24 18">
           <path fill="#009B3A" d="M0 0h24v18H0z" />
           <path fill="#FEDF00" d="m12 2.2 10 6.8-10 6.8L2 9z" />

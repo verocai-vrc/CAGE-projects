@@ -21,11 +21,16 @@ import { PlayByPlay } from '../components/PlayByPlay';
 import { FighterIdentity } from '../components/FighterIdentity';
 import { Meter } from '../components/Meter';
 import { Plate } from '../components/Plate';
+import { Button } from '../components/Button';
 import { StatRadar } from '../components/StatRadar';
+import { TaleOfTheTape } from '../components/TaleOfTheTape';
+import { Scorecard } from '../components/Scorecard';
 import { CornerChoice } from '../components/CornerChoice';
 import { MomentBar } from '../components/MomentBar';
 import { Screen } from '../components/Screen';
+import { Walkout, prefersReducedMotion } from '../components/Walkout';
 import { faceFromSeed, serializeFaceCode } from '../portrait/faceCode';
+import styles from './FightScreen.module.css';
 
 const REVEAL_INTERVAL_MS = 220;
 const FIXTURE_SEED = 2026;
@@ -143,21 +148,16 @@ function deriveHudState(events: FightEvent[], revealCount: number, aId: string, 
   return state;
 }
 
-// Running scorecard totals: scorecards are computed in full up front (same
-// as events — simulateFight returns the whole result synchronously), so
-// "revealing" them progressively just means summing the rounds whose
-// roundEnd event has appeared on screen so far.
-function runningScorecardTotals(result: FightResult, roundsScored: number) {
-  return result.scorecards.map((sc) => {
-    const scored = sc.roundScores.slice(0, roundsScored);
-    const total = scored.reduce((acc, r) => ({ a: acc.a + r.a, b: acc.b + r.b }), { a: 0, b: 0 });
-    return { judgeId: sc.judgeId, ...total };
-  });
-}
-
 const emptyOverrides: MomentOverrides = {};
 
 export function FightScreen() {
+  // The walkout (§15.7) plays once per mount of this screen — i.e. once per
+  // fight — never re-triggered by the corner-call/moment re-simulations
+  // below, which only ever touch `result`. Skips itself immediately under
+  // prefers-reduced-motion (Walkout.tsx), so the initial value already
+  // matches "does not play at all" rather than "plays instantly".
+  const [showWalkout, setShowWalkout] = useState(() => !prefersReducedMotion());
+
   const [tactics, setTactics] = useState<Tactics>(emptyTactics);
   const [momentOverrides, setMomentOverrides] = useState<MomentOverrides>(emptyOverrides);
   const [result, setResult] = useState<FightResult>(() => buildResult(emptyTactics, emptyOverrides));
@@ -199,10 +199,6 @@ export function FightScreen() {
   const hud = useMemo(
     () => deriveHudState(result.events, revealCount, fighterA.id, fighterB.id),
     [result, revealCount],
-  );
-  const scorecardTotals = useMemo(
-    () => runningScorecardTotals(result, hud.roundsScored),
-    [result, hud.roundsScored],
   );
   const pillarsA = useMemo(() => computePillars(fighterA.attributes), []);
   const pillarsB = useMemo(() => computePillars(fighterB.attributes), []);
@@ -259,7 +255,7 @@ export function FightScreen() {
   }, [result, revealCount, handledMoments]);
 
   useEffect(() => {
-    if (!playing || done || pendingCornerRound !== null || pendingMoment !== null) return;
+    if (showWalkout || !playing || done || pendingCornerRound !== null || pendingMoment !== null) return;
 
     function tick(ts: number) {
       if (lastTsRef.current === null) lastTsRef.current = ts;
@@ -285,33 +281,50 @@ export function FightScreen() {
       frameRef.current = null;
       lastTsRef.current = null;
     };
-  }, [playing, done, pendingCornerRound, pendingMoment, nextMomentIndex, result.events.length]);
+  }, [showWalkout, playing, done, pendingCornerRound, pendingMoment, nextMomentIndex, result.events.length]);
+
+  const cornerOf: Record<string, 'red' | 'blue'> = {
+    [fighterA.id]: 'red',
+    [fighterB.id]: 'blue',
+  };
 
   return (
-    <Screen register="broadcast" id="fight-screen" eyebrow={`${fighterA.name} vs ${fighterB.name}`} title="Fight night">
+    <Screen register="broadcast" id="fight-screen" eyebrow={`${fighterA.name} vs ${fighterB.name}`} title="Fight night" plate="cage">
 
-      <div style={{ padding: '0 3rem 1rem' }}>
+      {showWalkout && (
+        <Walkout
+          fighterA={fighterA}
+          fighterB={fighterB}
+          pillarsA={pillarsA}
+          pillarsB={pillarsB}
+          onDone={() => setShowWalkout(false)}
+        />
+      )}
+
+      <TaleOfTheTape fighterA={fighterA} fighterB={fighterB} pillarsA={pillarsA} pillarsB={pillarsB} />
+
+      <Plate eyebrow="Attribute spread">
         <StatRadar
           axes={[...PILLAR_AXES]}
           series={[
-            { name: fighterA.name, color: '#4a9d5f', values: [pillarsA.striking, pillarsA.grappling, pillarsA.durability, pillarsA.mind] },
-            { name: fighterB.name, color: '#d64545', values: [pillarsB.striking, pillarsB.grappling, pillarsB.durability, pillarsB.mind] },
+            { name: fighterA.name, corner: 'red', values: [pillarsA.striking, pillarsA.grappling, pillarsA.durability, pillarsA.mind] },
+            { name: fighterB.name, corner: 'blue', values: [pillarsB.striking, pillarsB.grappling, pillarsB.durability, pillarsB.mind] },
           ]}
         />
-      </div>
+      </Plate>
 
       {/* §15.2: the player is always red, the opponent always blue. The corner
           class is set once per side here and every Meter under it inherits the
           fill — no component below takes a colour. */}
-      <div style={{ display: 'flex', gap: '2rem' }}>
-        <div class="corner-red" style={{ flex: 1 }}>
+      <div class={styles.corners}>
+        <div class="corner-red">
           <Plate eyebrow={hud.rockedA ? 'Hurt' : 'Red corner'} corner>
             <FighterIdentity fighter={fighterA} />
             <Meter label="Health" value={hud.healthA} tone={hud.rockedA ? 'warn' : 'default'} />
             <Meter label="Stamina" value={hud.staminaA} />
           </Plate>
         </div>
-        <div class="corner-blue" style={{ flex: 1 }}>
+        <div class="corner-blue">
           <Plate eyebrow={hud.rockedB ? 'Hurt' : 'Blue corner'} corner>
             <FighterIdentity fighter={fighterB} />
             <Meter label="Health" value={hud.healthB} tone={hud.rockedB ? 'warn' : 'default'} />
@@ -320,20 +333,20 @@ export function FightScreen() {
         </div>
       </div>
 
-      <div>
-        <button
-          type="button"
+      <div class={styles.controls}>
+        <Button
+          variant="primary"
           onClick={() => setPlaying((p) => !p)}
           disabled={done || pendingCornerRound !== null || pendingMoment !== null}
         >
           {done ? 'Finished' : playing ? 'Pause' : 'Play'}
-        </button>
+        </Button>
         {/* Skipping to the end auto-resolves every remaining moment: the
             result already holds the engine's own outcomes for any moment
             without an override, so this is the §7 skip path applied wholesale. */}
-        <button type="button" onClick={skipToEnd} disabled={done}>
+        <Button variant="ghost" onClick={skipToEnd} disabled={done}>
           Skip to end
-        </button>
+        </Button>
       </div>
 
       {pendingCornerRound !== null && (
@@ -351,36 +364,19 @@ export function FightScreen() {
         events={result.events}
         revealCount={revealCount}
         fighterNames={{ [fighterA.id]: fighterA.name, [fighterB.id]: fighterB.name }}
+        cornerOf={cornerOf}
       />
 
-      {hud.roundsScored > 0 && (
-        <table>
-          <thead>
-            <tr>
-              <th>Judge</th>
-              <th>{fighterA.name}</th>
-              <th>{fighterB.name}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {scorecardTotals.map((row) => {
-              const judge = judges.find((j) => j.id === row.judgeId);
-              return (
-                <tr key={row.judgeId}>
-                  <td>{judge?.name ?? row.judgeId}</td>
-                  <td>{row.a}</td>
-                  <td>{row.b}</td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      )}
+      <Scorecard
+        scorecards={result.scorecards}
+        judges={judges}
+        roundsScored={hud.roundsScored}
+        fighterAName={fighterA.name}
+        fighterBName={fighterB.name}
+      />
 
       {done && (
-        <p>
-          {winnerName(result)} wins by {result.method} (round {result.endRound})
-        </p>
+        <Plate title={`${winnerName(result)} wins by ${result.method}`} eyebrow={`Round ${result.endRound}`} />
       )}
     </Screen>
   );

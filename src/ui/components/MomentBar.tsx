@@ -21,9 +21,15 @@
 //   - Performance 0 is exactly what the engine rolls unaided, so the
 //     auto-resolve / skip path is never worse than a neutral attempt: the
 //     game stays fully completable with zero twitch input.
+//
+// Loop 6.8: rebuilt on Plate/Button, always the red corner (see the module
+// CSS header for why), all styling moved out of inline styles.
 
 import { useEffect, useRef, useState } from 'preact/hooks';
+import { Plate } from './Plate';
+import { Button } from './Button';
 import type { MomentKind, MomentPerformance } from '../../engine/types';
+import styles from './MomentBar.module.css';
 
 type Mechanic = 'timing' | 'ladder';
 
@@ -74,23 +80,15 @@ export function MomentBar({ kind, onResolve }: MomentBarProps) {
   const mechanic = MECHANIC[kind];
 
   return (
-    <div
-      style={{
-        border: '1px solid #6a5acd',
-        borderRadius: '0.4rem',
-        padding: '0.75rem',
-        margin: '0.75rem 0',
-        background: '#1c1b2a',
-      }}
-    >
-      <strong>{copy.title}</strong>
-      <p style={{ margin: '0.35rem 0', fontSize: '0.9rem' }}>{copy.prompt}</p>
-
-      {mechanic === 'timing' ? (
-        <TimingBar copy={copy} onResolve={onResolve} />
-      ) : (
-        <RiskLadder copy={copy} onResolve={onResolve} />
-      )}
+    <div class="corner-red">
+      <Plate eyebrow="Moment" title={copy.title} corner>
+        <p class={styles.prompt}>{copy.prompt}</p>
+        {mechanic === 'timing' ? (
+          <TimingBar copy={copy} onResolve={onResolve} />
+        ) : (
+          <RiskLadder copy={copy} onResolve={onResolve} />
+        )}
+      </Plate>
     </div>
   );
 }
@@ -148,53 +146,27 @@ function TimingBar({ copy, onResolve }: MechanicProps) {
 
   return (
     <>
-      <div
-        style={{
-          position: 'relative',
-          height: '1.4rem',
-          background: '#2a2a2a',
-          borderRadius: '0.2rem',
-          margin: '0.5rem 0',
-          overflow: 'hidden',
-        }}
-      >
-        {/* Target zone */}
+      <div class={styles.track}>
         <div
-          style={{
-            position: 'absolute',
-            left: `${(0.5 - TARGET_HALF_WIDTH) * 100}%`,
-            width: `${TARGET_HALF_WIDTH * 2 * 100}%`,
-            top: 0,
-            bottom: 0,
-            background: '#2f4f3a',
-            borderLeft: '1px solid #4a9d5f',
-            borderRight: '1px solid #4a9d5f',
-          }}
+          class={styles.targetZone}
+          style={{ left: `${(0.5 - TARGET_HALF_WIDTH) * 100}%`, width: `${TARGET_HALF_WIDTH * 2 * 100}%` }}
         />
-        {/* Marker */}
         <div
-          style={{
-            position: 'absolute',
-            left: `${shown * 100}%`,
-            top: 0,
-            bottom: 0,
-            width: '3px',
-            marginLeft: '-1.5px',
-            background: locked === null ? '#f0f0f0' : '#6a5acd',
-          }}
+          class={`${styles.marker} ${locked !== null ? styles.locked : ''}`}
+          style={{ left: `${shown * 100}%` }}
         />
       </div>
 
       {locked === null && (
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-          <button type="button" onClick={stop}>
+        <div class={styles.actions}>
+          <Button variant="primary" onClick={stop}>
             {copy.climb}
-          </button>
+          </Button>
           {/* §7: fair to skip — a neutral performance is exactly the engine's
               own unaided roll, so skipping costs nothing. */}
-          <button type="button" onClick={() => onResolve(0, false)}>
+          <Button variant="ghost" onClick={() => onResolve(0, false)}>
             Auto-resolve
-          </button>
+          </Button>
         </div>
       )}
     </>
@@ -241,36 +213,33 @@ function RiskLadder({ copy, onResolve }: MechanicProps) {
 
   return (
     <>
-      <div style={{ display: 'flex', gap: '0.3rem', margin: '0.5rem 0' }}>
-        {Array.from({ length: RUNGS }, (_, i) => (
-          <div
-            key={i}
-            style={{
-              flex: 1,
-              height: '0.9rem',
-              borderRadius: '0.2rem',
-              border: BUST_CHANCE[i] >= 0.35 ? '1px solid #b5651d' : '1px solid #3a3a3a',
-              background: busted ? '#d64545' : i < rung ? '#6a5acd' : '#2a2a2a',
-              transition: 'background 150ms linear',
-            }}
-          />
-        ))}
+      <div class={styles.rungs}>
+        {Array.from({ length: RUNGS }, (_, i) => {
+          const classes = [
+            styles.rung,
+            BUST_CHANCE[i] >= 0.35 ? styles.risky : '',
+            busted ? styles.busted : i < rung ? styles.climbed : '',
+          ]
+            .filter(Boolean)
+            .join(' ');
+          return <div key={i} class={classes} />;
+        })}
       </div>
 
-      {busted && <p style={{ color: '#d64545', margin: '0.35rem 0' }}>Caught pushing — it slipped away.</p>}
-      {!busted && rung >= RUNGS - 1 && <p style={{ color: '#4a9d5f', margin: '0.35rem 0' }}>Perfect execution.</p>}
+      {busted && <p class={`${styles.outcome} ${styles.bad}`}>Caught pushing — it slipped away.</p>}
+      {!busted && rung >= RUNGS - 1 && <p class={`${styles.outcome} ${styles.good}`}>Perfect execution.</p>}
 
       {!done && (
-        <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-          <button type="button" onClick={climb}>
+        <div class={styles.actions}>
+          <Button variant="primary" onClick={climb}>
             {copy.climb} ({Math.round(BUST_CHANCE[rung] * 100)}% risk)
-          </button>
-          <button type="button" onClick={bank}>
+          </Button>
+          <Button variant="ghost" onClick={bank}>
             {copy.bank}
-          </button>
-          <button type="button" onClick={() => onResolve(0, false)}>
+          </Button>
+          <Button variant="ghost" onClick={() => onResolve(0, false)}>
             Auto-resolve
-          </button>
+          </Button>
         </div>
       )}
     </>

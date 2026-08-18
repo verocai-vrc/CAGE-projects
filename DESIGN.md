@@ -239,7 +239,7 @@ export function seedFromString(s: string): number {
 
 ## 6. Fight engine (the heart)
 
-`simulateFight(a, b, tactics, rng): FightResult`. Rounds resolve as a series of ticks. Two persistent pools per fighter: **health** and **stamina**, both drain, both feed back into effectiveness.
+`simulateFight(a, b, tactics, rng): FightResult`. Rounds resolve as a series of ticks, reported to the player as one explicit **check** per in-fiction minute — see §6.6a. Two persistent pools per fighter: **health** and **stamina**, both drain, both feed back into effectiveness.
 
 ### 6.1 Core probability — the one dial that defines the whole game
 
@@ -287,6 +287,15 @@ Score each round from strike differential, control time, knockdowns, and threate
 - High IQ **reveals the opponent's tendencies** pre-fight and makes the corner's advice **accurate**.
 - Low IQ makes the corner **sometimes wrong** (suggests a tactic mismatched to the situation).
 - Implement IQ as the fidelity of information surfaced to the player, not as a hidden `+X` on rolls.
+
+### 6.6a Per-minute checks (amendment — resolution cadence, not a new system)
+
+Round resolution is not a silent continuous loop. Each round is an explicit sequence of **checks**, one per in-fiction minute (a 5-minute round is 5 checks; a 3-round amateur bout is 15 checks total). A check is the player-visible unit of "something happened this minute" — pressing "fight" must read as watching a contest unfold, not as one engine roll producing a result.
+
+- **A check wraps the existing finer tick loop, it does not replace it.** §6.2–§6.4's per-tick stamina drain, strike/position `rollLogistic` calls, and finish rolls keep running at their existing (finer than one-minute) rate — that granularity is what gives stamina curves and damage accumulation their shape. A check is the *aggregation and report* of one minute's worth of those ticks: it resolves to a single contested winner/margin for that minute-slice (via the same pillar-vs-pillar `rollLogistic` form, §6.1, applied to the minute's dominant exchange — striking or position/grappling) and that is the unit the player sees land.
+- **Checks feed the existing `RoundTape` directly — no parallel scoring system.** A check's outcome increments the same fields §6.5/`judging.ts` already reads: a striking check win adds to `strikesLanded`, a position/grappling check win adds `controlTime` or a takedown count, a knockdown or submission threat surfaces the same way it does today. Judges' bias vectors and noise (§6.5) are computed from this tape exactly as before — per-minute checks are a coarser, player-legible *sampling* of the same tape, not a bypass of it. There is no separate "checks won" tally competing with the scorecard; the fighter who wins more checks and the fighter the judges score higher should normally agree, precisely because they're reading the same numbers.
+- **Each check is one `Beat`** for §16.6's narration pipeline — see the amendment there.
+- **Corner decisions are unchanged.** §6.7's between-round tactical choices still land only at round boundaries; checks are the resolution *within* a round, not a new place for player input.
 
 ### 6.7 Corner decisions and player moments
 
@@ -953,6 +962,15 @@ At ~21 beats per bout and ~20 bouts per career, a run fires roughly 420 lines. T
 **This bends §2's "validated at boot" rule and the bend must be stated.** §2 wants Zod to catch malformed content at boot rather than mid-fight. Mitigation: a CI test imports and validates **every** content file, including the narration pools, so malformed content cannot ship at all; the runtime validation becomes a shipping-integrity check whose failure path is "commentary off, tape on" — degraded, never a crash, and never mid-bout since the load completes before the walkout.
 
 **Trademark safety (§13).** No real promotion, event, venue, fighter, or commentator name appears in any pool. The fictional promotion is the **Vantage Fight League (VFL)**; the cage is "the cage" and its wall is "the fence" — "Octagon" is a Zuffa mark and is banned outright. Commentators are fictional. A CI content lint runs a denylist regex across every JSON file under `/content` (org names, "octagon", "zuffa", and a list of real fighters' nicknames) and fails the build on any hit. *The VFL name is a working name and must be trademark-cleared before any public release.*
+
+### 16.6a Per-minute checks as beats (amendment — no second narration system)
+
+§6.6a's per-minute checks slot into the beat pipeline that already exists here; they are not a second narration system.
+
+- **A check is a `FightEvent` (or a small run of them) at the point it's emitted, and becomes a `Beat` through the existing Stage 1 fold** — no new `BeatKind` is required in the general case. A striker's successful check is an `exchange` (or `takedown`) beat; a grappler's stuffed check is a `stuffed` beat; the mapping from "what kind of check, who won, by how much" to beat kind and its salience inputs (`totalDamage`, `unansweredStreak`, etc.) is exactly the aggregation Stage 1 already performs — the only change is that the input stream is now chunked into fixed one-minute slices instead of whatever finer cadence produced events before.
+- **No fixed filler/result alternation.** The New Star Soccer-style rhythm (atmosphere line, then a result-bearing line) is not a hardcoded 1:1 rule. It falls out of the existing salience system (§16.6's beat budget of 7/round and the `base`/`exchange` salience scores): a low-salience check reads as filler because it competes for a narration slot and often loses; a high-salience check (a knockdown check, a big unanswered-streak check) wins a slot and reads as the result line. Since a 5-minute round now produces up to 5 check-beats plus whatever `roundEnd`/`corner`/`moment` beats already exist, the per-round beat budget and its salience competition are what shapes the rhythm — this may mean re-measuring the budget (see open question below) rather than adding a second pacing rule.
+- **Still one narration RNG stream, one selection pass.** Checks introduce no new `rng.next()` call site outside what Stage 2 (§16.6) already does — exactly one draw per beat, check-beats included.
+- **Open question carried into implementation:** at up to 5 check-beats per round (15 per 3-round bout) competing with `open`/`corner`/`moment`/`roundEnd`/`finish`/`decision` beats against the existing 7-per-round budget and the measured ~21-beats-per-bout target, the budget or the salience constants may need re-tuning so checks don't crowd out mandatory beats or blow past the measured pacing (~46–55s of fight night, §16.6). This is a tuning pass against real output, not a design decision to make blind — flag before Loop 7.11/7.12 rework, and re-measure against the coverage matrix (§16.6) once check-beats are live.
 
 ### 16.7 The corner's voice
 

@@ -9,6 +9,8 @@
 // no branch of its own.
 
 import type { ComponentChildren } from 'preact';
+import { ScenePlate } from './ScenePlate';
+import type { ScenePlateName } from '../sprite/scenePlates';
 import styles from './Screen.module.css';
 
 /** The File is paperwork; The Broadcast is fight night. §15.1. */
@@ -24,6 +26,11 @@ interface ScreenProps {
   title?: string;
   /** Opt out of the max-width column. The lab report is the only intended user. */
   wide?: boolean;
+  /**
+   * A location backdrop, low-opacity, behind the header only (§15.6) — never
+   * behind the body content below it, so it can never sit under dense data.
+   */
+  plate?: ScenePlateName;
   children: ComponentChildren;
 }
 
@@ -32,7 +39,7 @@ const REGISTER_CLASS: Record<Register, string> = {
   broadcast: 'reg-broadcast',
 };
 
-export function Screen({ register, id, eyebrow, title, wide, children }: ScreenProps) {
+export function Screen({ register, id, eyebrow, title, wide, plate, children }: ScreenProps) {
   const classes = [
     styles.root,
     REGISTER_CLASS[register],
@@ -49,6 +56,7 @@ export function Screen({ register, id, eyebrow, title, wide, children }: ScreenP
       <div class={styles.column}>
         {(title || eyebrow) && (
           <header class={styles.header}>
+            {plate && <ScenePlate plate={plate} />}
             {eyebrow && <span class={styles.eyebrow}>{eyebrow}</span>}
             {title && <h1 class={styles.title}>{title}</h1>}
           </header>
