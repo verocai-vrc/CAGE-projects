@@ -1,10 +1,15 @@
-// CampScreen.tsx — Loop 3.2: the camp-week energy allocation screen (DESIGN.md
-// §8.1). Player splits the week's energy budget across training / weight
-// management / rest / life via sliders, then resolves the week — updating
-// the career store's player fighter, week, energy, life bars, hype, and cut
-// discipline (Loop 4.1 added the life pillar; Loop 4.2 gives weight
-// management a real effect — it accumulates into weightCutProgress, which
-// CareerScreen classifies into a CutQuality on fight week).
+// CampScreen.tsx — Loop 3.2 built the camp-week energy allocation screen
+// (DESIGN.md §8.1); Loop 6.7 rebuilds it on the component kit. Player splits
+// the week's energy budget across training / weight management / rest / life
+// via `BudgetSplit` — a single bar, not four independent sliders — then
+// resolves the week, updating the career store's player fighter, week,
+// energy, life bars, hype, and cut discipline.
+//
+// The over-budget warning and its state are gone: `BudgetSplit` cannot
+// produce a total above the budget by construction (a divider can only move
+// within the space its neighbours hold), so there is nothing to warn about.
+// `clampAllocation` stays in career/camp.ts as an engine-side guard against
+// any other caller, per DESIGN.md §15.8.
 
 import { useState } from 'preact/hooks';
 import { resolveCampWeek, type CampAllocation } from '../../career/camp';
@@ -12,42 +17,34 @@ import { campFocusMultiplier, resolveLifeWeek, trainingPartnerQuality } from '..
 import { resolveWeightCutWeek } from '../../career/weightcut';
 import { balance } from '../../content';
 import { useCageStore } from '../../state/store';
+import { BudgetSplit, type BudgetPillar } from '../components/BudgetSplit';
+import { Button } from '../components/Button';
 import { Meter } from '../components/Meter';
 import { Screen } from '../components/Screen';
 import { Sheet } from '../components/Sheet';
 
-const PILLAR_LABELS: Record<keyof Required<CampAllocation>, string> = {
-  training: 'Training',
-  weightManagement: 'Weight management',
-  rest: 'Rest',
-  life: 'Life',
-};
+const PILLARS: BudgetPillar[] = [
+  { id: 'training', label: 'Training' },
+  { id: 'weightManagement', label: 'Weight management' },
+  { id: 'rest', label: 'Rest' },
+  { id: 'life', label: 'Life' },
+];
 
-const PILLAR_IDS = Object.keys(PILLAR_LABELS) as (keyof Required<CampAllocation>)[];
+const EMPTY_ALLOCATION: Required<CampAllocation> = {
+  training: 0,
+  weightManagement: 0,
+  rest: 0,
+  life: 0,
+};
 
 export function CampScreen() {
   const career = useCageStore((s) => s.career);
   const updateCareer = useCageStore((s) => s.updateCareer);
 
-  const [allocation, setAllocation] = useState<Required<CampAllocation>>({
-    training: 0,
-    weightManagement: 0,
-    rest: 0,
-    life: 0,
-  });
+  const [allocation, setAllocation] = useState<Required<CampAllocation>>(EMPTY_ALLOCATION);
 
   const budget = balance.weeklyEnergyBudget;
   const spent = allocation.training + allocation.weightManagement + allocation.rest + allocation.life;
-  const remaining = Math.max(0, budget - spent);
-  const overBudget = spent > budget;
-
-  function maxForPillar(pillar: keyof Required<CampAllocation>): number {
-    return budget - (spent - allocation[pillar]);
-  }
-
-  function setPillar(pillar: keyof Required<CampAllocation>, value: number) {
-    setAllocation((prev) => ({ ...prev, [pillar]: Math.max(0, value) }));
-  }
 
   function resolveWeek() {
     if (!career.player) return;
@@ -72,13 +69,15 @@ export function CampScreen() {
       hype,
       weightCutProgress,
     });
-    setAllocation({ training: 0, weightManagement: 0, rest: 0, life: 0 });
+    setAllocation(EMPTY_ALLOCATION);
   }
 
   if (!career.player) {
     return (
       <Screen register="file" id="camp-screen" title="Camp">
-        <p>No active fighter — start a career first.</p>
+        <Sheet>
+          <p>No active fighter — start a career first.</p>
+        </Sheet>
       </Screen>
     );
   }
@@ -98,37 +97,24 @@ export function CampScreen() {
         <Meter label="Cut discipline" value={career.weightCutProgress} />
       </Sheet>
 
-      <Meter label="Energy remaining" value={remaining} max={budget} />
-      {overBudget && (
-        <p style={{ color: '#d64545', fontSize: '0.8rem' }}>
-          Over budget — allocations will be scaled down when the week resolves.
-        </p>
-      )}
-
-      {PILLAR_IDS.map((pillar) => (
-        <div key={pillar} style={{ marginBottom: '0.75rem' }}>
-          <label style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-            <span>{PILLAR_LABELS[pillar]}</span>
-            <span>{allocation[pillar]}</span>
-          </label>
-          <input
-            type="range"
-            min={0}
-            max={budget}
-            step={1}
-            value={allocation[pillar]}
-            onInput={(e) => setPillar(pillar, Number((e.target as HTMLInputElement).value))}
-            style={{ width: '100%' }}
-          />
-          <span style={{ fontSize: '0.7rem', color: '#888' }}>
-            up to {Math.max(0, maxForPillar(pillar))} more before over budget
-          </span>
-        </div>
-      ))}
-
-      <button type="button" onClick={resolveWeek} disabled={spent === 0}>
-        Resolve week
-      </button>
+      <Sheet title="This week's energy" caption={`${budget} to split`}>
+        <BudgetSplit
+          budget={budget}
+          pillars={PILLARS}
+          value={allocation}
+          onChange={(next) =>
+            setAllocation({
+              training: next.training ?? 0,
+              weightManagement: next.weightManagement ?? 0,
+              rest: next.rest ?? 0,
+              life: next.life ?? 0,
+            })
+          }
+        />
+        <Button variant="primary" block onClick={resolveWeek} disabled={spent === 0}>
+          Resolve week
+        </Button>
+      </Sheet>
     </Screen>
   );
 }

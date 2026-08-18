@@ -12,6 +12,7 @@
 import { useEffect, useState } from 'preact/hooks';
 import type { Fighter } from '../../engine/types';
 import { mulberry32 } from '../../engine/rng';
+import { BudgetSplit, type BudgetPillar } from '../components/BudgetSplit';
 import { Button } from '../components/Button';
 import { FighterIdentity } from '../components/FighterIdentity';
 import { FlagChip } from '../components/FlagChip';
@@ -77,6 +78,14 @@ function wearFixtureSummary(overrides: Partial<FightSummary>): FightSummary {
   };
 }
 
+const BUDGET_PILLARS: BudgetPillar[] = [
+  { id: 'training', label: 'Training' },
+  { id: 'weightManagement', label: 'Weight management' },
+  { id: 'rest', label: 'Rest' },
+  { id: 'life', label: 'Life' },
+];
+const BUDGET_TOTAL = 10;
+
 const WEAR_MID_RECORD = { wins: 4, losses: 2, draws: 0, noContests: 0 };
 const WEAR_BRUTAL_RECORD = { wins: 9, losses: 6, draws: 0, noContests: 0 };
 
@@ -126,7 +135,15 @@ const FACE_GRID = Array.from({ length: 24 }, (_, i) =>
 );
 
 /** The identical prop set both registers are handed. */
-function KitBody({ sweep }: { sweep: number }) {
+function KitBody({
+  sweep,
+  budgetAllocation,
+  setBudgetAllocation,
+}: {
+  sweep: number;
+  budgetAllocation: Record<string, number>;
+  setBudgetAllocation: (next: Record<string, number>) => void;
+}) {
   return (
     <>
       <Sheet title="Meters" caption="same props, both registers">
@@ -158,6 +175,15 @@ function KitBody({ sweep }: { sweep: number }) {
             Disabled
           </Button>
         </div>
+      </Sheet>
+
+      <Sheet title="Budget split" caption={`${BUDGET_TOTAL} to split`}>
+        <BudgetSplit
+          budget={BUDGET_TOTAL}
+          pillars={BUDGET_PILLARS}
+          value={budgetAllocation}
+          onChange={setBudgetAllocation}
+        />
       </Sheet>
 
       <Sheet variant="carbon" title="Carbon copy" caption="second sheet">
@@ -236,6 +262,12 @@ function KitBody({ sweep }: { sweep: number }) {
 
 export function KitScreen() {
   const [sweep, setSweep] = useState(0);
+  const [budgetAllocation, setBudgetAllocation] = useState<Record<string, number>>({
+    training: 4,
+    weightManagement: 2,
+    rest: 1,
+    life: 0,
+  });
 
   // Drive the sweep meter continuously so a screenshot at any moment catches it
   // mid-count. Values are chosen to cross every digit-width boundary (1, 2 and 3
@@ -259,7 +291,7 @@ export function KitScreen() {
           eyebrow="Component kit · not player-facing"
           title={register === 'file' ? 'The File' : 'The Broadcast'}
         >
-          <KitBody sweep={sweep} />
+          <KitBody sweep={sweep} budgetAllocation={budgetAllocation} setBudgetAllocation={setBudgetAllocation} />
         </Screen>
       ))}
     </div>

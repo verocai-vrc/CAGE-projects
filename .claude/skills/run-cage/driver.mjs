@@ -58,11 +58,15 @@ await page.click('#chargen-wrapper button[aria-label^="Next"]');
 await page.click('#chargen-wrapper button:has-text("Randomize")');
 await shot(page, 'chargen-portrait-edited');
 await page.click('#chargen-wrapper button:has-text("Confirm face")');
-await page.waitForSelector('#chargen-wrapper p:has-text("Moment")');
+// Loop 6.7: the moment step counter is Sheet's caption span, not a <p> — the
+// text itself ("Moment N of M") is unchanged.
+await page.waitForSelector('#chargen-wrapper [class*="caption"]:has-text("Moment")');
 await shot(page, 'chargen-moment-1');
 
 for (let i = 0; i < 6; i++) {
-  const momentText = await page.textContent('#chargen-wrapper p:has-text("Moment")').catch(() => null);
+  const momentText = await page
+    .textContent('#chargen-wrapper [class*="caption"]:has-text("Moment")')
+    .catch(() => null);
   console.log('moment progress:', momentText);
   const buttons = page.locator('#chargen-wrapper button');
   const count = await buttons.count();
@@ -88,19 +92,83 @@ await page.click('a[href="#/camp"]');
 await page.waitForSelector('#camp-screen');
 await shot(page, 'camp-before-alloc');
 
-const sliders = page.locator('#camp-screen input[type="range"]');
-const sliderCount = await sliders.count();
-console.log('camp sliders:', sliderCount);
-// max out training
-await sliders.nth(0).evaluate((el) => {
-  const setter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
-  setter.call(el, el.max);
-  el.dispatchEvent(new Event('input', { bubbles: true }));
-});
+// Loop 6.7's verify: BudgetSplit's dividers, not four range inputs. Keyboard
+// only — "the whole camp week is completable without a mouse."
+const dividers = page.locator('#camp-screen [role="slider"]');
+const dividerCount = await dividers.count();
+console.log('camp budget dividers:', dividerCount);
+if (dividerCount !== 4) {
+  console.error('CAMP DIVIDER COUNT FAIL: expected 4 dividers (one per pillar), got', dividerCount);
+  process.exitCode = 1;
+}
+
+// Drive the first divider (training's right edge) 6 steps right by keyboard
+// alone, moving energy from the unspent tail into training.
+await dividers.nth(0).focus();
+for (let i = 0; i < 6; i++) {
+  await page.keyboard.press('ArrowRight');
+}
+const trainingValueAfterKeys = await page
+  .locator('#camp-screen [class*="legendValue"]')
+  .first()
+  .textContent();
+console.log('training value after 6 keyboard steps:', trainingValueAfterKeys);
 await shot(page, 'camp-training-maxed');
+
+// Budget-cannot-exceed check: push every divider hard right, then read the
+// legend total — it must never exceed the week's energy budget.
+for (const d of await dividers.all()) {
+  await d.focus();
+  for (let i = 0; i < 20; i++) {
+    await page.keyboard.press('ArrowRight');
+  }
+}
+const legendValues = await page.locator('#camp-screen [class*="legendValue"]').allTextContents();
+const legendTotal = legendValues.reduce((sum, v) => sum + Number(v), 0);
+// The legend includes training/weightManagement/rest/life AND the unspent
+// tail reading, so the four pillars plus the tail must sum to exactly the
+// budget — never more, by construction.
+console.log('camp legend values (4 pillars + unspent):', legendValues, '-> sum', legendTotal);
+if (legendTotal > 10 + 1e-9 || legendValues.length !== 5) {
+  console.error('CAMP BUDGET-CANNOT-EXCEED CHECK FAIL: legend', legendValues);
+  process.exitCode = 1;
+} else {
+  console.log('CAMP BUDGET-CANNOT-EXCEED CHECK PASS: sum', legendTotal, 'never exceeds the budget');
+}
+
 await page.click('#camp-screen button:has-text("Resolve week")');
 await page.waitForTimeout(100);
 await shot(page, 'camp-after-resolve');
+
+// Viewport sweep — §15.9/Loop 6.7: legible and non-scrolling at 360/768/1280,
+// with BudgetSplit's dividers still ≥44px touch targets at mobile width.
+console.log('--- camp screen viewport sweep ---');
+await page.goto(BASE_URL + '/#/camp');
+await page.waitForSelector('#camp-screen');
+for (const width of [360, 768, 1280]) {
+  await page.setViewportSize({ width, height: 900 });
+  await page.waitForTimeout(80);
+  const scrollWidth = await page.evaluate(() => document.documentElement.scrollWidth);
+  const clientWidth = await page.evaluate(() => document.documentElement.clientWidth);
+  console.log(`camp @ ${width}px: scrollWidth=${scrollWidth} clientWidth=${clientWidth}`);
+  if (scrollWidth > clientWidth + 1) {
+    console.error(`CAMP HORIZONTAL SCROLL FAIL at ${width}px: scrollWidth ${scrollWidth} > clientWidth ${clientWidth}`);
+    process.exitCode = 1;
+  }
+  if (width === 360) {
+    const dividerBox = await page.locator('#camp-screen [role="slider"]').first().boundingBox();
+    console.log('divider touch target at 360px:', dividerBox);
+    if (!dividerBox || dividerBox.width < 44 || dividerBox.height < 44) {
+      console.error('CAMP TOUCH TARGET FAIL: divider smaller than 44px at 360px', dividerBox);
+      process.exitCode = 1;
+    } else {
+      console.log('CAMP TOUCH TARGET PASS: divider is', dividerBox.width, 'x', dividerBox.height);
+    }
+  }
+  await page.screenshot({ path: path.join(SHOT_DIR, `camp-${width}w.png`), fullPage: true });
+  console.log('SCREENSHOT', path.join(SHOT_DIR, `camp-${width}w.png`));
+}
+await page.setViewportSize({ width: 1000, height: 900 });
 
 console.log('--- back to career, fight loop ---');
 await page.click('a[href="#/"]').catch(() => {});

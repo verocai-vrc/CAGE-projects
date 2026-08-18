@@ -7,7 +7,12 @@
 // mirror" — where the player authors their own FaceCode via PortraitEditor
 // before the montage begins; that authored face is what flows into
 // startCareer, replacing the seeded-but-unedited roll this screen used to make
-// on its own.
+// on its own. Loop 6.7 rebuilds the moment-choice step on the component kit —
+// each moment is a Sheet, each option a full-width ghost Button with the
+// fiction as its subtitle. The "Moment N of M" caption is a step counter, not
+// a statline, so it does not trip §9.1's no-numbers rule (DESIGN.md §9.1 —
+// that rule is about live stat deltas, and §9.1 explicitly clears the
+// portrait step on the same grounds).
 
 import { useMemo, useState } from 'preact/hooks';
 import type { MomentOption } from '../../state/schema';
@@ -15,7 +20,9 @@ import { amateurMoments } from '../../content';
 import { buildOriginFromChoices } from '../../career/origin';
 import { startCareer } from '../../career/progression';
 import { mulberry32, seedFromString } from '../../engine';
+import { Button } from '../components/Button';
 import { Screen } from '../components/Screen';
+import { Sheet } from '../components/Sheet';
 import { PortraitEditor } from '../portrait/PortraitEditor';
 import { useCageStore } from '../../state/store';
 import { RevealScreen } from './RevealScreen';
@@ -56,26 +63,25 @@ export function ChargenWrapper() {
   return (
     <Screen register="file" id="chargen-wrapper" title="Where it all started">
       {moment && (
-        <div>
-          <p style={{ marginBottom: '0.75rem', color: 'var(--text-soft)' }}>
-            Moment {momentIndex + 1} of {amateurMoments.length}
-          </p>
-          <p style={{ marginBottom: '1rem' }}>{moment.prompt}</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+        <Sheet caption={`Moment ${momentIndex + 1} of ${amateurMoments.length}`}>
+          <p style={{ marginBottom: 'var(--sp-4)' }}>{moment.prompt}</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 'var(--sp-3)' }}>
             {moment.options.map((option) => (
-              <button
+              <Button
                 key={option.id}
-                type="button"
+                variant="ghost"
+                block
                 onClick={() => choose(option)}
-                style={{ textAlign: 'left', padding: '0.6rem' }}
+                style={{ flexDirection: 'column', alignItems: 'flex-start', textAlign: 'left', height: 'auto', padding: 'var(--sp-3)' }}
               >
                 <strong>{option.label}</strong>
-                <br />
-                <span style={{ fontSize: 'var(--t-2)', color: 'var(--text-soft)' }}>{option.text}</span>
-              </button>
+                <span style={{ fontSize: 'var(--t-2)', color: 'var(--text-soft)', fontWeight: 400 }}>
+                  {option.text}
+                </span>
+              </Button>
             ))}
           </div>
-        </div>
+        </Sheet>
       )}
     </Screen>
   );

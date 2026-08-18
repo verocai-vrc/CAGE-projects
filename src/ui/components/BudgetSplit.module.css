@@ -1,0 +1,155 @@
+/* BudgetSplit — one bar, four segments, a hatched tail (§15.8, §16 loop 6.7).
+ *
+ * Segment colour is not a new palette entry: it steps the register's own ink
+ * through --text, --mark, --mark-alt and --meter — the four semantic roles a
+ * form register already defines, no fifth colour invented for one component.
+ * The tail is a hatch of --hairline over --surface, so "unspent" reads as an
+ * unfilled part of the form rather than a fifth allocation. */
+
+.root {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+/* 46px border-box, not 32 — the track's own height is what bounds the
+ * divider's touch target (the divider spans top:0/bottom:0 of the track), and
+ * §15.9's mobile floor is 44px measured on the divider's content box, so the
+ * track needs 44px plus its own 1px+1px border to clear it. */
+.track {
+  position: relative;
+  display: flex;
+  height: 46px;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-control);
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.segment {
+  width: var(--segment-width, 0%);
+  height: 100%;
+  transition: width var(--dur-base) var(--ease);
+}
+
+.segment[data-pillar='training'] {
+  background: var(--text);
+}
+
+.segment[data-pillar='weightManagement'] {
+  background: var(--mark);
+}
+
+.segment[data-pillar='rest'] {
+  background: var(--mark-alt);
+}
+
+.segment[data-pillar='life'] {
+  background: var(--meter);
+}
+
+.tail {
+  width: var(--segment-width, 0%);
+  height: 100%;
+  background: repeating-linear-gradient(
+    45deg,
+    var(--hairline),
+    var(--hairline) 3px,
+    transparent 3px,
+    transparent 8px
+  );
+}
+
+/* Dividers sit on top of the track, one per boundary between segments (and a
+ * final one into the tail, when there is a tail to divide from). A generous
+ * hit target — the visible line is 2px, but the draggable/focusable area is
+ * the full 44px touch target centred on it (§15.9's mobile floor). */
+.divider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--divider-pos, 0%);
+  width: 44px;
+  margin-left: -22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+.divider::before {
+  content: '';
+  width: 2px;
+  height: 100%;
+  background: var(--ground);
+  opacity: 0.6;
+}
+
+.divider[data-dragging='true']::before {
+  opacity: 1;
+  width: 3px;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-4);
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+.legendSwatch {
+  width: 10px;
+  height: 10px;
+  flex: none;
+  border-radius: 1px;
+}
+
+.legendSwatch[data-pillar='training'] {
+  background: var(--text);
+}
+
+.legendSwatch[data-pillar='weightManagement'] {
+  background: var(--mark);
+}
+
+.legendSwatch[data-pillar='rest'] {
+  background: var(--mark-alt);
+}
+
+.legendSwatch[data-pillar='life'] {
+  background: var(--meter);
+}
+
+.tailSwatch {
+  border: 1px solid var(--hairline);
+  background: repeating-linear-gradient(
+    45deg,
+    var(--hairline),
+    var(--hairline) 2px,
+    transparent 2px,
+    transparent 5px
+  );
+}
+
+.legendLabel {
+  font-size: var(--t-1);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text-soft);
+}
+
+.legendValue {
+  font-family: var(--font-mono);
+  font-size: var(--t-2);
+  font-variant-numeric: tabular-nums lining-nums;
+  font-feature-settings: 'tnum' 1, 'lnum' 1;
+  color: var(--text);
+  min-width: 2ch;
+  text-align: right;
+}

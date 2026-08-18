@@ -5,7 +5,9 @@
 // replaced the Loop 3.5 stub Origin with the real §9.3 skip path: an
 // RNG-rolled Origin through the same buildOriginFromChoices fold the
 // amateur wrapper uses, so this entry point and #/chargen's are identical
-// from startCareer's point of view.
+// from startCareer's point of view. Loop 6.7 rebuilds the hub on the
+// component kit — Sheet/FormRow for the filed readings, Stamp for the
+// retirement verdict.
 
 import { useState } from 'preact/hooks';
 import { mulberry32, seedFromString, simulateFight } from '../../engine';
@@ -19,8 +21,12 @@ import { buildDailySetup } from '../../career/daily';
 import { sponsorPurseMultiplier } from '../../career/life';
 import { classifyCut, initialCutProgress } from '../../career/weightcut';
 import { useCageStore } from '../../state/store';
-import { Screen } from '../components/Screen';
+import { Button } from '../components/Button';
 import { FighterIdentity } from '../components/FighterIdentity';
+import { FormRow } from '../components/FormRow';
+import { Screen } from '../components/Screen';
+import { Sheet } from '../components/Sheet';
+import { Stamp } from '../components/Stamp';
 
 // Local calendar date (not UTC) so "today" matches the player's own clock —
 // DESIGN.md §11's daily challenge is meant to change at midnight for them,
@@ -86,18 +92,20 @@ export function CareerScreen() {
   if (!career.player) {
     return (
       <Screen register="file" id="career-screen" title="CAGE">
-        <p>No active career.</p>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <a href="#/chargen">
-            <button type="button">Create your fighter</button>
-          </a>
-          <button type="button" onClick={skipToRandomProspect}>
-            Skip: random prospect
-          </button>
-          <button type="button" onClick={startTodaysProspect}>
-            Today's prospect
-          </button>
-        </div>
+        <Sheet>
+          <p>No active career.</p>
+          <div style={{ display: 'flex', gap: 'var(--sp-3)', flexWrap: 'wrap', marginTop: 'var(--sp-3)' }}>
+            <a href="#/chargen">
+              <Button variant="primary">Create your fighter</Button>
+            </a>
+            <Button variant="ghost" onClick={skipToRandomProspect}>
+              Skip: random prospect
+            </Button>
+            <Button variant="ghost" onClick={startTodaysProspect}>
+              Today's prospect
+            </Button>
+          </div>
+        </Sheet>
       </Screen>
     );
   }
@@ -111,33 +119,48 @@ export function CareerScreen() {
           `record` onto Fighter. */}
       <FighterIdentity fighter={career.player} record={career.record} corner="red" />
 
-      <p>
-        Week {career.week} · Ranking {career.ranking === null ? 'Unranked' : `#${career.ranking}`}
-      </p>
-      <p>
-        Purse ${career.purse.toLocaleString('en-US')} · Hype {Math.round(career.hype)}
-      </p>
-      <p>
-        Cut discipline {Math.round(career.weightCutProgress)}/100 — would go in{' '}
-        <strong>{classifyCut(career.weightCutProgress, balance)}</strong>
-      </p>
+      <Sheet title="Standing" caption={`Week ${career.week}`}>
+        <FormRow label="Ranking" value={career.ranking === null ? 'Unranked' : `#${career.ranking}`} />
+        <FormRow label="Purse" value={`$${career.purse.toLocaleString('en-US')}`} />
+        <FormRow label="Hype" value={Math.round(career.hype)} />
+        <FormRow
+          label="Cut discipline"
+          value={`${Math.round(career.weightCutProgress)}/100`}
+        />
+        <FormRow label="Would go in" value={classifyCut(career.weightCutProgress, balance)} prose />
+      </Sheet>
 
       {career.retired ? (
-        <p>
-          <strong>Career over.</strong> <a href="#/card">View career card</a>
-        </p>
+        <Sheet>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--sp-4)', flexWrap: 'wrap' }}>
+            <Stamp>Career over</Stamp>
+            <a href="#/card">
+              <Button variant="primary">View career card</Button>
+            </a>
+          </div>
+        </Sheet>
       ) : (
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <a href="#/camp">
-            <button type="button">Camp</button>
-          </a>
-          <button type="button" onClick={findFightAndResolve} disabled={totalFights >= balance.maxCareerFights}>
-            Find opponent &amp; fight
-          </button>
-        </div>
+        <Sheet>
+          <div style={{ display: 'flex', gap: 'var(--sp-3)', flexWrap: 'wrap' }}>
+            <a href="#/camp">
+              <Button variant="primary">Camp</Button>
+            </a>
+            <Button
+              variant="ghost"
+              onClick={findFightAndResolve}
+              disabled={totalFights >= balance.maxCareerFights}
+            >
+              Find opponent &amp; fight
+            </Button>
+          </div>
+        </Sheet>
       )}
 
-      {lastFight && <p>{lastFight}</p>}
+      {lastFight && (
+        <Sheet variant="carbon">
+          <p>{lastFight}</p>
+        </Sheet>
+      )}
     </Screen>
   );
 }
