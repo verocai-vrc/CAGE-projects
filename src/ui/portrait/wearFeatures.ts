@@ -51,13 +51,29 @@ const SWELLING: WearSymbol[] = [
   { id: 'wr-swell-2', d: 'M39.5 32.5a4.2 3.2 0 1 0 0 6.4 4.2 3.2 0 1 0 0-6.4z' },
 ];
 
-// --- weathering (1-3): a light texture across the cheek/jaw plane, not tied
-// to any single feature slot — the visual register a face gains just from
-// career length, independent of any specific fight's result.
+// --- weathering (1-3): the lines a face gains from career length alone,
+// independent of any specific fight's result. Drawn where a face actually
+// creases — crow's feet at the outer eye corners first, then a second pair
+// above them, then the nasolabial folds running from the nose past the mouth.
+//
+// NOT horizontal dashes across the mid-cheek: that was the first pass, and a
+// row of parallel ticks either side of the nose reads as whiskers, not age.
+// Creases follow the muscles that make them, so these run diagonally away from
+// the features they hang off.
 const WEATHERING: WearSymbol[] = [
-  { id: 'wr-weather-1', d: 'M22 42h4M40 42h4', strokeWidth: 0.6 },
-  { id: 'wr-weather-2', d: 'M21 40h5M39 40h5M22 44h4M40 44h4', strokeWidth: 0.6 },
-  { id: 'wr-weather-3', d: 'M20 38h6M40 38h6M21 41h5M39 41h5M22 44h4M40 44h4', strokeWidth: 0.6 },
+  { id: 'wr-weather-1', d: 'M22.6 36.2l-1.6 1.8M41.4 36.2l1.6 1.8', strokeWidth: 0.7 },
+  {
+    id: 'wr-weather-2',
+    d: 'M22.6 36.2l-1.6 1.8M41.4 36.2l1.6 1.8M22.2 33.6l-1.8 1M41.8 33.6l1.8 1',
+    strokeWidth: 0.7,
+  },
+  {
+    id: 'wr-weather-3',
+    d:
+      'M22.6 36.2l-1.6 1.8M41.4 36.2l1.6 1.8M22.2 33.6l-1.8 1M41.8 33.6l1.8 1' +
+      'M28.6 40.8q-1.6 2.6-1.2 5M35.4 40.8q1.6 2.6 1.2 5',
+    strokeWidth: 0.7,
+  },
 ];
 
 export const WEAR_LAYERS = {

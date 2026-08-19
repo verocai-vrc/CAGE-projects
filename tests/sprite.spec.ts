@@ -139,35 +139,102 @@ describe('inline SVG total (§15.9: 14KB for faces + flags + plates)', () => {
   /** The two dictionary-driven families are not literal markup in their source —
    *  FaceSprite/WearSprite template one <symbol> per entry. Measure what those
    *  templates actually emit, so the number is the shipped defs block rather
-   *  than the authoring format around it. */
-  async function dictionaryMarkupBytes(
+   *  than the authoring format around it.
+   *
+   *  Each treatment is priced at the wrapper it ACTUALLY emits rather than at the
+   *  widest one in the file. Charging every symbol the stroked wrapper's 88 bytes
+   *  overstated the fill and silhouette layers by ~2.7x, and the closing </symbol>
+   *  was not counted at all — an error in the safe direction on one side and the
+   *  unsafe direction on the other. The three constants below are asserted against
+   *  the components' own source in the test that follows, so a change to a wrapper
+   *  cannot silently invalidate the arithmetic here. */
+  const WRAPPER = {
+    // `<path d="…"/>` — fill and stroke both inherited from the <use> site.
+    silhouette: '<path d=""/>'.length,
+    // `<path d="…" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/>`
+    stroke: '<path d="" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/>'.length,
+    // `<path d="…" fill="currentColor"/>`
+    fill: '<path d="" fill="currentColor"/>'.length,
+    // WearSprite adds an opacity to both of its branches.
+    wearStroke:
+      '<path d="" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none" opacity="0.7"/>'
+        .length,
+    wearFill: '<path d="" fill="currentColor" opacity="0.55"/>'.length,
+  };
+
+  function symbolBytes(id: string, d: string, wrapper: number): number {
+    return `<symbol id="${id}" viewBox="0 0 64 64">`.length + d.length + wrapper + '</symbol>'.length;
+  }
+
+  function dictionaryMarkupBytes(
     layers: Record<string, readonly { id: string; d?: string }[]>,
-    perSymbolOverhead: number,
-  ): Promise<number> {
+    wrapperFor: (slot: string) => number,
+  ): number {
     let total = 0;
-    for (const symbols of Object.values(layers)) {
+    for (const [slot, symbols] of Object.entries(layers)) {
       for (const { id, d } of symbols) {
         if (!d) continue;
-        total += `<symbol id="${id}" viewBox="0 0 64 64">`.length + d.length + perSymbolOverhead;
+        total += symbolBytes(id, d, wrapperFor(slot));
       }
     }
     return total;
   }
 
-  it('keeps faces + flags + plates + wear under 14KB of shipped markup', async () => {
-    const { FEATURE_LAYERS } = await import('../src/ui/portrait/features');
-    const { WEAR_LAYERS } = await import('../src/ui/portrait/wearFeatures');
+  /** What FaceSprite emits for the face dictionary, including the shared
+   *  ears/neck/shoulders frame — which is a real symbol in the defs block even
+   *  though it is not a FaceCode slot, and so has to be counted. */
+  async function faceBytes(): Promise<number> {
+    const { FACE_FRAME, FEATURE_LAYERS } = await import('../src/ui/portrait/features');
+    const STROKE_SLOTS = new Set(['brow', 'eyes', 'nose', 'mouth']);
+    const wrapperFor = (slot: string) =>
+      slot === 'head' ? WRAPPER.silhouette : STROKE_SLOTS.has(slot) ? WRAPPER.stroke : WRAPPER.fill;
+    return (
+      symbolBytes(FACE_FRAME.id, FACE_FRAME.d, WRAPPER.silhouette) +
+      dictionaryMarkupBytes(FEATURE_LAYERS, wrapperFor)
+    );
+  }
 
+  async function wearBytes(): Promise<number> {
+    const { WEAR_LAYERS } = await import('../src/ui/portrait/wearFeatures');
+    const FILLED = new Set(['cauliflowerEar', 'swelling']);
+    return dictionaryMarkupBytes(WEAR_LAYERS, (slot) =>
+      FILLED.has(slot) ? WRAPPER.wearFill : WRAPPER.wearStroke,
+    );
+  }
+
+  it('prices each treatment at the wrapper its component actually emits', () => {
+    // The arithmetic above is only honest while these are the wrappers in the
+    // source. If a treatment gains or loses an attribute, this fails here rather
+    // than quietly shifting the budget by a few hundred bytes.
+    const FACE_SPRITE = readFileSync(
+      fileURLToPath(new URL('../src/ui/portrait/FaceSprite.tsx', import.meta.url)),
+      'utf-8',
+    );
+    const WEAR_SPRITE = readFileSync(
+      fileURLToPath(new URL('../src/ui/portrait/WearSprite.tsx', import.meta.url)),
+      'utf-8',
+    );
+
+    // The silhouette treatment's whole point is that it sets neither fill nor
+    // stroke, so CSS at the <use> site can drive both.
+    expect(FACE_SPRITE).toContain('<path d={d} />');
+    for (const source of [FACE_SPRITE, WEAR_SPRITE]) {
+      expect(source).toContain('stroke="currentColor"');
+      expect(source).toContain('stroke-linecap="round"');
+      expect(source).toContain('fill="currentColor"');
+    }
+    expect(WEAR_SPRITE).toContain('opacity="0.55"');
+    expect(WEAR_SPRITE).toContain('opacity="0.7"');
+  });
+
+  it('keeps faces + flags + plates + wear under 14KB of shipped markup', async () => {
     const families = {
       // Flags and plates are literal JSX; the two tests above hold each to its
       // own sub-budget, and this reads the same markup.
       flags: markupBytes(SPRITE, '<svg class=', '</svg>'),
       plates: markupBytes(PLATE_SPRITE, '<symbol', '</symbol>'),
-      // `<path d="…" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/></symbol>`
-      // is the widest wrapper FaceSprite emits, at 88 chars around the `d` payload.
-      faces: await dictionaryMarkupBytes(FEATURE_LAYERS, 88),
-      // WearSprite's stroked branch is the wider of its two, at 106 chars.
-      wear: await dictionaryMarkupBytes(WEAR_LAYERS, 106),
+      faces: await faceBytes(),
+      wear: await wearBytes(),
     };
     const total = Object.values(families).reduce((a, b) => a + b, 0);
     // Logged so a future loop reads the real slack rather than re-deriving it.
@@ -187,13 +254,10 @@ describe('inline SVG total (§15.9: 14KB for faces + flags + plates)', () => {
     // estimate. This test pins the derivation to real numbers so Loop 7.7 sizes
     // its extension (build/marks/gear, wider hair ranges) against the space that
     // exists rather than against a figure derived from ceilings.
-    const { FEATURE_LAYERS } = await import('../src/ui/portrait/features');
-    const { WEAR_LAYERS } = await import('../src/ui/portrait/wearFeatures');
-
     const flags = markupBytes(SPRITE, '<svg class=', '</svg>');
     const plates = markupBytes(PLATE_SPRITE, '<symbol', '</symbol>');
-    const faces = await dictionaryMarkupBytes(FEATURE_LAYERS, 88);
-    const wear = await dictionaryMarkupBytes(WEAR_LAYERS, 106);
+    const faces = await faceBytes();
+    const wear = await wearBytes();
     const headroom = 14 * 1024 - (flags + plates + faces + wear);
 
 

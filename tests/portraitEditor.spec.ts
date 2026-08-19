@@ -14,6 +14,7 @@ import { startCareer } from '../src/career/progression';
 import { loadCareer, saveCareerImmediate } from '../src/state/persist';
 import { amateurMoments } from '../src/content';
 import { faceFromSeed, parseFaceCode, serializeFaceCode, SLOT_COUNTS, SLOT_ORDER } from '../src/ui/portrait/faceCode';
+import { FEATURE_LABELS } from '../src/ui/portrait/features';
 import { mulberry32 } from '../src/engine/rng';
 
 function makeMemoryStorage(): Storage {
@@ -67,6 +68,30 @@ describe('PortraitEditor cycling', () => {
       // A full lap (count steps) returns to the start.
       expect(value).toBe((count * 2) % count);
     }
+  });
+});
+
+describe('the editor names every variant, and names none of them with a digit', () => {
+  // §9.1's no-numbers rule is enforced end-to-end by the run-cage driver, which
+  // reads the chargen step's textContent and fails on any digit. That check found
+  // a real regression once: a positional fallback ("option 3 of 6") supplying the
+  // accessible name for the two swatch slots, which is invisible on screen and so
+  // survives every visual review. These two tests put the same rule where it can
+  // fail in a second rather than in a full playthrough.
+
+  it('names exactly as many variants as each slot has', () => {
+    for (const slot of SLOT_ORDER) {
+      expect(FEATURE_LABELS[slot]).toHaveLength(SLOT_COUNTS[slot]);
+    }
+  });
+
+  it('uses no digit in any variant name, including the tone slots', () => {
+    // The tone slots matter most here: they render as a colour swatch, so their
+    // name reaches the DOM only as screen-reader text.
+    const offenders = SLOT_ORDER.flatMap((slot) =>
+      FEATURE_LABELS[slot].filter((name) => /\d/.test(name)).map((name) => `${slot}: ${name}`),
+    );
+    expect(offenders).toEqual([]);
   });
 });
 

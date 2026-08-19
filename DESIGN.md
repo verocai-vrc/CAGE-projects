@@ -562,7 +562,13 @@ Stored on `Fighter` as `face: string`, alongside `nationality` and `stance` — 
 
 **Rendering is `<symbol>` + `<use>`.** One hidden `<svg>` defs block mounts once at app root holding every feature path; each `<Portrait>` is ~9 `<use>` elements referencing shared geometry. This is §2's "reuse DOM nodes" rule applied to art: a slate of six opponents costs six times nine `<use>` nodes, not six times nine path definitions.
 
+**One silhouette, filled and stroked in a single element.** `head` owns the whole outline — cranium, cheek, jaw, chin — and renders as one `<use>` whose symbol sets neither `fill` nor `stroke`, so CSS at the use site supplies skin inside and linework around. `skin` therefore draws no geometry at all and is a tone slot exactly like `hairColor`. The alternative — a filled skin shape under a separately-chosen outline shape — lets the two disagree about where the jaw is, and a square fill under a rounded outline is what made the first build's faces read as buckets rather than heads. A shared `face-frame` symbol (ears, neck, shoulders) draws beneath the silhouette; every head variant reaches the same maximum width at the temples so one frame serves all five.
+
+**Linework is keyed to the skin tone, not to the register.** Contrast against a fill is `(Llighter + 0.05) / (Ldarker + 0.05)`, and the 0.05 floor dominates at the dark end: a single near-black ink measures **1.2:1** on the darkest tone, which loses brow, eyes, nose and mouth and closes the silhouette into a blob. `SKIN_LINES` gives each tone its own line colour — the two darkest take a warm *lighter* line, the rest a darker one — holding every face between 2.3:1 and 3.75:1. The crossover is deliberate; dropping the dark end of the ramp to suit one ink was never the trade to make. These are absolute colours rather than `--text`, which makes a face the one element in §15.2 whose palette belongs to the subject instead of to the surface it is printed on.
+
 **Zero raster assets.** A 512px PNG costs ~1MB of decoded RAM regardless of its file size; a procedural roster cannot be pre-illustrated anyway. CI enforces that no `.png`/`.jpg`/`.webp` ships outside the favicon.
+
+**The editor names every variant, and names none of them with a digit.** §9.1's no-numbers rule is enforced against the chargen step's whole `textContent`, screen-reader text included, so a positional accessible name ("option 3 of 6") trips it while remaining invisible to any visual review. Each slot's variants carry real names (`FEATURE_LABELS`) and the two tone slots render as a colour swatch with that name as their accessible label. The skin ramp is named for position on a lightness scale rather than with evocative words.
 
 ### 15.5 Flags
 

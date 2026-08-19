@@ -19,17 +19,26 @@
   display: block;
   width: 100%;
   height: 100%;
+  /* Ink for the linework slots (brow/eyes/nose/mouth) and for wear, which draws
+   * in currentColor on top of them. This is the face's OWN line colour, keyed to
+   * its skin tone (features.ts SKIN_LINES), not the register's --text: a single
+   * ink measures 1.2:1 against the darkest tone, which loses every feature and
+   * closes the silhouette into a blob. --text is the fallback for a portrait
+   * rendered without a tone set. */
+  color: var(--skin-line, var(--text));
 }
 
-/* Default ink for the linework slots (brow/eyes/nose/mouth) and the head/skin
- * outline where no per-layer tone is set — the register's text color, so a
- * portrait never needs its own palette to read against paper or arena black. */
-.svg {
-  color: var(--text);
-}
-
-.skin {
-  color: var(--portrait-skin, var(--text-soft));
+/* The silhouette layers (ears/neck/shoulders, then the skull) carry no fill or
+ * stroke attribute of their own. Both properties are inherited in SVG, so setting
+ * them here reaches the paths inside the <use> shadow tree — which is what lets a
+ * single element be skin on the inside and ink on the outside. Splitting that into
+ * a fill shape plus an outline shape is what let the old portraits show a square
+ * jaw poking out from under a rounded one. */
+.silhouette {
+  fill: var(--skin, var(--text-soft));
+  stroke: var(--skin-line, var(--text));
+  stroke-width: 1.1;
+  stroke-linejoin: round;
 }
 
 .hair {

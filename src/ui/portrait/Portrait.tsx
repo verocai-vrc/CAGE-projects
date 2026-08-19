@@ -5,18 +5,28 @@
 // base face, never persisted, always passed in freshly computed by the caller
 // (see ui/portrait/wear.ts).
 //
-// Layer order is fixed and matters: skin sits under head (the outline reads
-// against the fill), hair sits over head, facial hair and the linework features
-// sit on top. Most wear draws above everything — a scar or a broken nose reads
-// on top of the feature it's marking. swelling is the one exception: it's a
-// filled halo around the eye, not a mark on it, so it draws right after
-// skin/head and BEFORE the eyes/brow linework — otherwise an opaque fill on
-// top would cover the eye it's supposed to surround, reading as a blotch
-// instead of puffiness. `hairColor` and `skin`'s own tone are not symbols —
-// they recolor their layer via a CSS custom property.
+// Layer order is fixed and matters:
+//
+//   frame       ears, neck, shoulders — UNDER the skull, so the jaw overlaps the
+//               neck and each ear shows only the crescent outside the silhouette
+//   head        the whole silhouette, filled with the skin tone and stroked with
+//               ink in one element (see FaceSprite's SILHOUETTE treatment)
+//   swelling    the one wear layer that draws early: it is a filled halo AROUND
+//               the eye, not a mark on it, so drawing it on top would cover the
+//               eye it is meant to surround and read as a blotch
+//   linework    brow, eyes, nose
+//   facialHair  under the mouth — a beard that covers the mouth line erases a
+//               feature the player chose
+//   mouth
+//   hair        over the skull, in the hair colour facial hair also uses
+//   wear        everything else draws last: a scar or a broken nose reads on top
+//               of the feature it is marking
+//
+// `skin` and `hairColor` are not symbols — they recolor their layer via a CSS
+// custom property, which is why one dictionary serves every tone combination.
 
 import { parseFaceCode, type FaceCode } from './faceCode';
-import { HAIR_COLORS, SKIN_TONES } from './features';
+import { HAIR_COLORS, SKIN_LINES, SKIN_TONES } from './features';
 import { NO_WEAR, type WearLayers } from './wear';
 import styles from './Portrait.module.css';
 
@@ -36,22 +46,26 @@ export function Portrait({ face, size, wear = NO_WEAR }: PortraitProps) {
 
   return (
     <div class={styles.root} style={size ? `--portrait-size:${size}` : undefined}>
-      <svg class={styles.svg} viewBox="0 0 64 64">
-        <g class={styles.skin} style={`color:${SKIN_TONES[code.skin]}`}>
-          <use href={`#skin-${code.skin}`} />
+      <svg
+        class={styles.svg}
+        viewBox="0 0 64 64"
+        style={`--skin:${SKIN_TONES[code.skin]};--skin-line:${SKIN_LINES[code.skin]}`}
+      >
+        <use class={styles.silhouette} href="#face-frame" />
+        <use class={styles.silhouette} href={`#head-${code.head}`} />
+        {wear.swelling > 0 && <use href={`#wr-swell-${wear.swelling}`} />}
+        <use href={`#brow-${code.brow}`} />
+        <use href={`#eyes-${code.eyes}`} />
+        <use href={`#nose-${code.nose}`} />
+        <g class={styles.hair} style={`color:${HAIR_COLORS[code.hairColor]}`}>
+          {code.facialHair > 0 && <use href={`#facialhair-${code.facialHair}`} />}
         </g>
-        <use href={`#head-${code.head}`} />
+        <use href={`#mouth-${code.mouth}`} />
         {code.hair > 0 && (
           <g class={styles.hair} style={`color:${HAIR_COLORS[code.hairColor]}`}>
             <use href={`#hair-${code.hair}`} />
           </g>
         )}
-        {wear.swelling > 0 && <use href={`#wr-swell-${wear.swelling}`} />}
-        <use href={`#brow-${code.brow}`} />
-        <use href={`#eyes-${code.eyes}`} />
-        <use href={`#nose-${code.nose}`} />
-        <use href={`#mouth-${code.mouth}`} />
-        {code.facialHair > 0 && <use href={`#facialhair-${code.facialHair}`} />}
         {wear.cauliflowerEar > 0 && <use href={`#wr-ear-${wear.cauliflowerEar}`} />}
         {wear.browScarring > 0 && <use href={`#wr-brow-${wear.browScarring}`} />}
         {wear.noseBreak && <use href="#wr-nose-break" />}

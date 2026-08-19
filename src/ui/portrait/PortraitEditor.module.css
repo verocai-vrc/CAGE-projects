@@ -1,51 +1,139 @@
-/* PortraitEditor — Loop 6.5: step 0 of the amateur wrapper ("who's in the
- * mirror"). A filed form, same as every other chargen step (§15.1) — per-slot
- * cyclers stacked as FormRow controls, a large preview, and a randomize/confirm
- * pair. No statline anywhere in this file (§9.1's no-numbers rule extends here). */
-
-.root {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-5);
-}
-
-.top {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-5);
-}
-
-.preview {
-  --portrait-size: 96px;
-  flex: none;
-}
+/* PortraitEditor — step 0 of the amateur wrapper ("who's in the mirror").
+ *
+ * A licence application with the photograph affixed: the portrait is the
+ * largest thing on the page and the nine slots are the form beside it. Same
+ * filed-document language as every other chargen step (§15.1) — ruled rows, the
+ * small tracked label voice, square surfaces. No statline anywhere in this file
+ * (§9.1's no-numbers rule extends here). */
 
 .hint {
+  max-width: 60ch;
+  margin-bottom: var(--sp-5);
   color: var(--text-soft);
   font-size: var(--t-2);
 }
 
-.slots {
+.layout {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: var(--sp-3) var(--sp-4);
+  /* max-content, not auto: an auto track absorbs the grid's free space, which
+   * pushed the photograph's column out to twice the photograph's width and left
+   * the form floating off to the right of it. */
+  grid-template-columns: max-content 1fr;
+  gap: var(--sp-5) var(--sp-6);
+  align-items: start;
+}
+
+/* --- the photograph ------------------------------------------------------- */
+
+.photo {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--sp-2);
+  /* Drives BOTH axes of <Portrait>, which is what keeps it square. A percentage
+   * would resolve against an auto-height parent and collapse. */
+  --portrait-size: clamp(140px, 30vw, 220px);
+  width: var(--portrait-size);
+}
+
+.photoCaption {
+  padding-bottom: var(--sp-2);
+  border-bottom: 1px solid var(--hairline);
+  margin-bottom: var(--sp-2);
+  color: var(--text-soft);
+  font-family: var(--font-mono);
+  font-size: var(--t-1);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  text-align: center;
+}
+
+/* --- the form ------------------------------------------------------------- */
+
+/* Capped so a ruled row stays a form field. Left to fill a 960px screen, the row
+ * strands its label and its cycler at opposite ends of the page and the pairing
+ * stops reading — the leader line has to be a leader, not a corridor. */
+.fields {
+  display: flex;
+  flex-direction: column;
+  max-width: 30rem;
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  border-bottom: 1px solid var(--hairline);
+}
+
+.field:last-child {
+  border-bottom: none;
+}
+
+.fieldLabel {
+  font-size: var(--t-1);
+  letter-spacing: var(--track-label);
+  text-transform: uppercase;
+  color: var(--text-soft);
 }
 
 .cycler {
   display: flex;
   align-items: center;
-  gap: var(--sp-2);
+  gap: var(--sp-1);
 }
 
-.cyclerValue {
-  flex: 1;
-  text-align: center;
-  font-family: var(--font-mono);
-  letter-spacing: 1px;
-  color: var(--text-soft);
+/* Fixed width so the arrows hold still while the player cycles. A value box that
+ * resizes to its content walks the buttons left and right under the cursor,
+ * which turns "click next a few times" into a moving target. */
+.fieldValue {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 6.5rem;
+  font-size: var(--t-2);
+  color: var(--text);
+}
+
+/* The two tone slots show the colour rather than a name (features.ts
+ * FEATURE_LABELS). Square, like every other surface in §15.2. */
+.swatch {
+  width: 2.25rem;
+  height: 1.25rem;
+  border: 1px solid var(--hairline);
+  border-radius: var(--radius-surface);
 }
 
 .actions {
-  display: flex;
-  gap: var(--sp-3);
+  margin-top: var(--sp-5);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* One column once the form and the photograph stop fitting side by side, and a
+ * stacked field once the label and its cycler stop fitting on one line. */
+@media (max-width: 640px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .field {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    padding-bottom: var(--sp-2);
+  }
+
+  .fieldValue {
+    flex: 1;
+  }
 }
