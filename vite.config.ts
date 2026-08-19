@@ -3,7 +3,8 @@ import { defineConfig } from 'vite'
 import preact from '@preact/preset-vite'
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ command }) => ({
+  base: command === 'build' ? '/CAGE-projects/' : '/',
   plugins: [preact()],
   test: {
     // zustand's default export is its React hook adapter, aliased to
@@ -12,4 +13,4 @@ export default defineConfig({
     // alias actually applies.
     server: { deps: { inline: ['zustand'] } },
   },
-})
+}))
