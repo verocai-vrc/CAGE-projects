@@ -111,6 +111,8 @@ interface HudState {
   healthB: number;
   staminaA: number;
   staminaB: number;
+  /** Hurt *in the round currently on screen* — cleared at the round break.
+   *  Not "has ever been hurt": see deriveHudState. */
   rockedA: boolean;
   rockedB: boolean;
   roundsScored: number; // count of revealed roundEnd events
@@ -119,7 +121,7 @@ interface HudState {
 // Pure derivation from the revealed slice of the event log — the HUD never
 // tracks its own running totals, so it can never drift from what's on
 // screen in the play-by-play (DESIGN.md §2: UI replays the event log).
-function deriveHudState(events: FightEvent[], revealCount: number, aId: string, bId: string): HudState {
+export function deriveHudState(events: FightEvent[], revealCount: number, aId: string, bId: string): HudState {
   const state: HudState = {
     healthA: 100,
     healthB: 100,
@@ -142,10 +144,27 @@ function deriveHudState(events: FightEvent[], revealCount: number, aId: string, 
       state.staminaA = event.staminaA;
       state.staminaB = event.staminaB;
       state.roundsScored += 1;
+      // Loop 7.2: the round break is the recovery. Before the damage re-tune
+      // `knockdown` never fired, so nobody noticed that "Hurt" latched on for
+      // the rest of the bout once it did — a fighter rocked in round 1 read as
+      // hurt while comfortably winning round 3. The lasting cost of that
+      // knockdown is carried by the health meter, which does not recover; the
+      // eyebrow is the transient "they're hurt right now".
+      state.rockedA = false;
+      state.rockedB = false;
     }
   }
 
   return state;
+}
+
+// §15.2's amber is "rocked, gassed, injured". Read off the health level rather
+// than off the transient `rocked` flag, so a fighter who took a knockdown in
+// round 1 and is still at 30 health in round 3 keeps an amber bar after the
+// "Hurt" eyebrow has cleared. The threshold is the same one the engine crosses
+// to emit `knockdown`, so the bar turns amber on exactly that event.
+export function healthTone(health: number): 'default' | 'warn' {
+  return health <= balance.knockdownHealthThreshold ? 'warn' : 'default';
 }
 
 const emptyOverrides: MomentOverrides = {};
@@ -320,14 +339,14 @@ export function FightScreen() {
         <div class="corner-red">
           <Plate eyebrow={hud.rockedA ? 'Hurt' : 'Red corner'} corner>
             <FighterIdentity fighter={fighterA} />
-            <Meter label="Health" value={hud.healthA} tone={hud.rockedA ? 'warn' : 'default'} />
+            <Meter label="Health" value={hud.healthA} tone={healthTone(hud.healthA)} />
             <Meter label="Stamina" value={hud.staminaA} />
           </Plate>
         </div>
         <div class="corner-blue">
           <Plate eyebrow={hud.rockedB ? 'Hurt' : 'Blue corner'} corner>
             <FighterIdentity fighter={fighterB} />
-            <Meter label="Health" value={hud.healthB} tone={hud.rockedB ? 'warn' : 'default'} />
+            <Meter label="Health" value={hud.healthB} tone={healthTone(hud.healthB)} />
             <Meter label="Stamina" value={hud.staminaB} />
           </Plate>
         </div>

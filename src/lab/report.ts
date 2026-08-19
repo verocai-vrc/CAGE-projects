@@ -9,6 +9,24 @@
 //     remainder go to a judges' decision or draw.
 //   - Neither KO/TKO nor SUB should be ~0% or ~100% of all finishes — both
 //     finish routes need to be live outcomes, not decorative.
+//
+// Loop 7.2 re-tune (DESIGN.md §16.1), measured at N=3000 per ordered pairing:
+//
+//                        before            after
+//   baseStrikeDamage     0.3               2.8
+//   significantStrikeChance 0.016          0.010
+//   finish rate          70.8%             68.4%
+//   KO / TKO / SUB       52.4 / 0.0 / 18.4  37.7 / 12.3 / 18.4
+//   decision / draw      27.8 / 1.4        30.1 / 1.4
+//   avg end round        2.34              2.33
+//   field avg (str/wr/all) 50.6/46.0/51.3  50.4/46.1/51.4
+//   wrestler vs striker  55.0%             55.0%
+//
+// `kFinish` was measured across 4/6/9/14 at the new damage and moved the
+// distribution by under a point on every line — once damage is real, a
+// significant strike arrives with the power-vs-effectiveChin delta already far
+// from zero, so the slope of the logistic there is not the binding constraint.
+// It stays at 6 rather than being changed for the sake of the sweep.
 
 import type { SimFightRecord } from './simulate';
 import { simulateStaminaCurve } from '../engine/round';

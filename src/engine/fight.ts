@@ -257,6 +257,22 @@ function applyStrike(
   def.health = Math.max(0, def.health - damage);
   events.push({ t: 'strike', by: atk.fighter.id, kind, landed: true, damage, round });
 
+  // `rocked` is a latch, and deliberately never cleared: it makes `knockdown`
+  // fire on the downward CROSSING of knockdownHealthThreshold rather than on
+  // being below it. Health is monotonically non-increasing within a bout — no
+  // path adds health back — so the crossing happens at most once per fighter,
+  // and the latch is what encodes that.
+  //
+  // Loop 7.2 considered clearing it at `roundEnd` (the recovery rule the loop
+  // asks to be decided). It is wrong here: with health never recovering, a
+  // fighter who ended round 1 at 40 would re-emit `knockdown` on the first
+  // landed strike of round 2 and again in round 3, mechanically, every bout —
+  // a level check wearing a crossing's name, inflating RoundTape.knockdowns
+  // that §6.5's judges read. Recovery belongs to the *displayed* state, not the
+  // event: see deriveHudState in ui/screens/FightScreen.tsx, where the "Hurt"
+  // flag clears at the round break and the health meter carries the lasting
+  // damage. §16.6's `rocked` beat reads this event, so it stays one beat per
+  // fighter per bout — the moment they got hurt, not a per-round reminder.
   if (!def.rocked && def.health <= balance.knockdownHealthThreshold) {
     def.rocked = true;
     bumpTape(tape, attacker, 'knockdowns');
