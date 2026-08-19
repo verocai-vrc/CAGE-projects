@@ -7,6 +7,7 @@ import {
   JudgeSchema,
   LifeEventContentSchema,
   NamePoolSchema,
+  NicknameContentSchema,
 } from '../state/schema';
 import { loadContent } from './load';
 import balanceRaw from './balance.json';
@@ -20,6 +21,7 @@ import namesBrazilRaw from './names/brazil.json';
 import namesJapanRaw from './names/japan.json';
 import namesIrelandRaw from './names/ireland.json';
 import namesPolandRaw from './names/poland.json';
+import nicknamesRaw from './names/nicknames.json';
 
 export const balance = loadContent('balance.json', balanceRaw, BalanceSchema);
 export const attributeMeta = loadContent('attributes.json', attributesRaw, z.array(AttributeMetaSchema));
@@ -39,3 +41,5 @@ const namePoolFiles = [
 export const namePools = Object.freeze(
   namePoolFiles.map(({ name, raw }) => loadContent(name, raw, NamePoolSchema)),
 );
+
+export const nicknames = loadContent('names/nicknames.json', nicknamesRaw, NicknameContentSchema);

@@ -69,6 +69,7 @@ describe('resolveLifeEventChoice', () => {
   const fighter: Fighter = {
     id: 'p1',
     name: 'Test Fighter',
+    nickname: null,
     nationality: 'USA',
     face: '000000000',
     weightClass: 'lightweight',

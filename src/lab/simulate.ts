@@ -27,6 +27,7 @@ function fighterFromArchetype(id: string, archetypeId: string, weakness: string 
   return {
     id,
     name: archetype.label,
+    nickname: null,
     nationality: 'lab',
     // Never rendered as a Portrait — the lab is a headless batch runner — so a
     // fixed placeholder is correct here rather than importing ui/portrait for no

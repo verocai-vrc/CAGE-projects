@@ -23,6 +23,7 @@ export const InjurySchema = z.object({
 export const FighterSchema = z.object({
   id: z.string(),
   name: z.string(),
+  nickname: z.string().nullable(),
   nationality: z.string(),
   face: z.string(),
   weightClass: z.string(),
@@ -202,6 +203,28 @@ export const NamePoolSchema = z.object({
   weight: z.number().positive(),
   firstNames: z.array(z.string()).min(1),
   lastNames: z.array(z.string()).min(1),
+});
+
+// Loop 7.6 (§16.5): nickname pools. One entry is a word plus its base weight
+// and, optionally, the archetypes and nationalities it leans toward — an entry
+// with neither is universal. Leaning is a weight multiplier rather than a
+// filter, so a Polish striker can still draw a Brazilian-flavoured word; the
+// pools would read as five separate games otherwise.
+export const NicknamePartSchema = z.object({
+  word: z.string().min(1),
+  weight: z.number().positive(),
+  archetypes: z.array(z.string()).optional(),
+  nationalities: z.array(z.string()).optional(),
+});
+
+export const NicknameContentSchema = z.object({
+  /** Share of nicknamed fighters that get "{adjective} {noun}" rather than a
+   *  standalone. Not the assignment rate — that lives in identity.ts, because
+   *  §16.5 states it as a design rule ("roughly 65%"), not a tuning knob. */
+  twoPartChance: z.number().min(0).max(1),
+  adjectives: z.array(NicknamePartSchema).min(1),
+  nouns: z.array(NicknamePartSchema).min(1),
+  standalone: z.array(NicknamePartSchema).min(1),
 });
 
 // The amateur wrapper's 6 formative moments (DESIGN.md §9.1). statDeltas is

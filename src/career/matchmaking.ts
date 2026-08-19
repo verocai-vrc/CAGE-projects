@@ -6,6 +6,7 @@
 
 import type { RNG } from '../engine';
 import type { ArchetypeId, Attributes, Fighter, FightRecord, WeaknessId, WeightClass } from '../engine/types';
+import { nicknameFor } from './identity';
 
 export interface ArchetypeTemplate {
   id: ArchetypeId;
@@ -152,10 +153,14 @@ export function generateOpponent(
   const face = drawFace(rng);
   const weakness = drawWeakness(rng);
   const record = drawRecord(rng, options.ranking);
+  // Loop 7.6 (§16.5): drawn last, from the same stream, so the earlier draws
+  // are bit-identical to what they were before nicknames existed.
+  const nickname = nicknameFor(rng, archetype.id, namePool.nationality);
 
   return {
     id: `${options.idPrefix ?? 'opp'}-${idSuffix}`,
     name: `${firstName} ${lastName}`,
+    nickname,
     nationality: namePool.nationality,
     face,
     weightClass: options.weightClass,

@@ -35,6 +35,7 @@ function makeFighter(): Fighter {
   return {
     id: 'f1',
     name: 'Test Fighter',
+    nickname: null,
     nationality: 'fixture',
     face: '000000000',
     weightClass: 'lightweight',

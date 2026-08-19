@@ -28,8 +28,9 @@ function makeMemoryStorage(): Storage {
 const fixtureFighter: Fighter = {
   id: 'f1',
   name: 'Test Fighter',
+  nickname: 'Copper Bell',
   nationality: 'USA',
-    face: '000000000',
+  face: '000000000',
   weightClass: 'lightweight',
   stance: 'orthodox',
   attributes: {

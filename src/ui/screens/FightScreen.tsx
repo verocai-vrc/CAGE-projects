@@ -49,12 +49,14 @@ function fighterFromArchetype(
   nationality: string,
   face: string,
   record: FightRecord,
+  nickname: string | null,
 ): Fighter {
   const archetype = archetypes.find((entry) => entry.id === archetypeId);
   if (!archetype) throw new Error(`FightScreen fixture: missing archetype '${archetypeId}'`);
   return {
     id,
     name,
+    nickname,
     nationality,
     face,
     weightClass: 'lightweight',
@@ -79,11 +81,15 @@ const fighterA = fighterFromArchetype(
   'fighter-a', 'Riko Tanaka', 'striker', 'Japan',
   serializeFaceCode(faceFromSeed(fixtureFaceRng)),
   { wins: 14, losses: 3, draws: 0, noContests: 0 },
+  'Silent Lantern',
 );
 const fighterB = fighterFromArchetype(
   'fighter-b', 'Deshawn Cole', 'wrestler', 'USA',
   serializeFaceCode(faceFromSeed(fixtureFaceRng)),
   { wins: 11, losses: 5, draws: 1, noContests: 0 },
+  // Loop 7.6: ~35% of fighters have none (§16.5). The demo matchup shows both
+  // states, so any layout that assumes a nickname is always there breaks here.
+  null,
 );
 const emptyTactics: Tactics = {};
 

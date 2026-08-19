@@ -50,6 +50,12 @@ export interface FightRecord {
 export interface Fighter {
   id: string;
   name: string;
+  // Loop 7.6 (§16.5): "the mnemonic handle that survives the fight". Null for
+  // the ~35% who have none — universal nicknames devalue the nickname. Flavour
+  // only; /engine never reads it. Narration must tolerate null everywhere
+  // (§16.6's needsNickname filtering), so it is nullable rather than defaulted
+  // to the fighter's surname.
+  nickname: string | null;
   nationality: string; // drives name pool + flavor only
   face: string; // serialized FaceCode (ui/portrait) — flavor only, engine never reads it
   weightClass: WeightClass; // single class in v1 (see §12)

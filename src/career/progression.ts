@@ -7,6 +7,8 @@
 import type { RNG } from '../engine';
 import type { Fighter, FightRecord, FightResult, Injury, Origin } from '../engine/types';
 import { fighterFromOrigin } from './origin';
+import { nicknameFor } from './identity';
+import { careerRng } from './seed';
 import { initialCareerState, type CareerState } from '../state/store';
 
 export interface ProgressionBalance {
@@ -149,6 +151,16 @@ export interface StartCareerOptions {
   nationality?: string;
   weightClass?: string;
   face?: string;
+  /**
+   * Loop 7.6: omitted means "roll one from the career seed", which is what
+   * every caller does today — the ~65% assignment rate applies to the player
+   * exactly as it does to an opponent (§16.5), so a daily run gives everyone
+   * the same fighter with the same handle. Pass `null` for no nickname, or a
+   * string once there is a surface for the player to author one (the chargen
+   * names neither the fighter nor the nickname yet; see the note in
+   * career/identity.ts).
+   */
+  nickname?: string | null;
 }
 
 export function startCareer(
@@ -156,12 +168,22 @@ export function startCareer(
   seed: string,
   playerId: string,
   playerName: string,
-  { nationality = 'USA', weightClass = 'lightweight', face = '000000000' }: StartCareerOptions = {},
+  {
+    nationality = 'USA',
+    weightClass = 'lightweight',
+    face = '000000000',
+    nickname,
+  }: StartCareerOptions = {},
 ): CareerState {
+  // Its own addressable slot in the career stream (§16.2), so rolling it cannot
+  // shift the origin, the gym, or the first opponent.
+  const resolvedNickname =
+    nickname === undefined ? nicknameFor(careerRng(seed, 'origin', 1), origin.archetype, nationality) : nickname;
+
   return {
     ...initialCareerState,
     seed,
-    player: fighterFromOrigin(origin, playerId, playerName, nationality, weightClass, face),
+    player: fighterFromOrigin(origin, playerId, playerName, nationality, weightClass, face, resolvedNickname),
     origin,
     hype: Math.max(0, Math.min(100, origin.hypeModifier)),
   };

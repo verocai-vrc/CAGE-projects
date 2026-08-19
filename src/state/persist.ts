@@ -19,7 +19,9 @@ const STORAGE_KEY = 'cage:save';
 // has it in the old place, so the new FighterSchema rejects it and the old
 // CareerStateSchema field is gone — the bump makes that an intentional discard
 // rather than a schema surprise, same as the two bumps above.
-const SAVE_VERSION = 4;
+// Loop 7.6: `nickname` joins Fighter as a required (nullable) field, so a v4
+// envelope's player fails FighterSchema. Same intentional discard as above.
+const SAVE_VERSION = 5;
 const DEBOUNCE_MS = 500;
 
 interface SaveEnvelope {

@@ -31,6 +31,7 @@ function fighter(attributes: Attributes): Fighter {
   return {
     id: 'opp',
     name: 'Test Opponent',
+    nickname: null,
     nationality: 'usa',
     face: '000000000',
     weightClass: 'lightweight',

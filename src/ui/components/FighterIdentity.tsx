@@ -55,6 +55,10 @@ export function FighterIdentity({ fighter, corner, compact }: FighterIdentityPro
           <FlagChip nationality={fighter.nationality} />
           <span class={styles.name}>{fighter.name}</span>
         </div>
+        {/* Loop 7.6: absent for the ~35% who have no nickname (§16.5) — rendered
+            conditionally rather than as an empty node, so the block closes up
+            instead of leaving a gap where a handle would be. */}
+        {fighter.nickname !== null && <div class={styles.nickname}>“{fighter.nickname}”</div>}
         <div class={styles.meta}>
           <span class={styles.record}>{formatRecord(fighter.record)}</span>
           <span class={styles.archetype}>{archetypeLabel}</span>

@@ -31,6 +31,7 @@ function fighterFromArchetype(id: string, archetypeId: string): Fighter {
   return {
     id,
     name: archetype.label,
+    nickname: null,
     nationality: 'lab',
     face: '000000000',
     weightClass: 'lab',

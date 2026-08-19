@@ -18,6 +18,7 @@ function fighterFromArchetype(id: string, archetypeId: string): Fighter {
   return {
     id,
     name: id,
+    nickname: null,
     nationality: 'testland',
     face: '000000000',
     weightClass: 'lightweight',

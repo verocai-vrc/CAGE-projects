@@ -20,6 +20,7 @@ function fighter(overrides: Partial<Fighter> = {}): Fighter {
   return {
     id: 'f1',
     name: 'Test Fighter',
+    nickname: null,
     nationality: 'USA',
     face: '000000000',
     weightClass: 'lightweight',

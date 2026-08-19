@@ -33,6 +33,7 @@ function fighter(id: string, archetypeId: string, weakness: WeaknessId | null): 
   return {
     id,
     name: archetype.label,
+    nickname: null,
     nationality: 'lab',
     face: '000000000',
     weightClass: 'lab',

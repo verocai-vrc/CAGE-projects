@@ -7,8 +7,9 @@ import { initialCareerState, type CareerState } from '../src/state/store';
 const player: Fighter = {
   id: 'player-1',
   name: 'Your Fighter',
+  nickname: null,
   nationality: 'USA',
-    face: '000000000',
+  face: '000000000',
   weightClass: 'lightweight',
   stance: 'orthodox',
   attributes: {

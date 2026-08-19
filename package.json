@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "typecheck": "tsc -b --noEmit",
     "test": "vitest run",
-    "budget": "node scripts/check-budgets.mjs"
+    "budget": "node scripts/check-budgets.mjs",
+    "lint:content": "node scripts/check-content.mjs"
   },
   "dependencies": {
     "preact": "^10.29.7",

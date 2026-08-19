@@ -30,6 +30,7 @@
 
 import type { Attributes, Fighter, RNG } from '../engine';
 import { computePillars } from '../engine';
+import { nicknames } from '../content';
 
 export type DescriptorId =
   | 'pressure-striker'
@@ -160,4 +161,73 @@ export function tendenciesFor(opponent: Fighter, playerFightIQ: number, rng: RNG
   // imperfect stat. Shuffled even when everything is true, so the shape of the
   // output tells you nothing about which tier produced it.
   return shuffled(picked, rng);
+}
+
+// --- Nicknames (§16.5) ---
+//
+// "Roughly 65% of fighters get one — universal nicknames devalue the nickname."
+// The rate is a design rule rather than a tuning knob, so it lives here as a
+// named constant and not in balance.json: nothing about it is balance, and a lab
+// run would have nothing to say about it.
+//
+// The pools are deliberately mundane — Overtime, The Landlord, Copper Bell. A
+// nickname has to survive being said in a commentary line six fights later
+// (§16.6), and it has to be nobody's. §13 forbids modelling real athletes, so
+// the whole product space of {adjective} x {noun} is checked against the
+// trademark denylist in CI (scripts/check-content.mjs) rather than trusted to
+// authoring discipline — the combinations are what a human author cannot hold
+// in their head.
+export const NICKNAME_CHANCE = 0.65;
+
+const LEAN_MULTIPLIER = 3;
+
+interface NicknamePart {
+  word: string;
+  weight: number;
+  archetypes?: string[];
+  nationalities?: string[];
+}
+
+/** Base weight, tripled for each of archetype and nationality it leans toward.
+ *  A lean is a thumb on the scale, never a filter — see NicknameContentSchema. */
+function effectiveWeight(part: NicknamePart, archetype: string, nationality: string): number {
+  let weight = part.weight;
+  if (part.archetypes?.includes(archetype)) weight *= LEAN_MULTIPLIER;
+  if (part.nationalities?.includes(nationality)) weight *= LEAN_MULTIPLIER;
+  return weight;
+}
+
+function pickWeighted(
+  parts: readonly NicknamePart[],
+  archetype: string,
+  nationality: string,
+  rng: RNG,
+): string {
+  const total = parts.reduce((sum, part) => sum + effectiveWeight(part, archetype, nationality), 0);
+  let roll = rng.next() * total;
+  for (const part of parts) {
+    roll -= effectiveWeight(part, archetype, nationality);
+    if (roll <= 0) return part.word;
+  }
+  return parts[parts.length - 1].word;
+}
+
+/**
+ * A fighter's nickname, or `null` for the ~35% who do not get one (§16.5).
+ *
+ * Exactly five draws on every path, including the ~35% that return null, so the
+ * caller's stream advances by a fixed amount — the same discipline drawWeakness
+ * and drawRecord follow in matchmaking.ts. Adding a nickname must not be able to
+ * change the face or the record generated after it. That is why all three parts
+ * are drawn before either branch is taken and two of them are then discarded.
+ */
+export function nicknameFor(rng: RNG, archetype: string, nationality: string): string | null {
+  const assigned = rng.next() < NICKNAME_CHANCE;
+  const twoPart = rng.next() < nicknames.twoPartChance;
+  const adjective = pickWeighted(nicknames.adjectives, archetype, nationality, rng);
+  const noun = pickWeighted(nicknames.nouns, archetype, nationality, rng);
+  const solo = pickWeighted(nicknames.standalone, archetype, nationality, rng);
+
+  if (!assigned) return null;
+  return twoPart ? `${adjective} ${noun}` : solo;
 }

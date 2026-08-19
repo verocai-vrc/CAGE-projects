@@ -113,10 +113,12 @@ export function fighterFromOrigin(
   nationality: string,
   weightClass: string,
   face: string,
+  nickname: string | null,
 ): Fighter {
   return {
     id,
     name,
+    nickname,
     nationality,
     face,
     weightClass,

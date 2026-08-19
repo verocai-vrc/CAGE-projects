@@ -15,6 +15,10 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint
+      # Loop 7.6: DESIGN.md §13's naming guardrails, enforced as §16.9 requires.
+      # Runs before the tests because a trademark hit is a legal problem, not a
+      # test failure, and should be the first thing a red build reports.
+      - run: npm run lint:content
       - run: npm run typecheck
       - run: npm run test
       - run: npm run build

@@ -40,10 +40,12 @@ function kitFighter(
   archetype: string,
   face: string,
   record: FightRecord = { wins: 8, losses: 2, draws: 0, noContests: 0 },
+  nickname: string | null = null,
 ): Fighter {
   return {
     id: `kit-${name}`,
     name,
+    nickname,
     nationality,
     face,
     weightClass: 'lightweight',
@@ -62,9 +64,13 @@ function kitFighter(
 
 // Loop 7.4: both sides carry a record now, so the gallery shows the NC variant
 // against a plain one rather than "record present vs absent".
-const KIT_PLAYER = kitFighter('Wanderlei Nascimento', 'Brazil', 'striker', '412030201', {
-  wins: 12, losses: 3, draws: 0, noContests: 1,
-});
+// Loop 7.6: and one of the two carries a nickname, because ~35% of fighters do
+// not (§16.5) — both states have to be looked at side by side.
+const KIT_PLAYER = kitFighter(
+  'Wanderlei Nascimento', 'Brazil', 'striker', '412030201',
+  { wins: 12, losses: 3, draws: 0, noContests: 1 },
+  'Riverside Undertow',
+);
 const KIT_OPPONENT = kitFighter('Kamil Wisniewski', 'Poland', 'wrestler', '203142310', {
   wins: 19, losses: 6, draws: 1, noContests: 0,
 });
