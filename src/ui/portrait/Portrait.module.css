@@ -44,3 +44,30 @@
 .hair {
   color: var(--portrait-hair, var(--text));
 }
+
+/* Loop 7.7 (§16.4): the southpaw carriage. A horizontal flip about the head
+ * space's centre line, which squares the fighter the other way without a second
+ * set of paths. Read from Fighter.stance by the caller — never from a FaceCode
+ * slot, which could contradict the stance the same screen is printing. */
+.southpaw {
+  transform: scaleX(-1);
+}
+
+/* Loop 7.7: corner gear reads as an object rather than as part of the fighter,
+ * so it takes the ink colour at full opacity instead of the skin-keyed line. */
+.gear {
+  color: var(--skin-line, var(--text));
+  opacity: 0.9;
+}
+
+/* Loop 7.7: marks are ink ON skin — stroked so a two-character path reads as a
+ * scar rather than a hairline, and slightly transparent so they sit in the face
+ * instead of on top of it. Kept distinct from the `wr-*` wear treatment: wear is
+ * damage and draws above this. */
+.mark {
+  fill: none;
+  stroke: var(--skin-line, var(--text));
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  opacity: 0.75;
+}

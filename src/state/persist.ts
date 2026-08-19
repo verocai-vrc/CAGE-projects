@@ -21,7 +21,12 @@ const STORAGE_KEY = 'cage:save';
 // rather than a schema surprise, same as the two bumps above.
 // Loop 7.6: `nickname` joins Fighter as a required (nullable) field, so a v4
 // envelope's player fails FighterSchema. Same intentional discard as above.
-const SAVE_VERSION = 5;
+// Loop 7.7: FaceCode went 9 slots to 12, and `build` was inserted at index 1.
+// `face` is still just a string to the schema, so a v5 save would LOAD — and
+// silently decode to a different face, because every slot after `skin` has
+// shifted one place. A wrong face is worse than a discarded one: the player
+// would think the editor lied to them. Hence the bump.
+const SAVE_VERSION = 6;
 const DEBOUNCE_MS = 500;
 
 interface SaveEnvelope {

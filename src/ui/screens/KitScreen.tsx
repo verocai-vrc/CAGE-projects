@@ -67,11 +67,11 @@ function kitFighter(
 // Loop 7.6: and one of the two carries a nickname, because ~35% of fighters do
 // not (§16.5) — both states have to be looked at side by side.
 const KIT_PLAYER = kitFighter(
-  'Wanderlei Nascimento', 'Brazil', 'striker', '412030201',
+  'Wanderlei Nascimento', 'Brazil', 'striker', '431203201750',
   { wins: 12, losses: 3, draws: 0, noContests: 1 },
   'Riverside Undertow',
 );
-const KIT_OPPONENT = kitFighter('Kamil Wisniewski', 'Poland', 'wrestler', '203142310', {
+const KIT_OPPONENT = kitFighter('Kamil Wisniewski', 'Poland', 'wrestler', '213031423102', {
   wins: 19, losses: 6, draws: 1, noContests: 0,
 });
 
@@ -80,7 +80,12 @@ const KIT_OPPONENT = kitFighter('Kamil Wisniewski', 'Poland', 'wrestler', '20314
 // mid-career, and after a brutal run — the three must be obviously
 // distinguishable" — with nowhere else in the app yet to show it (that's
 // Loop 6.11's job, once the career/retirement screens are rebuilt).
-const WEAR_FACE = '531420310';
+// Loop 7.7: twelve slots, and deliberately a MARKED face — `marks` index 7 (the
+// jaw chevron) plus `gear` 0. The wear row is where §16.4's "marks and wear never
+// occupy the same layer" is looked at rather than only asserted: the same code is
+// rendered clean, mid-career and after a brutal run, and the tattoo has to stay
+// legible under the cauliflower ears, brow scarring and broken nose piling on top.
+const WEAR_FACE = '531420310070';
 const WEAR_FIGHTER = kitFighter('Dusan Kovac', 'Poland', 'wrestler', WEAR_FACE);
 
 function wearFixtureSummary(overrides: Partial<FightSummary>): FightSummary {
@@ -256,6 +261,16 @@ function KitBody({
           {FACE_GRID.map((face, i) => (
             <Portrait key={i} face={face} size="40px" />
           ))}
+        </div>
+      </Sheet>
+
+      {/* Loop 7.7 (§16.4): the southpaw carriage, which is a Fighter.stance prop
+          and never a FaceCode slot. One code, both stances — the flip has to read
+          as the same fighter squared the other way, not as a different face. */}
+      <Sheet title="Stance" caption="one FaceCode, read from Fighter.stance">
+        <div class={styles.row}>
+          <Portrait face={WEAR_FACE} stance="orthodox" size="72px" />
+          <Portrait face={WEAR_FACE} stance="southpaw" size="72px" />
         </div>
       </Sheet>
 

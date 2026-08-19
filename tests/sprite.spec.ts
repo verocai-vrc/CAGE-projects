@@ -150,7 +150,7 @@ describe('inline SVG total (§15.9: 14KB for faces + flags + plates)', () => {
    *  cannot silently invalidate the arithmetic here. */
   const WRAPPER = {
     // `<path d="…"/>` — fill and stroke both inherited from the <use> site.
-    silhouette: '<path d=""/>'.length,
+    bare: '<path d=""/>'.length,
     // `<path d="…" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/>`
     stroke: '<path d="" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" fill="none"/>'.length,
     // `<path d="…" fill="currentColor"/>`
@@ -162,8 +162,14 @@ describe('inline SVG total (§15.9: 14KB for faces + flags + plates)', () => {
     wearFill: '<path d="" fill="currentColor" opacity="0.55"/>'.length,
   };
 
+  // Loop 7.7: the dictionaries emit `<g id="…">…</g>`, not
+  // `<symbol id="…" viewBox="0 0 64 64">…</symbol>`. Every path is authored
+  // against the one 64x64 head space and every <use> sits inside an <svg> with
+  // that same viewBox, so the nested viewport <symbol> established was mapping a
+  // coordinate system onto itself for 23 bytes an entry. Asserted against the
+  // components' own source in the test below, same as the wrappers.
   function symbolBytes(id: string, d: string, wrapper: number): number {
-    return `<symbol id="${id}" viewBox="0 0 64 64">`.length + d.length + wrapper + '</symbol>'.length;
+    return `<g id="${id}">`.length + d.length + wrapper + '</g>'.length;
   }
 
   function dictionaryMarkupBytes(
@@ -186,10 +192,11 @@ describe('inline SVG total (§15.9: 14KB for faces + flags + plates)', () => {
   async function faceBytes(): Promise<number> {
     const { FACE_FRAME, FEATURE_LAYERS } = await import('../src/ui/portrait/features');
     const STROKE_SLOTS = new Set(['brow', 'eyes', 'nose', 'mouth']);
+    const BARE_SLOTS = new Set(['head', 'build', 'marks']);
     const wrapperFor = (slot: string) =>
-      slot === 'head' ? WRAPPER.silhouette : STROKE_SLOTS.has(slot) ? WRAPPER.stroke : WRAPPER.fill;
+      BARE_SLOTS.has(slot) ? WRAPPER.bare : STROKE_SLOTS.has(slot) ? WRAPPER.stroke : WRAPPER.fill;
     return (
-      symbolBytes(FACE_FRAME.id, FACE_FRAME.d, WRAPPER.silhouette) +
+      symbolBytes(FACE_FRAME.id, FACE_FRAME.d, WRAPPER.bare) +
       dictionaryMarkupBytes(FEATURE_LAYERS, wrapperFor)
     );
   }
@@ -215,9 +222,19 @@ describe('inline SVG total (§15.9: 14KB for faces + flags + plates)', () => {
       'utf-8',
     );
 
-    // The silhouette treatment's whole point is that it sets neither fill nor
+    // The bare treatment's whole point is that it sets neither fill nor
     // stroke, so CSS at the <use> site can drive both.
     expect(FACE_SPRITE).toContain('<path d={d} />');
+    // Loop 7.7: <g>, not <symbol viewBox> — the arithmetic above prices the
+    // former, so a revert here must fail loudly rather than under-count by 23
+    // bytes an entry.
+    // Strip comments first: FaceSprite's header explains the change and quotes
+    // the old wrapper, which is documentation rather than emitted markup.
+    for (const source of [FACE_SPRITE, WEAR_SPRITE]) {
+      const code = source.replace(/^\s*\/\/.*$/gm, '');
+      expect(code).toContain('<g key={id} id={id}>');
+      expect(code).not.toContain('<symbol');
+    }
     for (const source of [FACE_SPRITE, WEAR_SPRITE]) {
       expect(source).toContain('stroke="currentColor"');
       expect(source).toContain('stroke-linecap="round"');

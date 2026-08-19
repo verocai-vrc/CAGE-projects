@@ -56,11 +56,11 @@ export function CareerCardScreen() {
       <Sheet title={player.name} caption={card.archetype}>
         <div class={styles.faces}>
           <div class={styles.face}>
-            <Portrait face={player.face} size="7rem" />
+            <Portrait face={player.face} stance={player.stance} size="7rem" />
             <span class={styles.faceLabel}>Debut</span>
           </div>
           <div class={styles.face}>
-            <Portrait face={player.face} wear={wear} size="7rem" />
+            <Portrait face={player.face} stance={player.stance} wear={wear} size="7rem" />
             <span class={styles.faceLabel}>{card.retired ? 'Retirement' : 'Current'}</span>
           </div>
         </div>

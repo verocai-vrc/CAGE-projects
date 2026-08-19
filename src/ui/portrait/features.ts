@@ -53,13 +53,82 @@ export interface FeatureSymbol {
 // The ears sit just inside the cauliflower-ear overlay's footprint on purpose —
 // wear is a swelling OF the ear, so it has to read as the same feature getting
 // thicker, not as a new shape appearing next to it.
+//
+// Loop 7.7: the shoulders moved OUT of this path and into the `build` slot. The
+// neck and ears stay here because neither varies with frame — a heavyweight and
+// a featherweight have the same ears — and because splitting them would cost two
+// more symbols for no visual gain. What is left is the neck column plus the two
+// ear crescents; `build` draws the shoulder line beneath it.
 export const FACE_FRAME: FeatureSymbol = {
   id: 'face-frame',
   d:
-    'M6 64c1-8.5 8-12.5 19.5-14.5 2-.4 2.5-1 2.5-3V38h8v8.5c0 2 .5 2.6 2.5 3C50 51.5 57 55.5 58 64z' +
+    'M28 38h8v8.5c0 2 .5 2.6 2.5 3l-6.5 2.5-6.5-2.5c2-.4 2.5-1 2.5-3z' +
     'M18.5 31c-2.6-.4-4 1.2-4 3.5s1.4 3.9 4 3.5z' +
     'M45.5 31c2.6-.4 4 1.2 4 3.5s-1.4 3.9-4 3.5z',
 };
+
+// --- build (5): the shoulder line (§16.4) ------------------------------------
+// "Frame is the first thing you read on a fighter and it is visible at 24px,
+// where a nose shape is not." Five widths from a lean 125-pounder to a
+// thick-set heavyweight, drawn in the same filled-skin treatment as the frame
+// so they read as one silhouette rather than as a collar.
+//
+// Every variant carries geometry — none is empty. A missing shoulder line is a
+// floating head, not a build.
+const BUILD: FeatureSymbol[] = [
+  { id: 'build-0', d: 'M14 64c1-7 7.5-11 18-12.5 10.5 1.5 17 5.5 18 12.5z' }, // rangy
+  { id: 'build-1', d: 'M11 64c1-7.5 8-11.5 21-13 13 1.5 20 5.5 21 13z' }, // lean
+  { id: 'build-2', d: 'M7 64c1-8.5 8.5-12.5 25-14 16.5 1.5 24 5.5 25 14z' }, // even
+  { id: 'build-3', d: 'M4 64c.5-9 9-13.5 28-15 19 1.5 27.5 6 28 15z' }, // thick
+  { id: 'build-4', d: 'M2 64c0-9.5 9.5-14.5 30-16 20.5 1.5 30 6.5 30 16z' }, // heavy
+];
+
+// --- marks (12): tattoos and birth-scars (§16.4) -----------------------------
+// The `mk-*` namespace exists so this slot and `faceWear`'s `wr-*` overlays can
+// never collide. Marks are authored and permanent; wear is derived and grows
+// (§15.4). Kept off the brow line and out of the eye sockets so a heavily-worn
+// tattooed face shows both — the two draw in different layers and must not sit
+// in the same pixels either.
+//
+// mk-0 is bare skin and draws nothing, which is why the majority of fighters
+// carry no mark: the slot is uniform, so 1 in 12 faces has each.
+const MARKS: FeatureSymbol[] = [
+  { id: 'mk-0', d: '' }, // none
+  { id: 'mk-1', d: 'M20 47h5' }, // cheek slash
+  { id: 'mk-2', d: 'M40 45l4 4' }, // cheekbone cut
+  { id: 'mk-3', d: 'M43 25.5h4' }, // shaved brow slit
+  { id: 'mk-4', d: 'M30 55h4v3h-4z' }, // throat block
+  { id: 'mk-5', d: 'M19 42q3-3 6 0' }, // temple arc
+  { id: 'mk-6', d: 'M41 40h1M44 42h1M42 44h1' }, // cheekbone dots
+  { id: 'mk-7', d: 'M22 50l3 3-3 3' }, // jaw chevron
+  { id: 'mk-8', d: 'M38 52h7v1.5h-7z' }, // jawline band
+  { id: 'mk-9', d: 'M32 24.5h6' }, // forehead bar
+  { id: 'mk-a', d: 'M21 44v6M23 46v4' }, // temple bars
+  { id: 'mk-b', d: 'M40 47q3 2 0 4' }, // cheek hook
+];
+
+// --- gear (8): corner gear (§16.4) -------------------------------------------
+// §16.4 calls this "the lowest yield of the three — cut this first if the SVG
+// sub-budget binds", and Loop 7.7 measured whether it binds rather than assuming.
+// It does not: dropping the redundant per-entry <symbol viewBox> (see
+// FaceSprite.tsx) freed ~1.4KB, which is more than this slot costs. Cutting a
+// feature to pay for boilerplate would have been the wrong trade.
+//
+// Constrained by what is actually visible in a headshot — gloves and shorts are
+// not, so §16.4's "glove tape, shorts block" become the things that do show at
+// the neckline and on the face itself.
+const GEAR: FeatureSymbol[] = [
+  { id: 'gr-0', d: '' }, // none
+  { id: 'gr-1', d: 'M27.5 43.6h9v1.6h-9z' }, // mouthguard
+  { id: 'gr-2', d: 'M13 33.5h2.5v2.5H13zM48.5 33.5H51v2.5h-2.5z' }, // ear tape
+  { id: 'gr-3', d: 'M24 56h16v3H24z' }, // corner towel over the shoulders
+  { id: 'gr-4', d: 'M28 52q4 3.5 8 0l1 3q-5 4-10 0z' }, // neck chain
+  { id: 'gr-5', d: 'M20 26h24v2H20z' }, // headband
+  { id: 'gr-6', d: 'M30.5 40.6h3v1.2h-3z' }, // nose plug
+  // Every entry is a CLOSED shape: the slot takes the filled treatment, and a
+  // stroked path here would render as a filled sliver instead of a line.
+  { id: 'gr-7', d: 'M18 57h5v2h-5zM41 57h5v2h-5z' }, // shoulder tape
+];
 
 // --- skin (6): tone only, no geometry of its own -----------------------------
 // The skin layer used to carry six rectangles that were filled underneath a
@@ -220,10 +289,19 @@ const FACIAL_HAIR: FeatureSymbol[] = [
   { id: 'facialhair-4', d: 'M21.5 41c1.5 7 5.5 11.5 10.5 11.5S40.5 48 42 41c-2 2.5-6 4-10 4s-8.5-1.5-10.5-4z' },
   // full beard and moustache
   { id: 'facialhair-5', d: 'M19.6 36.4c0 11.2 5.6 18 12.4 18s12.4-6.8 12.4-18c-2.4 3.8-7 5.6-12.4 5.6s-10-1.8-12.4-5.6zM26.8 40.6q5.2-1.8 10.4 0l-.5 2.2q-4.7-1.7-9.4 0z' },
+  // Loop 7.7 widens this slot 6 -> 8 (§16.4). Both additions are cheap by
+  // construction — a chin patch and a stubble shadow are small shapes, which is
+  // exactly the test §16.4 sets for widening an existing slot ("where the cost
+  // is a handful of small paths").
+  // soul patch — under the lip only
+  { id: 'facialhair-6', d: 'M30 46.6q2 1 4 0l-.4 3.2q-1.6.8-3.2 0z' },
+  // stubble — the beard plane, drawn as a thin band along the jaw
+  { id: 'facialhair-7', d: 'M20.6 40c1 8 5.6 13 11.4 13s10.4-5 11.4-13c-2.2 3.4-6.2 5-11.4 5s-9.2-1.6-11.4-5z' },
 ];
 
 export const FEATURE_LAYERS: Record<keyof FaceCode, FeatureSymbol[]> = {
   skin: [], // tone only — see SKIN_TONES
+  build: BUILD,
   head: HEAD,
   hair: HAIR,
   hairColor: [], // not drawn geometry — see HAIR_COLORS
@@ -232,6 +310,8 @@ export const FEATURE_LAYERS: Record<keyof FaceCode, FeatureSymbol[]> = {
   nose: NOSE,
   mouth: MOUTH,
   facialHair: FACIAL_HAIR,
+  marks: MARKS,
+  gear: GEAR,
 };
 
 /**
@@ -240,7 +320,10 @@ export const FEATURE_LAYERS: Record<keyof FaceCode, FeatureSymbol[]> = {
  * symbol per hairstyle, which would multiply the hair count by five for no visual
  * gain.
  */
-export const HAIR_COLORS = ['#2B1B12', '#4A2E1D', '#8A5A2B', '#C9A24A', '#1A1A1A'] as const;
+// Loop 7.7 widens this 5 -> 6 (§16.4). Grey earns the sixth slot over another
+// brown: it is the one hair colour that says something about the fighter rather
+// than only about the palette, and it costs no geometry at all.
+export const HAIR_COLORS = ['#2B1B12', '#4A2E1D', '#8A5A2B', '#C9A24A', '#1A1A1A', '#9A9A96'] as const;
 
 /**
  * What each variant is called, for the portrait editor's field values (§15.4's
@@ -265,14 +348,20 @@ export const HAIR_COLORS = ['#2B1B12', '#4A2E1D', '#8A5A2B', '#C9A24A', '#1A1A1A
  */
 export const FEATURE_LABELS = {
   skin: ['Deepest', 'Deeper', 'Deep', 'Medium', 'Light', 'Lightest'],
-  hairColor: ['Black brown', 'Dark brown', 'Brown', 'Blond', 'Black'],
+  hairColor: ['Black brown', 'Dark brown', 'Brown', 'Blond', 'Black', 'Grey'],
+  build: ['Rangy', 'Lean', 'Even', 'Thick set', 'Heavy'],
+  marks: [
+    'Bare', 'Cheek scar', 'Cheekbone cut', 'Brow slit', 'Throat ink', 'Temple arc',
+    'Cheek dots', 'Jaw chevron', 'Jawline band', 'Forehead bar', 'Temple bars', 'Cheek hook',
+  ],
   head: ['Oval', 'Square', 'Long', 'Round', 'Tapered'],
   hair: ['Shaved', 'Buzz', 'Crop', 'Flat top', 'Swept back', 'Afro', 'Long', 'Topknot', 'Mohawk', 'Receding'],
   brow: ['Level', 'Angled', 'Arched', 'Heavy', 'Raised'],
   eyes: ['Even', 'Narrow', 'Wide', 'Hooded', 'Closed', 'Deep set'],
   nose: ['Straight', 'Wide', 'Hooked', 'Short', 'Broad'],
   mouth: ['Level', 'Set', 'Grim', 'Full', 'Thin'],
-  facialHair: ['Clean', 'Goatee', 'Full beard', 'Moustache', 'Boxed beard', 'Full set'],
+  facialHair: ['Clean', 'Goatee', 'Full beard', 'Moustache', 'Boxed beard', 'Full set', 'Soul patch', 'Stubble'],
+  gear: ['None', 'Mouthguard', 'Ear tape', 'Corner towel', 'Neck chain', 'Headband', 'Nose plug', 'Hood strings'],
 } as const satisfies Record<keyof FaceCode, readonly string[]>;
 
 // Every slot in the dictionary must supply exactly the count faceCode.ts expects,

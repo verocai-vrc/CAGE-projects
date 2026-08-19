@@ -1,5 +1,6 @@
-// faceCode.ts — Loop 6.4: DESIGN.md §15.4's FaceCode — nine feature slots, each an
-// index below 36, serialized to a nine-character base36 string.
+// faceCode.ts — Loop 6.4: DESIGN.md §15.4's FaceCode — twelve feature slots (nine at Loop 6.4,
+// three more at Loop 7.7 / §16.4), each an index below 36, serialized to a
+// twelve-character base36 string.
 //
 // This file is deliberately independent of the feature dictionary (features.ts):
 // serialize/parse only need SLOT_ORDER and a per-slot count to stay in range, not
@@ -17,6 +18,8 @@ import type { RNG } from '../../engine';
 
 export interface FaceCode {
   skin: number;
+  /** Loop 7.7 (§16.4): the shoulder line. Read at 24px, where a nose is not. */
+  build: number;
   head: number;
   hair: number;
   hairColor: number;
@@ -25,11 +28,19 @@ export interface FaceCode {
   nose: number;
   mouth: number;
   facialHair: number;
+  /** Loop 7.7 (§16.4): tattoos and birth-scars, in the `mk-*` namespace.
+   *  Authored and permanent — NOT wear, which is derived by faceWear into the
+   *  separate `wr-*` namespace and must never share a layer with this. */
+  marks: number;
+  /** Loop 7.7 (§16.4): corner gear. Kept after measuring that the SVG
+   *  sub-budget does not bind — see features.ts's GEAR. */
+  gear: number;
 }
 
-/** Fixed order — this is also the order the nine base36 characters serialize in. */
+/** Fixed order — this is also the order the twelve base36 characters serialize in. */
 export const SLOT_ORDER = [
   'skin',
+  'build',
   'head',
   'hair',
   'hairColor',
@@ -38,6 +49,8 @@ export const SLOT_ORDER = [
   'nose',
   'mouth',
   'facialHair',
+  'marks',
+  'gear',
 ] as const satisfies readonly (keyof FaceCode)[];
 
 /**
@@ -48,14 +61,17 @@ export const SLOT_ORDER = [
  */
 export const SLOT_COUNTS: Record<keyof FaceCode, number> = {
   skin: 6,
+  build: 5,
   head: 5,
   hair: 10,
-  hairColor: 5,
+  hairColor: 6,
   brow: 5,
   eyes: 6,
   nose: 5,
   mouth: 5,
-  facialHair: 6,
+  facialHair: 8,
+  marks: 12,
+  gear: 8,
 };
 
 const BASE = 36;
@@ -65,7 +81,7 @@ function clampToSlot(slot: keyof FaceCode, value: number): number {
   return ((value % count) + count) % count;
 }
 
-/** One base36 digit per slot, in SLOT_ORDER — always exactly 9 characters. */
+/** One base36 digit per slot, in SLOT_ORDER — always exactly 12 characters. */
 export function serializeFaceCode(code: FaceCode): string {
   return SLOT_ORDER.map((slot) => clampToSlot(slot, code[slot]).toString(BASE)).join('');
 }

@@ -58,11 +58,14 @@ describe('serializeFaceCode / parseFaceCode round-trip', () => {
     }
   });
 
-  it('serializes to exactly 9 base36 characters', () => {
+  it('serializes to exactly one base36 character per slot', () => {
     const code = faceFromSeed(mulberry32(3));
     const serialized = serializeFaceCode(code);
-    expect(serialized).toHaveLength(9);
-    expect(serialized).toMatch(/^[0-9a-z]{9}$/);
+    // Twelve since Loop 7.7 (§16.4: build, marks, gear). Derived from SLOT_ORDER
+    // rather than hardcoded, so the next slot does not need this line edited.
+    expect(SLOT_ORDER).toHaveLength(12);
+    expect(serialized).toHaveLength(SLOT_ORDER.length);
+    expect(serialized).toMatch(/^[0-9a-z]+$/);
   });
 
   it('never fails or throws on a malformed or corrupted string — flavor data fails safe', () => {
@@ -78,10 +81,9 @@ describe('serializeFaceCode / parseFaceCode round-trip', () => {
   });
 
   it('clamps an out-of-range slot value on serialize rather than emitting an invalid digit', () => {
-    const overflowing: FaceCode = {
-      skin: 99, head: 99, hair: 99, hairColor: 99, brow: 99,
-      eyes: 99, nose: 99, mouth: 99, facialHair: 99,
-    };
+    // Built from SLOT_ORDER rather than listed, so adding a slot cannot leave
+    // this test quietly checking eleven of twelve.
+    const overflowing = Object.fromEntries(SLOT_ORDER.map((slot) => [slot, 99])) as unknown as FaceCode;
     const serialized = serializeFaceCode(overflowing);
     const reparsed = parseFaceCode(serialized);
     for (const slot of SLOT_ORDER) {

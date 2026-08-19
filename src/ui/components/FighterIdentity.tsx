@@ -49,7 +49,10 @@ export function FighterIdentity({ fighter, corner, compact }: FighterIdentityPro
 
   return (
     <div class={classes}>
-      <Portrait face={fighter.face} size={compact ? '32px' : '48px'} />
+      {/* Loop 7.7 (§16.4): stance comes off the Fighter, never off the FaceCode.
+          This is the component that always holds a real one, so a southpaw is
+          drawn squared the other way everywhere a fighter is named. */}
+      <Portrait face={fighter.face} stance={fighter.stance} size={compact ? '32px' : '48px'} />
       <div class={styles.body}>
         <div class={styles.nameRow}>
           <FlagChip nationality={fighter.nationality} />

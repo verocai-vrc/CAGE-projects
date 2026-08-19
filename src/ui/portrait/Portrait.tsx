@@ -39,18 +39,33 @@ interface PortraitProps {
   /** Derived, never stored — omit for a debut/no-history portrait (identical
    *  to passing NO_WEAR). */
   wear?: WearLayers;
+  /**
+   * Loop 7.7 (§16.4): read from `Fighter.stance`, NEVER from a FaceCode slot.
+   *
+   * "A separate portrait slot could disagree with it, and a southpaw drawn in an
+   * orthodox stance is a visible lie for zero benefit." The field already exists,
+   * is already generated 85/15 by matchmaking.ts, and is already printed on the
+   * tale of the tape — so the carriage is a prop reading that one source, and
+   * §16.4's discarded thirteenth slot stays discarded.
+   *
+   * Implemented as a horizontal flip rather than a second set of paths: the same
+   * fighter, squared the other way. Costs no bytes in the dictionary.
+   */
+  stance?: 'orthodox' | 'southpaw';
 }
 
-export function Portrait({ face, size, wear = NO_WEAR }: PortraitProps) {
+export function Portrait({ face, size, wear = NO_WEAR, stance = 'orthodox' }: PortraitProps) {
   const code = typeof face === 'string' ? parseFaceCode(face) : face;
 
   return (
     <div class={styles.root} style={size ? `--portrait-size:${size}` : undefined}>
       <svg
-        class={styles.svg}
+        class={`${styles.svg}${stance === 'southpaw' ? ` ${styles.southpaw}` : ''}`}
         viewBox="0 0 64 64"
+        data-stance={stance}
         style={`--skin:${SKIN_TONES[code.skin]};--skin-line:${SKIN_LINES[code.skin]}`}
       >
+        <use class={styles.silhouette} href={`#build-${code.build}`} />
         <use class={styles.silhouette} href="#face-frame" />
         <use class={styles.silhouette} href={`#head-${code.head}`} />
         {wear.swelling > 0 && <use href={`#wr-swell-${wear.swelling}`} />}
@@ -66,6 +81,14 @@ export function Portrait({ face, size, wear = NO_WEAR }: PortraitProps) {
             <use href={`#hair-${code.hair}`} />
           </g>
         )}
+        {/* Loop 7.7: gear is worn, so it sits over hair and skin alike, but under
+            wear — a cut opens on top of a headband, not beneath it. */}
+        {code.gear > 0 && <use class={styles.gear} href={`#gr-${code.gear}`} />}
+        {/* Loop 7.7: marks draw above the face and BELOW wear. Authored ink is
+            older than any damage taken over a career, so a scar crossing a
+            tattoo reads correctly; and the two namespaces (mk-* / wr-*) never
+            meet, so faceWear still has no idea whether a fighter is tattooed. */}
+        {code.marks > 0 && <use class={styles.mark} href={`#mk-${code.marks.toString(36)}`} />}
         {wear.cauliflowerEar > 0 && <use href={`#wr-ear-${wear.cauliflowerEar}`} />}
         {wear.browScarring > 0 && <use href={`#wr-brow-${wear.browScarring}`} />}
         {wear.noseBreak && <use href="#wr-nose-break" />}

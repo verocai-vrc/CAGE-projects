@@ -28,6 +28,7 @@ import styles from './PortraitEditor.module.css';
 
 const SLOT_LABELS: Record<keyof FaceCode, string> = {
   skin: 'Skin tone',
+  build: 'Build',
   head: 'Face shape',
   hair: 'Hair',
   hairColor: 'Hair colour',
@@ -36,6 +37,8 @@ const SLOT_LABELS: Record<keyof FaceCode, string> = {
   nose: 'Nose',
   mouth: 'Mouth',
   facialHair: 'Facial hair',
+  marks: 'Marks',
+  gear: 'Corner gear',
 };
 
 /** The two slots that select a colour rather than a shape, and the ramp each one
