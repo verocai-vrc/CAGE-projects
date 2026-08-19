@@ -19,6 +19,7 @@
   "knockdownHealthThreshold": 55,
   "tkoHealthThreshold": 35,
   "groundDefenseMultiplier": 0.4,
+  "weaknessPenalty": 10,
   "significantStrikeChance": 0.01,
   "pressPaceStaminaDrainBonus": 0.15,
   "pressPaceStrikingBonus": 20,

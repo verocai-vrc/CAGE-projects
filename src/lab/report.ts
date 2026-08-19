@@ -22,6 +22,29 @@
 //   field avg (str/wr/all) 50.6/46.0/51.3  50.4/46.1/51.4
 //   wrestler vs striker  55.0%             55.0%
 //
+// Loop 7.3 (§16.5) added `weaknessPenalty: 10`, subtracted from the defender's
+// pillar at one contested roll per weakness id. Measured over 3000 seeded bouts,
+// allrounder vs identical allrounder with the opponent shooting takedowns:
+//
+//   weakness             td success   sub success   strikes taken   win rate
+//   null                    49.8%        88.5%          39.7          29.6%
+//   takedown-defense        61.8%        87.6%          39.1          26.2%
+//   submission-defense      49.8%        95.1%          39.6          29.5%
+//   striking-defense        49.5%        85.5%          46.7          23.9%
+//
+// Each id moves its own roll and leaves the others inside cascade noise. The
+// M1 gates hold with weaknesses live on both sides (tests/weakness.spec.ts).
+//
+// FINDING, handed forward: the three ids are worth wildly different amounts,
+// because their rolls fire at wildly different rates — resolveStrike ~80 times
+// a bout, a takedown ~11 (and only under shootTakedowns; ~2 otherwise), a
+// submission 0.07. `submission-defense` therefore moves its own roll by 6.6
+// points and the bout by 0.1 — a hole nobody can reach. That is partly the
+// matchup-over-rating pillar working as intended, but `submissionAttemptChance`
+// (0.013) is low enough that the submission roll is close to unobservable in a
+// normal bout. Raising it is a balance change with its own gate re-run, out of
+// Loop 7.3's scope; it belongs in the next balance re-pass.
+//
 // `kFinish` was measured across 4/6/9/14 at the new damage and moved the
 // distribution by under a point on every line — once damage is real, a
 // significant strike arrives with the power-vs-effectiveChin delta already far

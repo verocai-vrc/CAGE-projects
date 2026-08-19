@@ -5,7 +5,7 @@
 // offers is M4 (§8.3), not this loop's concern.
 
 import type { RNG } from '../engine';
-import type { ArchetypeId, Attributes, Fighter, WeightClass } from '../engine/types';
+import type { ArchetypeId, Attributes, Fighter, WeaknessId, WeightClass } from '../engine/types';
 
 export interface ArchetypeTemplate {
   id: ArchetypeId;
@@ -23,6 +23,27 @@ export interface NamePool {
 // Bounded per-attribute jitter applied on top of an archetype template so
 // generated opponents aren't exact stat clones of each other.
 const ATTRIBUTE_VARIANCE = 6;
+
+// Loop 7.3 (§16.5). Opponents used to be hardcoded `weakness: null`, which made
+// the player's own weakness a unilateral handicap — theirs was a real engine
+// penalty (fight.ts) and nobody else in the game had one. These are the same
+// three ids content/events/amateur.json can award the player, so scouting
+// (Loop 8.5) has something true to point at on either side of the cage.
+//
+// Not every fighter has an exploitable hole: WEAKNESS_CHANCE of them do. A
+// weakness on everyone is worth the same as a weakness on no one, and the
+// fighter with no named hole should read as the harder night's work.
+const WEAKNESS_IDS: readonly WeaknessId[] = ['striking-defense', 'takedown-defense', 'submission-defense'];
+const WEAKNESS_CHANCE = 0.55;
+
+// Two draws, always both, whatever the first returns — keeping rng consumption
+// per opponent constant so adding this could not shift any later draw in the
+// stream (the same discipline resolveMoment follows in the engine).
+function drawWeakness(rng: RNG): WeaknessId | null {
+  const has = rng.next() < WEAKNESS_CHANCE;
+  const pick = WEAKNESS_IDS[Math.floor(rng.next() * WEAKNESS_IDS.length)];
+  return has ? pick : null;
+}
 
 function weightedPick<T extends { weight: number }>(items: readonly T[], rng: RNG): T {
   const total = items.reduce((sum, item) => sum + item.weight, 0);
@@ -84,6 +105,7 @@ export function generateOpponent(
   // the same fixed order every time, so a given seed always reproduces the same
   // face alongside the same name and attributes (§15.4's determinism promise).
   const face = drawFace(rng);
+  const weakness = drawWeakness(rng);
 
   return {
     id: `${options.idPrefix ?? 'opp'}-${idSuffix}`,
@@ -94,7 +116,7 @@ export function generateOpponent(
     stance,
     attributes: jitterAttributes(archetype.attributes, rng),
     archetype: archetype.id,
-    weakness: null,
+    weakness,
     traits: [],
     condition: { health: 100, injuries: [] },
   };

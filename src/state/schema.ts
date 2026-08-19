@@ -314,6 +314,9 @@ export const BalanceSchema = z.object({
   knockdownHealthThreshold: z.number(),
   tkoHealthThreshold: z.number(),
   groundDefenseMultiplier: z.number().min(0).max(1),
+  // §16.5: subtracted from the defender's pillar value at exactly one contested
+  // roll per weakness id. On the same 0-100 scale as the pillars it modifies.
+  weaknessPenalty: z.number().min(0),
   significantStrikeChance: z.number().min(0).max(1),
   pressPaceStaminaDrainBonus: z.number().min(0),
   pressPaceStrikingBonus: z.number(),

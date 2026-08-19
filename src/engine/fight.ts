@@ -75,6 +75,34 @@ function tacticFor(tactics: Tactics, fighterId: string, round: number): TacticId
   return tactics[fighterId]?.rounds[round] ?? 'balanced';
 }
 
+// --- Weakness (§16.5) ---
+//
+// Loop 7.3. `weakness` had been a caption since Loop 4.4: the reveal screen
+// names "the explicitly-named exploitable hole" and nothing in the engine read
+// the field. It is now one constant, `balance.weaknessPenalty`, subtracted from
+// the defender's pillar value at exactly one contested roll per id:
+//
+//   striking-defense    the defender's striking in resolveStrike
+//   takedown-defense    the defender's grappling in the takedown resolvePositionChange
+//   submission-defense  the defender's grappling in the submission roll
+//
+// One roll each, so the three ids are separable and testable in isolation — a
+// fighter weak to takedowns is not quietly also easier to hit. Deterministic:
+// no new rng.next() anywhere, so a fight with weaknesses on both sides consumes
+// the identical random stream a fight with none does, and Loop 1.7's
+// byte-identical determinism test is untouched.
+//
+// Applied at the call site like cutPenalty and the tactic modifiers, keeping
+// round.ts's roll functions ignorant of what a weakness is.
+const WEAKNESS_STRIKING_DEFENSE = 'striking-defense';
+const WEAKNESS_TAKEDOWN_DEFENSE = 'takedown-defense';
+const WEAKNESS_SUBMISSION_DEFENSE = 'submission-defense';
+
+/** The penalty this fighter carries at `id`'s roll — 0 unless it is their weakness. */
+function weaknessPenalty(runtime: FighterRuntime, id: string): number {
+  return runtime.fighter.weakness === id ? balance.weaknessPenalty : 0;
+}
+
 // Real trade-offs per §6.7, applied at the call site so round.ts's roll
 // functions stay tactic-agnostic (same pattern as cutPenalty). All deltas
 // are additive/multiplicative on existing pillar values — no new roll paths.
@@ -423,7 +451,7 @@ export function simulateFight(
             const success = resolvePositionChange(
               runtime[side].pillars.grappling + (side === PLAYER_SIDE ? scrambleDelta : -scrambleDelta),
               runtime[side].stamina,
-              runtime[opp].pillars.grappling,
+              runtime[opp].pillars.grappling - weaknessPenalty(runtime[opp], WEAKNESS_TAKEDOWN_DEFENSE),
               runtime[opp].stamina,
               balance.k,
               rng,
@@ -442,7 +470,9 @@ export function simulateFight(
             const landed = resolveStrike(
               runtime[side].pillars.striking + mods[side].ownStrikingDelta,
               runtime[side].stamina,
-              runtime[opp].pillars.striking + mods[opp].opponentStrikingDelta,
+              runtime[opp].pillars.striking +
+                mods[opp].opponentStrikingDelta -
+                weaknessPenalty(runtime[opp], WEAKNESS_STRIKING_DEFENSE),
               runtime[opp].stamina,
               balance.k,
               rng,
@@ -503,7 +533,9 @@ export function simulateFight(
 
           const subAttack = runtime[dominant].pillars.grappling * runtime[dominant].cutPenalty;
           const subDefense =
-            (runtime[defender].pillars.grappling + defenderDelta) *
+            (runtime[defender].pillars.grappling +
+              defenderDelta -
+              weaknessPenalty(runtime[defender], WEAKNESS_SUBMISSION_DEFENSE)) *
             (runtime[defender].stamina / MAX_HEALTH);
           const success = rollFinish(subAttack, subDefense, balance.kFinish, rng);
           events.push({ t: 'submissionAttempt', by: runtime[dominant].fighter.id, escaped: !success, round });
@@ -515,10 +547,18 @@ export function simulateFight(
             break roundLoop;
           }
         } else {
+          // striking-defense applies here too: §16.5 names `resolveStrike`, the
+          // roll, not one of its two call sites, and a hole in your striking
+          // defense does not close because you are on your back. It sits inside
+          // the parens so groundDefenseMultiplier scales it along with the rest
+          // of the defender's striking — the penalty is diluted on the ground in
+          // exactly the proportion the defense itself is.
           const landed = resolveStrike(
             runtime[dominant].pillars.striking + mods[dominant].ownStrikingDelta,
             runtime[dominant].stamina,
-            (runtime[defender].pillars.striking + mods[defender].opponentStrikingDelta) *
+            (runtime[defender].pillars.striking +
+              mods[defender].opponentStrikingDelta -
+              weaknessPenalty(runtime[defender], WEAKNESS_STRIKING_DEFENSE)) *
               balance.groundDefenseMultiplier,
             runtime[defender].stamina,
             balance.k,
