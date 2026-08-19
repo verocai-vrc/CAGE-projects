@@ -14,6 +14,7 @@
 import { useState } from 'preact/hooks';
 import { resolveCampWeek, type CampAllocation } from '../../career/camp';
 import { campFocusMultiplier, resolveLifeWeek, trainingPartnerQuality } from '../../career/life';
+import { gymById, payGymDues, trainingPartnerCeiling } from '../../career/gym';
 import { resolveWeightCutWeek } from '../../career/weightcut';
 import { balance } from '../../content';
 import { useCageStore } from '../../state/store';
@@ -48,13 +49,18 @@ export function CampScreen() {
 
   function resolveWeek() {
     if (!career.player) return;
-    const result = resolveCampWeek(
-      career.player,
-      allocation,
-      balance,
-      trainingPartnerQuality(career.lifeBars),
-      campFocusMultiplier(career.lifeBars),
-    );
+    // Loop 7.8 (§16.8): all three gym effects land here, which is the section's
+    // own test of whether a gym ships — "a gym that does not touch camp does
+    // not ship."
+    const gym = gymById(career.gymId);
+    const result = resolveCampWeek(career.player, allocation, balance, {
+      // The gym's reputation is the CEILING; the life bar modulates it. Before
+      // this, a full bar at a terrible gym trained as well as one at the best
+      // room in the country.
+      trainingPartnerQuality: trainingPartnerCeiling(gym) * trainingPartnerQuality(career.lifeBars),
+      focusMultiplier: campFocusMultiplier(career.lifeBars),
+      specialty: gym.specialty,
+    });
     const { bars, hype } = resolveLifeWeek(career.lifeBars, career.hype, result.energySpent.life, balance);
     const weightCutProgress = resolveWeightCutWeek(
       career.weightCutProgress,
@@ -68,6 +74,9 @@ export function CampScreen() {
       lifeBars: bars,
       hype,
       weightCutProgress,
+      // §16.8 effect 3: the weekly drain that gives "sponsors: gym dues unpaid"
+      // something to actually be about.
+      purse: payGymDues(career.purse, gym),
     });
     setAllocation(EMPTY_ALLOCATION);
   }

@@ -7,6 +7,9 @@ const testBalance: CampBalance = {
   trainingGainPerEnergy: 0.4,
   restRegenPerEnergy: 1.5,
   defaultTrainingPartnerQuality: 0.75,
+  specialtyMultiplier: 1.35,
+  offSpecialtyMultiplier: 0.85,
+  gymDuesBase: 90,
 };
 
 function makeFighter(overrides: Partial<Fighter> = {}): Fighter {
@@ -44,13 +47,13 @@ describe('resolveCampWeek', () => {
       fighter,
       { training: 10, weightManagement: 0, rest: 0 },
       testBalance,
-      1,
+      { trainingPartnerQuality: 1 },
     );
     const half = resolveCampWeek(
       fighter,
       { training: 10, weightManagement: 0, rest: 0 },
       testBalance,
-      0.5,
+      { trainingPartnerQuality: 0.5 },
     );
 
     expect(full.fighter.attributes.power).toBeGreaterThan(fighter.attributes.power);
@@ -64,7 +67,7 @@ describe('resolveCampWeek', () => {
       fighter,
       { training: 10, weightManagement: 0, rest: 0 },
       testBalance,
-      0,
+      { trainingPartnerQuality: 0 },
     );
     expect(result.fighter.attributes).toEqual(fighter.attributes);
   });
@@ -138,8 +141,7 @@ describe('resolveCampWeek', () => {
       fighter,
       { training: 0, weightManagement: 0, rest: 10 },
       testBalance,
-      1,
-      0,
+      { trainingPartnerQuality: 1, focusMultiplier: 0 },
     );
     expect(result.fighter.condition.health).toBe(70);
   });

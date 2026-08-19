@@ -185,6 +185,10 @@ export function startCareer(
     seed,
     player: fighterFromOrigin(origin, playerId, playerName, nationality, weightClass, face, resolvedNickname),
     origin,
+    // Loop 7.8 (§16.8): "the mentor gym is where the player starts." This is the
+    // first thing that has ever read `origin.mentorGymId`, which the amateur
+    // wrapper has been authoring since M4.
+    gymId: origin.mentorGymId,
     hype: Math.max(0, Math.min(100, origin.hypeModifier)),
   };
 }

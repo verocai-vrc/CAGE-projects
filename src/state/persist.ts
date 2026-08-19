@@ -26,7 +26,9 @@ const STORAGE_KEY = 'cage:save';
 // silently decode to a different face, because every slot after `skin` has
 // shifted one place. A wrong face is worse than a discarded one: the player
 // would think the editor lied to them. Hence the bump.
-const SAVE_VERSION = 6;
+// Loop 7.8: CareerState gained a required `gymId` (§16.8). A v6 envelope has
+// none, so it fails validation — the bump makes that an intentional discard.
+const SAVE_VERSION = 7;
 const DEBOUNCE_MS = 500;
 
 interface SaveEnvelope {

@@ -60,6 +60,7 @@ const fixtureCareer: CareerState = {
   purse: 15000,
   hype: 35,
   ranking: 12,
+  gymId: 'ironside-mma',
   lifeBars: { trainingPartners: 80, partner: 60, sponsors: 90 },
   weightCutProgress: 45,
   fightHistory: [],

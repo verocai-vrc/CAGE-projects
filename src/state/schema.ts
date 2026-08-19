@@ -170,6 +170,8 @@ export const CareerStateSchema = z.object({
   purse: z.number(),
   hype: z.number().min(0).max(100),
   ranking: z.number().int().min(1).nullable(),
+  // §16.8. Empty is valid: initialCareerState has no career and so no gym.
+  gymId: z.string(),
   lifeBars: LifeBarsSchema,
   weightCutProgress: z.number().min(0).max(100),
   fightHistory: z.array(FightSummarySchema),
@@ -203,6 +205,29 @@ export const NamePoolSchema = z.object({
   weight: z.number().positive(),
   firstNames: z.array(z.string()).min(1),
   lastNames: z.array(z.string()).min(1),
+});
+
+// Loop 7.8 (§16.8): gyms. The four `anchors` are the ids the amateur wrapper
+// already emits and its prose already characterises by name — they are authored
+// rather than generated so "Ironside MMA" is the same gym the wrapper described.
+// Everything else is procedural from the name parts and city list below.
+export const GymSpecialtySchema = z.enum(['striking', 'grappling', 'conditioning']);
+
+export const GymSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  city: z.string().min(1),
+  country: z.string().min(1),
+  specialty: GymSpecialtySchema,
+  reputation: z.number().min(0).max(100),
+  dues: z.number().min(0),
+});
+
+export const GymContentSchema = z.object({
+  anchors: z.array(GymSchema).min(1),
+  namePartsA: z.array(z.string().min(1)).min(1),
+  namePartsB: z.array(z.string().min(1)).min(1),
+  cities: z.array(z.object({ city: z.string().min(1), country: z.string().min(1) })).min(1),
 });
 
 // Loop 7.6 (§16.5): nickname pools. One entry is a word plus its base weight
@@ -371,6 +396,11 @@ export const BalanceSchema = z.object({
   trainingGainPerEnergy: z.number().min(0),
   restRegenPerEnergy: z.number().min(0),
   defaultTrainingPartnerQuality: z.number().min(0).max(1),
+  // §16.8: a gym's specialty multiplies training gains on the attributes in its
+  // group and damps them elsewhere.
+  specialtyMultiplier: z.number().min(0),
+  offSpecialtyMultiplier: z.number().min(0),
+  gymDuesBase: z.number().min(0),
   baseOfferPurse: z.number().min(0),
   offerPursePerRankingPoint: z.number().min(0),
   offerPursePerHype: z.number().min(0),

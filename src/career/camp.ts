@@ -9,12 +9,31 @@
 // applies whatever multipliers the caller hands it (Loop 4.1).
 
 import type { Attributes, Fighter } from '../engine/types';
+import { specialtyMultiplierFor, type GymBalance, type GymSpecialty } from './gym';
 
-export interface CampBalance {
+export interface CampBalance extends GymBalance {
   weeklyEnergyBudget: number;
   trainingGainPerEnergy: number;
   restRegenPerEnergy: number;
   defaultTrainingPartnerQuality: number;
+}
+
+/**
+ * Loop 7.8: the trailing optionals collapsed into an options object, the same
+ * move Loop 7.1 made on `startCareer` and for the same reason — `specialty` is
+ * the third of them, and a caller wanting only that would otherwise have to
+ * pass `undefined, undefined` to reach past the other two.
+ */
+export interface CampWeekOptions {
+  /** 0..1. Since §16.8 this is the gym's reputation ceiling modulated by the
+   *  trainingPartners life bar, not the bar alone. */
+  trainingPartnerQuality?: number;
+  /** 0..1, from life.ts's partner bar (§8.3). */
+  focusMultiplier?: number;
+  /** The gym's specialty (§16.8 effect 1). Omitted means an unbiased week —
+   *  every attribute gains at the flat rate, which is what every pre-7.8 test
+   *  expects and what a career with no gym resolved to. */
+  specialty?: GymSpecialty;
 }
 
 // Energy spent per week, split across the camp pillars (§8.1). `life` is
@@ -85,19 +104,29 @@ export function resolveCampWeek(
   fighter: Fighter,
   allocation: CampAllocation,
   balance: CampBalance,
-  trainingPartnerQuality: number = balance.defaultTrainingPartnerQuality,
-  focusMultiplier: number = 1,
+  {
+    trainingPartnerQuality = balance.defaultTrainingPartnerQuality,
+    focusMultiplier = 1,
+    specialty,
+  }: CampWeekOptions = {},
 ): CampWeekResult {
   const budget = balance.weeklyEnergyBudget;
   const spent = clampAllocation(allocation, budget);
 
-  const gainPerAttribute = spent.training * balance.trainingGainPerEnergy * trainingPartnerQuality;
+  const baseGain = spent.training * balance.trainingGainPerEnergy * trainingPartnerQuality;
 
   // Attributes are integers on a 0-100 scale (DESIGN.md §4) — round each
   // gain rather than letting fractional camp gains accumulate silently.
+  //
+  // Loop 7.8 (§16.8 effect 1): the gain is biased per attribute by the gym's
+  // specialty before rounding, so a striking gym's camp and a grappling gym's
+  // camp spend the same energy on measurably different fighters. The rounding
+  // stays where it was — biasing after rounding would let a 0.4 off-specialty
+  // gain round to 0 and read as "this gym does not train wrestling at all".
   const attributes: Attributes = { ...fighter.attributes };
   for (const key of TRAINING_ATTRIBUTES) {
-    attributes[key] = Math.min(100, Math.round(attributes[key] + gainPerAttribute));
+    const gain = specialty ? baseGain * specialtyMultiplierFor(specialty, key, balance) : baseGain;
+    attributes[key] = Math.min(100, Math.round(attributes[key] + gain));
   }
 
   const healthRegen = spent.rest * balance.restRegenPerEnergy * focusMultiplier;

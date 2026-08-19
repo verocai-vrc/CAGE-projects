@@ -35,6 +35,10 @@ export interface CareerState {
   purse: number;
   hype: number; // 0..100, feeds matchmaking offer quality (DESIGN.md §8.4)
   ranking: number | null; // null = unranked; 1 = champion
+  /** Loop 7.8 (§16.8): where the player trains. Set from `origin.mentorGymId`
+   *  at career start — the mentor gym is where the player starts — and changed
+   *  by a gym move (Loop 7.9). Empty only on `initialCareerState`. */
+  gymId: string;
   lifeBars: LifeBars; // DESIGN.md §8.3 — decays weekly (career/life.ts)
   weightCutProgress: number; // 0..100, DESIGN.md §8.2 — camp-long diet/hydration discipline (career/weightcut.ts)
   fightHistory: FightSummary[]; // summaries only — full event logs are never persisted (DESIGN.md §2)
@@ -50,6 +54,7 @@ export const initialCareerState: CareerState = {
   purse: 0,
   hype: 0,
   ranking: null,
+  gymId: '',
   lifeBars: initialLifeBars,
   weightCutProgress: initialCutProgress,
   fightHistory: [],

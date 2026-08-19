@@ -1,1 +1,64 @@
-{}
+{
+  "anchors": [
+    {
+      "id": "ironside-mma",
+      "name": "Ironside MMA",
+      "city": "Cleveland",
+      "country": "USA",
+      "specialty": "grappling",
+      "reputation": 64,
+      "dues": 110
+    },
+    {
+      "id": "golden-gate-boxing",
+      "name": "Golden Gate Boxing",
+      "city": "Oakland",
+      "country": "USA",
+      "specialty": "striking",
+      "reputation": 71,
+      "dues": 145
+    },
+    {
+      "id": "apex-grappling",
+      "name": "Apex Grappling Academy",
+      "city": "Torrance",
+      "country": "USA",
+      "specialty": "grappling",
+      "reputation": 78,
+      "dues": 190
+    },
+    {
+      "id": "neighborhood-gym",
+      "name": "Third Street Boxing Club",
+      "city": "Youngstown",
+      "country": "USA",
+      "specialty": "conditioning",
+      "reputation": 38,
+      "dues": 45
+    }
+  ],
+  "namePartsA": [
+    "Ironbound", "Northgate", "Redline", "Anvil", "Foundry", "Crosstown",
+    "Harbourside", "Steelworks", "Lowland", "Riverbend", "Kestrel", "Union",
+    "Blackrock", "Nine Mile", "Longshore", "Overpass"
+  ],
+  "namePartsB": [
+    "Fight Club", "MMA", "Athletic Club", "Combat Academy", "Training Centre",
+    "Fight Team", "Martial Arts", "Gym"
+  ],
+  "cities": [
+    { "city": "Albuquerque", "country": "USA" },
+    { "city": "Coconut Creek", "country": "USA" },
+    { "city": "Denver", "country": "USA" },
+    { "city": "Sacramento", "country": "USA" },
+    { "city": "Rio de Janeiro", "country": "Brazil" },
+    { "city": "Curitiba", "country": "Brazil" },
+    { "city": "Belo Horizonte", "country": "Brazil" },
+    { "city": "Dublin", "country": "Ireland" },
+    { "city": "Cork", "country": "Ireland" },
+    { "city": "Tokyo", "country": "Japan" },
+    { "city": "Osaka", "country": "Japan" },
+    { "city": "Warsaw", "country": "Poland" },
+    { "city": "Krakow", "country": "Poland" }
+  ]
+}

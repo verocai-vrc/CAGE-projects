@@ -22,6 +22,9 @@ const campBalance: CampBalance = {
   trainingGainPerEnergy: 0.4,
   restRegenPerEnergy: 1.5,
   defaultTrainingPartnerQuality: 0.75,
+  specialtyMultiplier: 1.35,
+  offSpecialtyMultiplier: 0.85,
+  gymDuesBase: 90,
 };
 
 const matchBalance: MatchmakingBalance = {
@@ -134,15 +137,13 @@ describe('neglect vs. fed — the measurable tension (Loop 4.1 exit gate)', () =
       fighter,
       allocation,
       campBalance,
-      trainingPartnerQuality(neglectedBars),
-      campFocusMultiplier(neglectedBars),
+      { trainingPartnerQuality: trainingPartnerQuality(neglectedBars), focusMultiplier: campFocusMultiplier(neglectedBars) },
     );
     const fedResult = resolveCampWeek(
       fighter,
       allocation,
       campBalance,
-      trainingPartnerQuality(fedBars),
-      campFocusMultiplier(fedBars),
+      { trainingPartnerQuality: trainingPartnerQuality(fedBars), focusMultiplier: campFocusMultiplier(fedBars) },
     );
 
     expect(neglectedResult.fighter.attributes.power).toBeLessThan(fedResult.fighter.attributes.power);
@@ -168,15 +169,13 @@ describe('neglect vs. fed — the measurable tension (Loop 4.1 exit gate)', () =
       fighter,
       allocation,
       campBalance,
-      trainingPartnerQuality(neglectedBars),
-      campFocusMultiplier(neglectedBars),
+      { trainingPartnerQuality: trainingPartnerQuality(neglectedBars), focusMultiplier: campFocusMultiplier(neglectedBars) },
     );
     const fedResult = resolveCampWeek(
       fighter,
       allocation,
       campBalance,
-      trainingPartnerQuality(fedBars),
-      campFocusMultiplier(fedBars),
+      { trainingPartnerQuality: trainingPartnerQuality(fedBars), focusMultiplier: campFocusMultiplier(fedBars) },
     );
 
     expect(neglectedResult.fighter.condition.health).toBeLessThan(fedResult.fighter.condition.health);
