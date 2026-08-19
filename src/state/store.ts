@@ -4,16 +4,23 @@
 // than adding new stores.
 
 import { create } from 'zustand';
-import type { Fighter, FightSummary, Origin } from '../engine/types';
+import type { Fighter, FightRecord, FightSummary, Origin } from '../engine/types';
 import { initialLifeBars, type LifeBars } from '../career/life';
 import { initialCutProgress } from '../career/weightcut';
 
-export interface CareerRecord {
-  wins: number;
-  losses: number;
-  draws: number;
-  noContests: number;
-}
+/**
+ * Loop 7.4 (§16.5): kept as an alias so the UI's existing imports do not churn,
+ * but there is now exactly one definition of the shape, on `Fighter`
+ * (engine/types.ts). `CareerState.record` is gone — `career.player.record` is
+ * the single source. Two copies of a fighter's record is a drift bug waiting
+ * for a long career, and §16.5 explicitly discards "keep both and test that
+ * they agree" as a description of the bug rather than a fix.
+ */
+export type CareerRecord = FightRecord;
+
+/** The record of a career that has not started. Also what a debuting player
+ *  carries into their first bout. */
+export const emptyRecord: FightRecord = { wins: 0, losses: 0, draws: 0, noContests: 0 };
 
 export interface CareerState {
   /** DESIGN.md §16.2 — the one string every career-layer draw derives from.
@@ -28,7 +35,6 @@ export interface CareerState {
   purse: number;
   hype: number; // 0..100, feeds matchmaking offer quality (DESIGN.md §8.4)
   ranking: number | null; // null = unranked; 1 = champion
-  record: CareerRecord;
   lifeBars: LifeBars; // DESIGN.md §8.3 — decays weekly (career/life.ts)
   weightCutProgress: number; // 0..100, DESIGN.md §8.2 — camp-long diet/hydration discipline (career/weightcut.ts)
   fightHistory: FightSummary[]; // summaries only — full event logs are never persisted (DESIGN.md §2)
@@ -44,7 +50,6 @@ export const initialCareerState: CareerState = {
   purse: 0,
   hype: 0,
   ranking: null,
-  record: { wins: 0, losses: 0, draws: 0, noContests: 0 },
   lifeBars: initialLifeBars,
   weightCutProgress: initialCutProgress,
   fightHistory: [],

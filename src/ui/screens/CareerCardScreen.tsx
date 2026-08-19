@@ -35,8 +35,8 @@ export function CareerCardScreen() {
     );
   }
 
-  const { player, record, fightHistory } = career;
-  const wear = faceWear(player, record, fightHistory);
+  const { player, fightHistory } = career;
+  const wear = faceWear(player, player.record, fightHistory);
 
   async function copyShareText() {
     const text = formatShareText(card!, player!.name);

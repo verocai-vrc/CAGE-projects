@@ -40,6 +40,7 @@ function fighter(id: string, archetypeId: string, weakness: WeaknessId | null): 
     attributes: { ...archetype.attributes },
     archetype: archetype.id,
     weakness,
+    record: { wins: 0, losses: 0, draws: 0, noContests: 0 },
     traits: [],
     condition: { health: 100, injuries: [] },
   };

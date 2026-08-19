@@ -120,14 +120,15 @@ export function CareerScreen() {
     );
   }
 
-  const totalFights = career.record.wins + career.record.losses + career.record.draws;
+  const record = career.player.record;
+  const totalFights = record.wins + record.losses + record.draws;
 
   return (
     <Screen register="file" id="career-screen" eyebrow="Career file" title={career.player.name} plate="home">
-      {/* The player is the one fighter whose record has a real source today — it
-          lives on CareerState. An opponent's stays empty until Loop 7.4 moves
-          `record` onto Fighter. */}
-      <FighterIdentity fighter={career.player} record={career.record} corner="red" />
+      {/* Loop 7.4: the record rides on the fighter now, so FighterIdentity reads
+          it off `fighter` and needs no second prop — the player and an opponent
+          render through the identical path. */}
+      <FighterIdentity fighter={career.player} corner="red" />
 
       <Sheet title="Standing" caption={`Week ${career.week}`}>
         <FormRow label="Ranking" value={career.ranking === null ? 'Unranked' : `#${career.ranking}`} />

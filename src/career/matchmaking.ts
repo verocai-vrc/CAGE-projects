@@ -5,7 +5,7 @@
 // offers is M4 (§8.3), not this loop's concern.
 
 import type { RNG } from '../engine';
-import type { ArchetypeId, Attributes, Fighter, WeaknessId, WeightClass } from '../engine/types';
+import type { ArchetypeId, Attributes, Fighter, FightRecord, WeaknessId, WeightClass } from '../engine/types';
 
 export interface ArchetypeTemplate {
   id: ArchetypeId;
@@ -76,6 +76,51 @@ function jitterAttributes(base: Attributes, rng: RNG): Attributes {
 export interface GenerateOpponentOptions {
   weightClass: WeightClass;
   idPrefix?: string;
+  /** The ladder position this opponent is drawn for — 1 is the champion, higher
+   *  is further down, `null` is unranked. Scales their record (§16.5). Defaults
+   *  to unranked, so existing callers get the bottom-of-the-ladder shape. */
+  ranking?: number | null;
+}
+
+// Loop 7.4 (§16.5). Opponents had no record at all, which left FighterIdentity's
+// record slot unfillable and made an opponent unreadable as a person: a name and
+// a face with no history behind them.
+//
+// A record is a compressed career. It has to say two things at a glance — how
+// long they have been doing this, and how well — and both scale with where they
+// sit on the ladder. A #1 contender with a 3-1 record reads as a matchmaking
+// error; a #15 with 28 fights reads as a journeyman, which is exactly right.
+
+/** 1 at the top of the ladder, ~0 at the bottom and for the unranked. */
+function ladderStrength(ranking: number | null | undefined): number {
+  if (ranking === null || ranking === undefined) return 0;
+  return Math.max(0, Math.min(1, (LADDER_DEPTH + 1 - ranking) / LADDER_DEPTH));
+}
+
+const LADDER_DEPTH = 15; // matches balance.json's unrankedEntryRanking
+const MIN_FIGHTS = 4; // nobody debuts against the player — no opponent is 0-0
+const MAX_EXTRA_FIGHTS = 22; // a champion has ~26 fights, a #15 around 6
+
+// Exactly four draws, always all four, on every path — rng consumption per
+// opponent stays constant so adding a record could not shift a later draw in
+// the stream (the same discipline drawWeakness follows).
+function drawRecord(rng: RNG, ranking: number | null | undefined): FightRecord {
+  const strength = ladderStrength(ranking);
+
+  const total = MIN_FIGHTS + Math.round(strength * MAX_EXTRA_FIGHTS + rng.next() * 4);
+  // 45% at the bottom of the ladder up to 80% at the top, ±5 points of jitter,
+  // so two fighters at the same rank do not read as the same fighter.
+  const winShare = 0.45 + strength * 0.35 + (rng.next() - 0.5) * 0.1;
+  const draws = rng.next() < 0.09 ? 1 : 0;
+  const noContests = rng.next() < 0.04 ? 1 : 0;
+
+  // At least one win and at least one loss: an undefeated opponent is a
+  // different story beat than this function is for, and a winless one would
+  // never have been offered the fight.
+  const decided = total - draws - noContests;
+  const wins = Math.max(1, Math.min(decided - 1, Math.round(decided * winShare)));
+
+  return { wins, losses: decided - wins, draws, noContests };
 }
 
 // Pure given rng: builds one schema-valid Fighter from a weighted archetype
@@ -106,6 +151,7 @@ export function generateOpponent(
   // face alongside the same name and attributes (§15.4's determinism promise).
   const face = drawFace(rng);
   const weakness = drawWeakness(rng);
+  const record = drawRecord(rng, options.ranking);
 
   return {
     id: `${options.idPrefix ?? 'opp'}-${idSuffix}`,
@@ -117,6 +163,7 @@ export function generateOpponent(
     attributes: jitterAttributes(archetype.attributes, rng),
     archetype: archetype.id,
     weakness,
+    record,
     traits: [],
     condition: { health: 100, injuries: [] },
   };

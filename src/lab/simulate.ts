@@ -37,6 +37,9 @@ function fighterFromArchetype(id: string, archetypeId: string, weakness: string 
     attributes: { ...archetype.attributes },
     archetype: archetype.id,
     weakness,
+    // Flavour the engine never reads, and the lab renders nothing — a fixed
+    // placeholder, same reasoning as `face` above.
+    record: { wins: 0, losses: 0, draws: 0, noContests: 0 },
     traits: [],
     condition: { health: 100, injuries: [] },
   };

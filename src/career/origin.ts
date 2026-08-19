@@ -124,6 +124,11 @@ export function fighterFromOrigin(
     attributes: attributesFromOrigin(origin),
     archetype: origin.archetype,
     weakness: origin.weakness,
+    // Loop 7.4: the pro record starts empty, always. `origin.amateurRecord` is
+    // narrated flavour (§9.1) and deliberately does not seed this — an amateur
+    // 12-2 does not make you 12-2 as a professional, and the career card's
+    // arithmetic counts pro fights.
+    record: { wins: 0, losses: 0, draws: 0, noContests: 0 },
     traits: [],
     condition: { health: 100, injuries: [] },
   };

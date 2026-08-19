@@ -23,6 +23,7 @@ const player: Fighter = {
   },
   archetype: 'striker',
   weakness: null,
+  record: { wins: 0, losses: 0, draws: 0, noContests: 0 },
   traits: [],
   condition: { health: 100, injuries: [] },
 };
@@ -50,11 +51,10 @@ describe('computeCareerCardData', () => {
   it('computes record, finishes, and grade from fight history for a dominant run', () => {
     const career: CareerState = {
       ...initialCareerState,
-      player,
+      player: { ...player, record: { wins: 5, losses: 0, draws: 0, noContests: 0 } },
       ranking: 1,
       purse: 250000,
       retired: true,
-      record: { wins: 5, losses: 0, draws: 0, noContests: 0 },
       fightHistory: [
         fightSummary({ winnerId: 'player-1', method: 'KO' }),
         fightSummary({ winnerId: 'player-1', method: 'TKO' }),
@@ -80,11 +80,10 @@ describe('computeCareerCardData', () => {
   it('computes a low grade for an early, loss-heavy run', () => {
     const career: CareerState = {
       ...initialCareerState,
-      player,
+      player: { ...player, record: { wins: 1, losses: 3, draws: 0, noContests: 0 } },
       ranking: null,
       purse: 5000,
       retired: true,
-      record: { wins: 1, losses: 3, draws: 0, noContests: 0 },
       fightHistory: [
         fightSummary({ winnerId: 'player-1', method: 'UD' }),
         fightSummary({ winnerId: 'opp-internal-id-should-not-leak', method: 'KO' }),
@@ -100,8 +99,7 @@ describe('computeCareerCardData', () => {
   it('classifies a draw distinctly from a win or a loss', () => {
     const career: CareerState = {
       ...initialCareerState,
-      player,
-      record: { wins: 0, losses: 0, draws: 1, noContests: 0 },
+      player: { ...player, record: { wins: 0, losses: 0, draws: 1, noContests: 0 } },
       fightHistory: [fightSummary({ winnerId: null, method: 'DRAW' })],
     };
     expect(computeCareerCardData(career)!.fightGlyphs).toEqual(['draw']);
@@ -112,20 +110,18 @@ describe('formatShareText', () => {
   it('produces visibly distinct text for a title win vs an early loss', () => {
     const titleRun = computeCareerCardData({
       ...initialCareerState,
-      player,
+      player: { ...player, record: { wins: 8, losses: 0, draws: 0, noContests: 0 } },
       ranking: 1,
       purse: 250000,
       retired: true,
-      record: { wins: 8, losses: 0, draws: 0, noContests: 0 },
       fightHistory: Array.from({ length: 8 }, () => fightSummary({ winnerId: 'player-1', method: 'KO' })),
     })!;
     const earlyLoss = computeCareerCardData({
       ...initialCareerState,
-      player,
+      player: { ...player, record: { wins: 0, losses: 1, draws: 0, noContests: 0 } },
       ranking: null,
       purse: 3000,
       retired: true,
-      record: { wins: 0, losses: 1, draws: 0, noContests: 0 },
       fightHistory: [fightSummary({ winnerId: 'opp-internal-id-should-not-leak', method: 'KO' })],
     })!;
 
@@ -139,10 +135,9 @@ describe('formatShareText', () => {
   it('never leaks fighter ids, opponent ids, or seeds into the text', () => {
     const card = computeCareerCardData({
       ...initialCareerState,
-      player,
+      player: { ...player, record: { wins: 2, losses: 1, draws: 0, noContests: 0 } },
       ranking: 4,
       purse: 40000,
-      record: { wins: 2, losses: 1, draws: 0, noContests: 0 },
       fightHistory: [
         fightSummary({ winnerId: 'player-1', method: 'SUB' }),
         fightSummary({ winnerId: 'player-1', method: 'UD' }),

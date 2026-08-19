@@ -10,7 +10,7 @@
 // them.
 
 import { useEffect, useState } from 'preact/hooks';
-import type { Fighter } from '../../engine/types';
+import type { Fighter, FightRecord } from '../../engine/types';
 import { mulberry32 } from '../../engine/rng';
 import { BudgetSplit, type BudgetPillar } from '../components/BudgetSplit';
 import { Button } from '../components/Button';
@@ -34,7 +34,13 @@ import type { FightSummary } from '../../engine/types';
 // screenshots at 16px to confirm none falls back to a missing glyph.
 const NATIONALITIES = ['Brazil', 'Ireland', 'Japan', 'Poland', 'USA', 'lab', 'fixture'];
 
-function kitFighter(name: string, nationality: string, archetype: string, face: string): Fighter {
+function kitFighter(
+  name: string,
+  nationality: string,
+  archetype: string,
+  face: string,
+  record: FightRecord = { wins: 8, losses: 2, draws: 0, noContests: 0 },
+): Fighter {
   return {
     id: `kit-${name}`,
     name,
@@ -48,14 +54,20 @@ function kitFighter(name: string, nationality: string, archetype: string, face: 
     },
     archetype,
     weakness: null,
+    record,
     traits: [],
     condition: { health: 100, injuries: [] },
   };
 }
 
-const KIT_PLAYER = kitFighter('Wanderlei Nascimento', 'Brazil', 'striker', '412030201');
-const KIT_OPPONENT = kitFighter('Kamil Wisniewski', 'Poland', 'wrestler', '203142310');
-const KIT_RECORD = { wins: 12, losses: 3, draws: 0, noContests: 1 };
+// Loop 7.4: both sides carry a record now, so the gallery shows the NC variant
+// against a plain one rather than "record present vs absent".
+const KIT_PLAYER = kitFighter('Wanderlei Nascimento', 'Brazil', 'striker', '412030201', {
+  wins: 12, losses: 3, draws: 0, noContests: 1,
+});
+const KIT_OPPONENT = kitFighter('Kamil Wisniewski', 'Poland', 'wrestler', '203142310', {
+  wins: 19, losses: 6, draws: 1, noContests: 0,
+});
 
 // --- Loop 6.6's wear demonstration: one FaceCode, three points in a career.
 // This is the loop's own screenshot verify — "the same FaceCode at debut,
@@ -224,10 +236,11 @@ function KitBody({
         </div>
       </Sheet>
 
-      <Sheet title="Fighter identity" caption="record present vs absent">
-        {/* The player: record from career state. The opponent: no record source
-            until Loop 7.4, so the slot stays empty rather than fabricating 0-0-0. */}
-        <FighterIdentity fighter={KIT_PLAYER} record={KIT_RECORD} corner="red" />
+      <Sheet title="Fighter identity" caption="both corners, record on the fighter">
+        {/* Loop 7.4: the record rides on Fighter, so the player and a generated
+            opponent render through the identical path. Red carries a no-contest,
+            blue does not — the two formatRecord branches, side by side. */}
+        <FighterIdentity fighter={KIT_PLAYER} corner="red" />
         <FighterIdentity fighter={KIT_OPPONENT} corner="blue" />
         <FighterIdentity fighter={KIT_OPPONENT} compact />
       </Sheet>

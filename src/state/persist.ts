@@ -15,7 +15,11 @@ const STORAGE_KEY = 'cage:save';
 // none, so it would fail validation anyway — the bump makes that an intentional
 // "discard and restart" rather than a schema surprise, and `status: 'discarded'`
 // now lets the caller say so out loud instead of silently starting over.
-const SAVE_VERSION = 3;
+// Loop 7.4: `record` moved from CareerState onto Fighter (§16.5). A v3 envelope
+// has it in the old place, so the new FighterSchema rejects it and the old
+// CareerStateSchema field is gone — the bump makes that an intentional discard
+// rather than a schema surprise, same as the two bumps above.
+const SAVE_VERSION = 4;
 const DEBOUNCE_MS = 500;
 
 interface SaveEnvelope {

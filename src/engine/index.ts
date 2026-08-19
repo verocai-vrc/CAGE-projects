@@ -10,6 +10,7 @@ export type { Pillars } from './round';
 export type {
   Attributes,
   Fighter,
+  FightRecord,
   Injury,
   Origin,
   Pillar,

@@ -44,6 +44,8 @@ const fixtureFighter: Fighter = {
   },
   archetype: 'boxer',
   weakness: null,
+  // Loop 7.4 (§16.5): the record lives here now, not on CareerState.
+  record: { wins: 3, losses: 1, draws: 0, noContests: 0 },
   traits: [],
   condition: { health: 100, injuries: [] },
 };
@@ -57,7 +59,6 @@ const fixtureCareer: CareerState = {
   purse: 15000,
   hype: 35,
   ranking: 12,
-  record: { wins: 3, losses: 1, draws: 0, noContests: 0 },
   lifeBars: { trainingPartners: 80, partner: 60, sponsors: 90 },
   weightCutProgress: 45,
   fightHistory: [],

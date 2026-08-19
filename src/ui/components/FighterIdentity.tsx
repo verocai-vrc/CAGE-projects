@@ -3,17 +3,13 @@
 // procedural face (§15.4) — the empty div reserved in 6.3 is now a <Portrait>, so
 // nothing here reflows relative to that loop.
 //
-// ONE GAP REMAINS, documented in DEVELOPMENT_LOOPS.md Loop 6.3:
-//
-// `record` is optional, and an opponent has none. `generateOpponent` produces no
-// record at all, and the player's lives on CareerState rather than on Fighter, so
-// there is nothing to render for an opponent that would not be invented. Loop 7.4
-// puts `record` on Fighter and single-sources it; until then the slot stays empty
-// rather than showing a fabricated 0-0-0, which would read as a debutant and
-// mislead the player about who they are being matched with.
+// Loop 7.4 closes the gap Loop 6.3 left open (§16.5). The record used to be an
+// optional prop sourced from CareerState, so only the player had one and an
+// opponent's slot rendered empty. `record` is now a field on Fighter, seeded and
+// ladder-scaled for generated opponents, so both sides render through the same
+// path and the component takes no record prop at all.
 
-import type { Fighter } from '../../engine/types';
-import type { CareerRecord } from '../../state/store';
+import type { Fighter, FightRecord } from '../../engine/types';
 import { archetypes } from '../../content';
 import { FlagChip } from './FlagChip';
 import { Portrait } from '../portrait/Portrait';
@@ -21,11 +17,6 @@ import styles from './FighterIdentity.module.css';
 
 interface FighterIdentityProps {
   fighter: Fighter;
-  /**
-   * The player's record, from career state. Omitted for opponents until Loop 7.4 —
-   * see the note above.
-   */
-  record?: CareerRecord;
   /**
    * Corner assignment. Unlike the register (§15.2), this is fighter data rather
    * than styling — which fighter is in the red corner is a fact about the bout —
@@ -39,12 +30,12 @@ interface FighterIdentityProps {
   compact?: boolean;
 }
 
-function formatRecord(record: CareerRecord): string {
+function formatRecord(record: FightRecord): string {
   const base = `${record.wins}-${record.losses}-${record.draws}`;
   return record.noContests > 0 ? `${base} (${record.noContests} NC)` : base;
 }
 
-export function FighterIdentity({ fighter, record, corner, compact }: FighterIdentityProps) {
+export function FighterIdentity({ fighter, corner, compact }: FighterIdentityProps) {
   const archetypeLabel =
     archetypes.find((a) => a.id === fighter.archetype)?.label ?? fighter.archetype;
 
@@ -65,7 +56,7 @@ export function FighterIdentity({ fighter, record, corner, compact }: FighterIde
           <span class={styles.name}>{fighter.name}</span>
         </div>
         <div class={styles.meta}>
-          {record && <span class={styles.record}>{formatRecord(record)}</span>}
+          <span class={styles.record}>{formatRecord(fighter.record)}</span>
           <span class={styles.archetype}>{archetypeLabel}</span>
         </div>
       </div>

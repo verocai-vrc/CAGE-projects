@@ -28,6 +28,7 @@ function fighterFromArchetype(id: string, archetypeId: string): Fighter {
     attributes: { ...archetype.attributes },
     archetype: archetype.id,
     weakness: null,
+    record: { wins: 0, losses: 0, draws: 0, noContests: 0 },
     traits: [],
     condition: { health: 100, injuries: [] },
   };
@@ -56,8 +57,8 @@ describe('applyAftermath', () => {
     const after = applyAftermath(baseCareer, player, result, offer, balance, mulberry32(1));
     expect(after.ranking).not.toBeNull();
     expect(after.ranking as number).toBeLessThan(10);
-    expect(after.record.wins).toBe(1);
-    expect(after.record.losses).toBe(0);
+    expect(after.player!.record.wins).toBe(1);
+    expect(after.player!.record.losses).toBe(0);
   });
 
   it('a loss moves ranking away from the top (higher number)', () => {
@@ -65,8 +66,8 @@ describe('applyAftermath', () => {
     const baseCareer = { ...initialCareerState, player, ranking: 10 };
     const after = applyAftermath(baseCareer, player, result, offer, balance, mulberry32(1));
     expect(after.ranking as number).toBeGreaterThan(10);
-    expect(after.record.losses).toBe(1);
-    expect(after.record.wins).toBe(0);
+    expect(after.player!.record.losses).toBe(1);
+    expect(after.player!.record.wins).toBe(0);
   });
 
   it('an unranked fighter earns a ranking on a win but stays unranked on a loss', () => {
@@ -135,12 +136,16 @@ describe('checkRetirement', () => {
   });
 
   it('triggers once total fights reaches maxCareerFights', () => {
+    // Loop 7.4: read off the fighter, not off CareerState.
     const career = {
       ...initialCareerState,
-      player,
-      record: { wins: balance.maxCareerFights, losses: 0, draws: 0, noContests: 0 },
+      player: { ...player, record: { wins: balance.maxCareerFights, losses: 0, draws: 0, noContests: 0 } },
     };
     expect(checkRetirement(career, balance)).toBe(true);
+  });
+
+  it('is false when there is no player to have a record', () => {
+    expect(checkRetirement(initialCareerState, balance)).toBe(false);
   });
 
   it('triggers once the player is worn down to or past retirementHealthFloor, not before', () => {
@@ -154,7 +159,7 @@ describe('checkRetirement', () => {
   });
 
   it('stays true once already retired, regardless of subsequent state', () => {
-    const career = { ...initialCareerState, player, retired: true, record: { wins: 0, losses: 0, draws: 0, noContests: 0 } };
+    const career = { ...initialCareerState, player, retired: true };
     expect(checkRetirement(career, balance)).toBe(true);
   });
 });
@@ -165,7 +170,7 @@ describe('startCareer', () => {
     expect(career.player).not.toBeNull();
     expect(career.player!.name).toBe('Fresh Fighter');
     expect(career.retired).toBe(false);
-    expect(career.record).toEqual({ wins: 0, losses: 0, draws: 0, noContests: 0 });
+    expect(career.player!.record).toEqual({ wins: 0, losses: 0, draws: 0, noContests: 0 });
     expect(career.ranking).toBeNull();
     expect(career.origin).toEqual(testOrigin);
   });

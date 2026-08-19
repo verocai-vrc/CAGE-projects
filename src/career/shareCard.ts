@@ -47,7 +47,10 @@ export interface CareerCardData {
 // Pure: null when there's no active career (nothing to show or share yet).
 export function computeCareerCardData(career: CareerState): CareerCardData | null {
   if (!career.player) return null;
-  const { player, record, fightHistory, purse, ranking, retired } = career;
+  // Loop 7.4 (§16.5): the record comes off the fighter now — `career.record`
+  // is gone, and `career.player.record` is the single source.
+  const { player, fightHistory, purse, ranking, retired } = career;
+  const record = player.record;
 
   const fightGlyphs = fightHistory.map((fight) => classifyFight(fight, player.id));
   const finishes = fightGlyphs.filter((g) => g === 'win-finish').length;

@@ -9,6 +9,7 @@ import { computePillars, simulateFight } from '../../engine';
 import { mulberry32 } from '../../engine/rng';
 import type {
   Fighter,
+  FightRecord,
   FightEvent,
   FightResult,
   MomentOverrides,
@@ -47,6 +48,7 @@ function fighterFromArchetype(
   archetypeId: string,
   nationality: string,
   face: string,
+  record: FightRecord,
 ): Fighter {
   const archetype = archetypes.find((entry) => entry.id === archetypeId);
   if (!archetype) throw new Error(`FightScreen fixture: missing archetype '${archetypeId}'`);
@@ -60,6 +62,7 @@ function fighterFromArchetype(
     attributes: { ...archetype.attributes },
     archetype: archetype.id,
     weakness: null,
+    record,
     traits: [],
     condition: { health: 100, injuries: [] },
   };
@@ -69,13 +72,18 @@ function fighterFromArchetype(
 // FIXTURE_SEED, which seeds the fight simulation and must stay untouched or the
 // Loop 1.7 determinism test this fixture matches would drift.
 const fixtureFaceRng = mulberry32(424242);
+// Loop 7.4: hand-written rather than drawn, because this is a demo matchup, not
+// a generated one — two contenders deep enough into a career to be headlining.
+// Loop 7.16 deletes all of it when the career supplies the real matchup.
 const fighterA = fighterFromArchetype(
   'fighter-a', 'Riko Tanaka', 'striker', 'Japan',
   serializeFaceCode(faceFromSeed(fixtureFaceRng)),
+  { wins: 14, losses: 3, draws: 0, noContests: 0 },
 );
 const fighterB = fighterFromArchetype(
   'fighter-b', 'Deshawn Cole', 'wrestler', 'USA',
   serializeFaceCode(faceFromSeed(fixtureFaceRng)),
+  { wins: 11, losses: 5, draws: 1, noContests: 0 },
 );
 const emptyTactics: Tactics = {};
 

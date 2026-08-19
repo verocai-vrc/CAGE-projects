@@ -31,6 +31,22 @@ export interface Injury {
   weeksRemaining: number;
 }
 
+// Loop 7.4 (§16.5). Lived on CareerState as `CareerRecord` and existed for the
+// player alone; generated opponents had no record at all, which left the §15.8
+// FighterIdentity component's record slot unfillable and made an opponent
+// unreadable as a person. It belongs to the fighter, not to the save file.
+//
+// §16.5 writes this as `{ wins, losses, draws }`. `noContests` is kept because
+// the shipped share card and FighterIdentity already render "(N NC)" and
+// dropping it would be a regression the section never asks for — the section's
+// subject is single-sourcing, not narrowing what a record can hold.
+export interface FightRecord {
+  wins: number;
+  losses: number;
+  draws: number;
+  noContests: number;
+}
+
 export interface Fighter {
   id: string;
   name: string;
@@ -41,6 +57,10 @@ export interface Fighter {
   attributes: Attributes;
   archetype: ArchetypeId;
   weakness: WeaknessId | null; // the explicitly-named exploitable hole
+  // Flavour only — /engine never reads it, same status as nationality, stance,
+  // and face. The career layer owns every write (career/progression.ts for the
+  // player, career/matchmaking.ts for a generated opponent).
+  record: FightRecord;
   traits: TraitId[]; // unlocked by spiking a stat >= 85 (max 2 equipped)
   condition: {
     health: number; // 0..100 long-term wear, distinct from in-fight health

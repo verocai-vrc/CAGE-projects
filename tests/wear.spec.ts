@@ -30,6 +30,7 @@ function fighter(overrides: Partial<Fighter> = {}): Fighter {
     },
     archetype: 'wrestler',
     weakness: null,
+    record: { wins: 0, losses: 0, draws: 0, noContests: 0 },
     traits: [],
     condition: { health: 100, injuries: [] },
     ...overrides,

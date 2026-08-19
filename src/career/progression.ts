@@ -5,7 +5,7 @@
 // (Loop 4.1) — this loop only applies a one-shot post-fight injury check.
 
 import type { RNG } from '../engine';
-import type { Fighter, FightResult, Injury, Origin } from '../engine/types';
+import type { Fighter, FightRecord, FightResult, Injury, Origin } from '../engine/types';
 import { fighterFromOrigin } from './origin';
 import { initialCareerState, type CareerState } from '../state/store';
 
@@ -89,17 +89,23 @@ export function applyAftermath(
   const hype = nextHype(career.hype + (outcome === 'win' ? offer.hypeReward : 0), outcome, balance);
   const ranking = nextRanking(career.ranking, outcome, balance);
 
-  const record = {
-    ...career.record,
-    wins: career.record.wins + (outcome === 'win' ? 1 : 0),
-    losses: career.record.losses + (outcome === 'loss' ? 1 : 0),
-    draws: career.record.draws + (outcome === 'draw' ? 1 : 0),
+  // Loop 7.4 (§16.5): the record lives on the fighter now, not on CareerState,
+  // so it is written in the same object as the injury rather than alongside it.
+  const record: FightRecord = {
+    ...player.record,
+    wins: player.record.wins + (outcome === 'win' ? 1 : 0),
+    losses: player.record.losses + (outcome === 'loss' ? 1 : 0),
+    draws: player.record.draws + (outcome === 'draw' ? 1 : 0),
   };
 
   const injury = rollInjury(outcome, balance, rng);
-  const updatedPlayer: Fighter = injury
-    ? { ...player, condition: { ...player.condition, injuries: [...player.condition.injuries, injury] } }
-    : player;
+  const updatedPlayer: Fighter = {
+    ...player,
+    record,
+    condition: injury
+      ? { ...player.condition, injuries: [...player.condition.injuries, injury] }
+      : player.condition,
+  };
 
   return {
     ...career,
@@ -107,7 +113,6 @@ export function applyAftermath(
     purse,
     hype,
     ranking,
-    record,
     fightHistory: [...career.fightHistory, result.summary],
   };
 }
@@ -119,9 +124,10 @@ export function applyAftermath(
 // bounded 20-40 minute run naturally caps out well under maxCareerFights.
 export function checkRetirement(career: CareerState, balance: ProgressionBalance): boolean {
   if (career.retired) return true;
-  const totalFights = career.record.wins + career.record.losses + career.record.draws;
-  if (totalFights >= balance.maxCareerFights) return true;
-  if (career.player !== null && career.player.condition.health <= balance.retirementHealthFloor) return true;
+  if (career.player === null) return false;
+  const { wins, losses, draws } = career.player.record;
+  if (wins + losses + draws >= balance.maxCareerFights) return true;
+  if (career.player.condition.health <= balance.retirementHealthFloor) return true;
   return false;
 }
 

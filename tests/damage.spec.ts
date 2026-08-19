@@ -38,6 +38,7 @@ function fighterFromArchetype(id: string, archetypeId: string): Fighter {
     attributes: { ...archetype.attributes },
     archetype: archetype.id,
     weakness: null,
+    record: { wins: 0, losses: 0, draws: 0, noContests: 0 },
     traits: [],
     condition: { health: 100, injuries: [] },
   };

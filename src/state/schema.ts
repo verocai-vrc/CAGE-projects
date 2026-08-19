@@ -30,6 +30,15 @@ export const FighterSchema = z.object({
   attributes: AttributesSchema,
   archetype: z.string(),
   weakness: z.string().nullable(),
+  // Loop 7.4 (§16.5) — moved here from CareerState, and now carried by
+  // generated opponents too. Declared below FighterSchema in source order, so
+  // it is inlined rather than referencing CareerRecordSchema.
+  record: z.object({
+    wins: z.number().int().min(0),
+    losses: z.number().int().min(0),
+    draws: z.number().int().min(0),
+    noContests: z.number().int().min(0),
+  }),
   traits: z.array(z.string()),
   condition: z.object({
     health: z.number().min(0).max(100),
@@ -160,7 +169,6 @@ export const CareerStateSchema = z.object({
   purse: z.number(),
   hype: z.number().min(0).max(100),
   ranking: z.number().int().min(1).nullable(),
-  record: CareerRecordSchema,
   lifeBars: LifeBarsSchema,
   weightCutProgress: z.number().min(0).max(100),
   fightHistory: z.array(FightSummarySchema),
