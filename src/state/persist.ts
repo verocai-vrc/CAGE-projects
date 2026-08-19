@@ -11,12 +11,33 @@ const STORAGE_KEY = 'cage:save';
 // v1 save would fail validation anyway — bumping the version makes that a clean,
 // intentional "discard and restart" instead of a schema-validation surprise
 // (§14 accepts losing a save costs one session).
-const SAVE_VERSION = 2;
+// Loop 7.1: CareerState gained a required `seed` (§16.2). A v2 envelope has
+// none, so it would fail validation anyway — the bump makes that an intentional
+// "discard and restart" rather than a schema surprise, and `status: 'discarded'`
+// now lets the caller say so out loud instead of silently starting over.
+const SAVE_VERSION = 3;
 const DEBOUNCE_MS = 500;
 
 interface SaveEnvelope {
   version: number;
   career: CareerState;
+}
+
+/**
+ * Why `loadCareer` returned what it returned (§16.2).
+ *
+ *   'empty'     — no save existed. A first run.
+ *   'loaded'    — a save existed and was restored.
+ *   'discarded' — a save existed and could not be used: malformed JSON, a
+ *                 failed schema parse, or an unknown version. The player lost
+ *                 a career and is owed an explanation, which is exactly what
+ *                 the old signature could not express.
+ */
+export type LoadStatus = 'empty' | 'loaded' | 'discarded';
+
+export interface LoadResult {
+  career: CareerState;
+  status: LoadStatus;
 }
 
 let debounceTimer: ReturnType<typeof setTimeout> | undefined;
@@ -47,16 +68,18 @@ export function saveCareerImmediate(career: CareerState, storage: Storage = defa
 }
 
 // Never throws. Returns the initial (empty) career state on any failure:
-// missing key, malformed JSON, schema mismatch, or an unknown save version.
-export function loadCareer(storage: Storage = defaultStorage()): CareerState {
+// missing key, malformed JSON, schema mismatch, or an unknown save version —
+// and, since Loop 7.1, says which of those happened. The never-throws contract
+// and the clean-restart fallback are unchanged (§16.2).
+export function loadCareer(storage: Storage = defaultStorage()): LoadResult {
   const raw = storage.getItem(STORAGE_KEY);
-  if (raw === null) return initialCareerState;
+  if (raw === null) return { career: initialCareerState, status: 'empty' };
 
   let parsed: unknown;
   try {
     parsed = JSON.parse(raw);
   } catch {
-    return initialCareerState;
+    return { career: initialCareerState, status: 'discarded' };
   }
 
   if (
@@ -66,11 +89,13 @@ export function loadCareer(storage: Storage = defaultStorage()): CareerState {
     !('career' in parsed) ||
     (parsed as { version: unknown }).version !== SAVE_VERSION
   ) {
-    return initialCareerState;
+    return { career: initialCareerState, status: 'discarded' };
   }
 
   const result = CareerStateSchema.safeParse((parsed as SaveEnvelope).career);
-  return result.success ? result.data : initialCareerState;
+  return result.success
+    ? { career: result.data, status: 'loaded' }
+    : { career: initialCareerState, status: 'discarded' };
 }
 
 export function clearCareer(storage: Storage = window.localStorage): void {

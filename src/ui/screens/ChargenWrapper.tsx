@@ -19,7 +19,7 @@ import type { MomentOption } from '../../state/schema';
 import { amateurMoments } from '../../content';
 import { buildOriginFromChoices } from '../../career/origin';
 import { startCareer } from '../../career/progression';
-import { mulberry32, seedFromString } from '../../engine';
+import { originRng, rollCareerSeed } from '../../career/seed';
 import { Button } from '../components/Button';
 import { Screen } from '../components/Screen';
 import { Sheet } from '../components/Sheet';
@@ -31,7 +31,12 @@ export function ChargenWrapper() {
   const setCareer = useCageStore((s) => s.setCareer);
   const [face, setFace] = useState<string | null>(null);
   const [chosen, setChosen] = useState<MomentOption[]>([]);
-  const faceRng = useMemo(() => mulberry32(seedFromString(`chargen-face-${Date.now()}`)), []);
+  // Loop 7.1: chargen owns the career's seed, rolled once when the screen
+  // mounts and carried through to startCareer — so the face the editor opens on
+  // is part of the same reproducible run as everything after it, rather than a
+  // `chargen-face-${Date.now()}` roll belonging to nothing (§16.2).
+  const seed = useMemo(() => rollCareerSeed(), []);
+  const faceRng = useMemo(() => originRng(seed), [seed]);
 
   const momentIndex = chosen.length;
   const done = face !== null && momentIndex >= amateurMoments.length;
@@ -44,7 +49,7 @@ export function ChargenWrapper() {
 
   function beginProCareer() {
     if (!origin || !face) return;
-    setCareer(startCareer(origin, 'player-1', 'Your Fighter', undefined, undefined, face));
+    setCareer(startCareer(origin, seed, 'player-1', 'Your Fighter', { face }));
     window.location.hash = '#/';
   }
 

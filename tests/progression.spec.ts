@@ -130,7 +130,7 @@ describe('applyAftermath', () => {
 
 describe('checkRetirement', () => {
   it('is false for a fresh career', () => {
-    const career = startCareer(testOrigin, 'p1', 'Fresh Fighter');
+    const career = startCareer(testOrigin, 'test-seed', 'p1', 'Fresh Fighter');
     expect(checkRetirement(career, balance)).toBe(false);
   });
 
@@ -161,7 +161,7 @@ describe('checkRetirement', () => {
 
 describe('startCareer', () => {
   it('builds a fresh, schema-valid career from an Origin', () => {
-    const career = startCareer(testOrigin, 'p1', 'Fresh Fighter');
+    const career = startCareer(testOrigin, 'test-seed', 'p1', 'Fresh Fighter');
     expect(career.player).not.toBeNull();
     expect(career.player!.name).toBe('Fresh Fighter');
     expect(career.retired).toBe(false);
@@ -171,7 +171,7 @@ describe('startCareer', () => {
   });
 
   it('applies origin statDeltas on top of the baseline, clamped to 0..100', () => {
-    const career = startCareer(testOrigin, 'p1', 'Fresh Fighter');
+    const career = startCareer(testOrigin, 'test-seed', 'p1', 'Fresh Fighter');
     for (const [key, delta] of Object.entries(testOrigin.statDeltas)) {
       const attrKey = key as keyof Attributes;
       expect(career.player!.attributes[attrKey]).toBe(50 + (delta ?? 0));

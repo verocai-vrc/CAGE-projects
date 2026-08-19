@@ -77,7 +77,7 @@ describe('authored face flows through the real pro-debut entry point', () => {
 
     const chosen = amateurMoments.map((moment) => moment.options[0]);
     const origin = buildOriginFromChoices(chosen);
-    const career = startCareer(origin, 'player-1', 'Your Fighter', undefined, undefined, face);
+    const career = startCareer(origin, 'test-seed', 'player-1', 'Your Fighter', { face });
 
     expect(career.player?.face).toBe(face);
     expect(parseFaceCode(career.player!.face)).toEqual(authored);
@@ -88,12 +88,13 @@ describe('authored face flows through the real pro-debut entry point', () => {
     const face = serializeFaceCode(faceFromSeed(mulberry32(456)));
     const chosen = amateurMoments.map((moment) => moment.options[1] ?? moment.options[0]);
     const origin = buildOriginFromChoices(chosen);
-    const career = startCareer(origin, 'player-1', 'Your Fighter', undefined, undefined, face);
+    const career = startCareer(origin, 'test-seed', 'player-1', 'Your Fighter', { face });
 
     saveCareerImmediate(career, storage);
     const loaded = loadCareer(storage);
 
-    expect(loaded.player?.face).toBe(face);
-    expect(loaded).toEqual(career);
+    expect(loaded.status).toBe('loaded');
+    expect(loaded.career.player?.face).toBe(face);
+    expect(loaded.career).toEqual(career);
   });
 });

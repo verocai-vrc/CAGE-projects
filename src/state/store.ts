@@ -16,6 +16,11 @@ export interface CareerRecord {
 }
 
 export interface CareerState {
+  /** DESIGN.md §16.2 — the one string every career-layer draw derives from.
+   *  A daily run's is the date; a normal run's is rolled once at career start
+   *  (career/seed.ts). Empty only on `initialCareerState`, which has no career
+   *  to be reproducible. */
+  seed: string;
   player: Fighter | null;
   origin: Origin | null;
   week: number;
@@ -31,6 +36,7 @@ export interface CareerState {
 }
 
 export const initialCareerState: CareerState = {
+  seed: '',
   player: null,
   origin: null,
   week: 0,

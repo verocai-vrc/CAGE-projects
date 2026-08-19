@@ -30,30 +30,41 @@ const DIST = join(ROOT, 'dist');
 
 const KB = 1024;
 
-// The pre-revamp baseline for the JS-delta budget. Measured, not guessed:
-// commit 1e07e97 ("Loop 5.2: shareable result — M5 done") is the last commit
-// before Loop 6.1, and `npm ci && npm run build` in a worktree at that commit
-// emits a single 179,840-byte JS chunk (and a 90-byte stylesheet — the "90-byte
-// stylesheet" DEVELOPMENT_LOOPS.md's M6 preamble describes, which confirms the
-// baseline is the right one). Reproduce with:
+// Milestone baselines for the JS-delta budgets. Both measured, not guessed —
+// `npm install && npm run build` in a worktree at the named commit:
 //
-//   git worktree add /tmp/cage-m5 1e07e97 && cd /tmp/cage-m5
-//   npm install && npm run build
+//   1e07e97  "Loop 5.2: shareable result — M5 done"   179,840 bytes
+//            The last commit before Loop 6.1. It also emits the 90-byte
+//            stylesheet DEVELOPMENT_LOOPS.md's M6 preamble describes, which
+//            confirms it is the right pre-revamp baseline.
+//   26f41c4  "Loop 6.12: ... — M6 done"                203,271 bytes
 //
-// The comparison is initial-chunk to initial-chunk: bytes a player downloads
+// Both comparisons are initial-chunk to initial-chunk: bytes a player downloads
 // before the first screen paints. Lazily-loaded route chunks are excluded from
-// both sides — at M5 there were none, and today there are two developer routes
-// (#/lab, #/kit) that no player path reaches.
+// every side — at M5 there were none, and since Loop 6.12 there are two
+// developer routes (#/lab, #/kit) that no player path reaches.
 const M5_BASELINE_JS_BYTES = 179_840;
+const M6_BASELINE_JS_BYTES = 203_271;
 
+// §15.9's "JS delta from the revamp" measured what M6 cost, and M6 is closed:
+// it settled at 22.84KB against an amended 24KB ceiling. Loop 7.1 showed why it
+// cannot also serve as the live ceiling — measured against the M5 baseline,
+// every future loop's growth counts against a budget for work that already
+// shipped, and the seed plus the session wiring alone left 70 bytes of it.
+//
+// §16.9 is explicit about what replaces it: "Two separate CI checks replace the
+// one — initial transfer ≤ 150 KB gzip, narration chunk ≤ 13 KB gzip", and it
+// sizes M7's own JS at "~25KB raw". So the M6 delta is reported as settled
+// history and the live ceiling re-baselines at the M6 close.
 const BUDGETS = {
   cssRaw: 28 * KB,
   cssGzip: 7 * KB,
   fontsTotal: 60 * KB,
-  // Amended at Loop 6.12 from 20KB, in the same commit as DESIGN.md's table —
-  // see §15.9's amendment note for the measurement and what it bought.
-  jsDeltaRaw: 24 * KB,
+  // §16.9: "M7's JS alone (narration, beats, identity, gym, routing) is ~25KB raw".
+  m7JsDeltaRaw: 25 * KB,
   totalGzip: 150 * KB,
+  // §16.9's second new check. Inert until Loop 7.10 creates the chunk.
+  narrationChunkGzip: 13 * KB,
 };
 
 const RASTER_EXTENSIONS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.gif', '.avif', '.bmp', '.ico']);
@@ -100,14 +111,39 @@ if (entryJs.length !== 1) {
 }
 
 const entryBytes = statSync(entryJs[0]).size;
-const jsDelta = entryBytes - M5_BASELINE_JS_BYTES;
-check(
-  'JS delta from the revamp (raw)',
-  jsDelta,
-  BUDGETS.jsDeltaRaw,
-  `entry ${fmt(entryBytes)} - M5 baseline ${fmt(M5_BASELINE_JS_BYTES)}` +
-    (lazyJs.length ? `; ${lazyJs.length} lazy route chunk(s) excluded: ${lazyJs.map((f) => basename(f)).join(', ')}` : ''),
+const lazyNote = lazyJs.length
+  ? `; ${lazyJs.length} lazy route chunk(s) excluded: ${lazyJs.map((f) => basename(f)).join(', ')}`
+  : '';
+
+// Settled history: what the §15 revamp cost, reported so a regression is visible
+// but not enforced as a live ceiling on work that came after it.
+console.log(
+  `M6 revamp cost (settled): ${fmt(M6_BASELINE_JS_BYTES - M5_BASELINE_JS_BYTES)} raw` +
+    ` — M5 ${fmt(M5_BASELINE_JS_BYTES)} -> M6 ${fmt(M6_BASELINE_JS_BYTES)}\n`,
 );
+
+check(
+  'M7 JS delta since M6 (raw)',
+  entryBytes - M6_BASELINE_JS_BYTES,
+  BUDGETS.m7JsDeltaRaw,
+  `entry ${fmt(entryBytes)} - M6 baseline ${fmt(M6_BASELINE_JS_BYTES)}${lazyNote}`,
+);
+
+// §16.9's narration chunk, checked once Loop 7.10 creates it. Reported as
+// absent rather than silently skipped, so the check cannot rot unnoticed.
+const narrationChunks = lazyJs.filter((f) => /narration/i.test(basename(f)));
+if (narrationChunks.length > 0) {
+  const narrationGzip = narrationChunks.reduce(
+    (sum, f) => sum + gzipSync(readFileSync(f), { level: 9 }).length,
+    0,
+  );
+  check(
+    'Narration chunk (gzip)',
+    narrationGzip,
+    BUDGETS.narrationChunkGzip,
+    narrationChunks.map((f) => basename(f)).join(', '),
+  );
+}
 
 // --- CSS -------------------------------------------------------------------
 // Every stylesheet the build emits, entry and route chunks together: a player

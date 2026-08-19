@@ -15,6 +15,22 @@ export function dailyRng(dateString: string): RNG {
   return mulberry32(seedFromString(dateString));
 }
 
+/**
+ * Today's date as `YYYY-MM-DD`, in the player's own local calendar rather than
+ * UTC — §11's daily challenge is meant to turn over at their midnight.
+ *
+ * **This is the only clock read in the entire codebase**, and Loop 7.1 moved it
+ * here from CareerScreen so that it is one named, exempt place rather than an
+ * inline `new Date()` somewhere in the UI. §16.2 removed every other one: a
+ * career's draws derive from its seed (career/seed.ts), never from the time it
+ * happened to be played. tests/seed.spec.ts enforces that structurally, and
+ * exempts exactly this function.
+ */
+export function todayDateString(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+}
+
 export interface DailySetup {
   origin: Origin;
   eventDeckOrder: string[]; // LifeEvent ids, in draw order

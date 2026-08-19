@@ -487,6 +487,105 @@ for (const screen of SCREENS) {
 }
 await page.setViewportSize({ width: 1000, height: 900 });
 
+// --- persistence: a career survives closing the tab (Loop 7.1, §16.2) ------
+// Every step of this failed before Loop 7.1: persist.ts was complete, tested,
+// and called by no application code, so nothing was ever written and a reload
+// dropped the career on the floor.
+console.log('\n--- persistence across a reload ---');
+await page.setViewportSize({ width: 1000, height: 900 });
+await page.goto(BASE_URL + '/');
+await page.evaluate(() => localStorage.clear());
+await page.reload();
+await page.waitForSelector('#career-screen');
+await page.click('button:has-text("Skip: random prospect")');
+await page.waitForTimeout(150);
+
+// saveCareer debounces at 500ms, so a read taken immediately after the click is
+// reading before the write, not before the wiring.
+await page.waitForTimeout(800);
+const startedSave = await page.evaluate(() => localStorage.getItem('cage:save'));
+assertGate(!!startedSave, 'a started career is written to localStorage');
+
+// Complete a camp week, which moves week, attributes and life bars at once.
+await page.click('a[href="#/camp"]');
+await page.waitForSelector('#camp-screen');
+const divider = page.locator('#camp-screen [role="slider"]').first();
+await divider.focus();
+for (let i = 0; i < 6; i++) await page.keyboard.press('ArrowRight');
+await page.click('#camp-screen button:has-text("Resolve week")');
+await page.waitForTimeout(200);
+await page.goto(BASE_URL + '/#/');
+await page.waitForSelector('#career-screen');
+
+// saveCareer debounces at 500ms — wait past it, the way a real player closing
+// a tab a second later would.
+await page.waitForTimeout(800);
+const afterWeek = await page.evaluate(() => {
+  const raw = localStorage.getItem('cage:save');
+  const career = raw ? JSON.parse(raw).career : null;
+  return {
+    hub: document.querySelector('#career-screen')?.innerText ?? '',
+    seed: career?.seed ?? null,
+    week: career?.week ?? null,
+    attributes: career?.player?.attributes ?? null,
+    lifeBars: career?.lifeBars ?? null,
+    face: career?.player?.face ?? null,
+  };
+});
+assertGate(afterWeek.week > 0, 'the camp week reached the save', `week ${afterWeek.week}`);
+assertGate(!!afterWeek.seed, 'the career seed is persisted (§16.2)', `seed "${afterWeek.seed}"`);
+
+// The actual reload — a fresh document, hydrating from storage alone.
+await page.reload();
+await page.waitForSelector('#career-screen');
+const restored = await page.evaluate(() => {
+  const raw = localStorage.getItem('cage:save');
+  const career = raw ? JSON.parse(raw).career : null;
+  return {
+    hub: document.querySelector('#career-screen')?.innerText ?? '',
+    seed: career?.seed ?? null,
+    week: career?.week ?? null,
+    attributes: career?.player?.attributes ?? null,
+    lifeBars: career?.lifeBars ?? null,
+    face: career?.player?.face ?? null,
+  };
+});
+
+assertGate(
+  !/No active career/.test(restored.hub),
+  'the hub still has a career after a reload',
+  restored.hub.split('\n').slice(0, 2).join(' / '),
+);
+assertGate(restored.week === afterWeek.week, 'week survives the reload', `${restored.week}`);
+assertGate(
+  JSON.stringify(restored.attributes) === JSON.stringify(afterWeek.attributes),
+  'attributes survive the reload',
+);
+assertGate(
+  JSON.stringify(restored.lifeBars) === JSON.stringify(afterWeek.lifeBars),
+  'life bars survive the reload',
+  JSON.stringify(restored.lifeBars),
+);
+assertGate(restored.face === afterWeek.face, 'the authored face survives the reload', restored.face);
+assertGate(restored.seed === afterWeek.seed, 'the seed survives the reload', restored.seed);
+// Loop 6.5's save/reload verify was explicitly blocked on this wiring — it can
+// finally be checked end to end rather than at the store level.
+assertGate(
+  restored.hub.replace(/\s+/g, ' ') === afterWeek.hub.replace(/\s+/g, ' '),
+  'the hub renders identically before and after the reload',
+);
+await shot(page, 'gate-persistence-after-reload');
+
+// A save the app cannot use must not strand the player on a broken screen.
+await page.evaluate(() => localStorage.setItem('cage:save', '{not valid json::'));
+await page.reload();
+await page.waitForSelector('#career-screen');
+const afterCorrupt = await page.textContent('#career-screen');
+assertGate(
+  /No active career/.test(afterCorrupt),
+  'a corrupt save falls back to a clean start rather than throwing',
+);
+
 // --- a full career by keyboard alone ---------------------------------------
 // "Completable by keyboard alone" means no click and no page.goto past the
 // initial load: every navigation is a focused link or button activated by

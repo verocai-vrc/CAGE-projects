@@ -134,16 +134,27 @@ export function checkRetirement(career: CareerState, balance: ProgressionBalance
 // (bald, clean-shaven, the first skin/head/feature variant), just not a rolled
 // one. Loop 6.5's portrait editor and the skip path's own seed are the callers
 // that pass a real one.
+//
+// Loop 7.1 adds `seed` (DESIGN.md §16.2) and collapses the three trailing
+// optionals into an options object — three of the eight call sites were already
+// passing `undefined, undefined, face` to reach past them, and `seed` is far too
+// load-bearing to sit at the end of that queue.
+export interface StartCareerOptions {
+  nationality?: string;
+  weightClass?: string;
+  face?: string;
+}
+
 export function startCareer(
   origin: Origin,
+  seed: string,
   playerId: string,
   playerName: string,
-  nationality = 'USA',
-  weightClass = 'lightweight',
-  face = '000000000',
+  { nationality = 'USA', weightClass = 'lightweight', face = '000000000' }: StartCareerOptions = {},
 ): CareerState {
   return {
     ...initialCareerState,
+    seed,
     player: fighterFromOrigin(origin, playerId, playerName, nationality, weightClass, face),
     origin,
     hype: Math.max(0, Math.min(100, origin.hypeModifier)),

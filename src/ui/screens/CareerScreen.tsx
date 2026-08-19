@@ -10,14 +10,15 @@
 // retirement verdict.
 
 import { useState } from 'preact/hooks';
-import { mulberry32, seedFromString, simulateFight } from '../../engine';
+import { simulateFight } from '../../engine';
 import type { Fighter, Tactics } from '../../engine/types';
 import { amateurMoments, archetypes, balance, lifeEvents, namePools } from '../../content';
 import { generateOpponent, offerQuality } from '../../career/matchmaking';
 import { faceFromSeed, serializeFaceCode } from '../portrait/faceCode';
 import { applyAftermath, checkRetirement, startCareer } from '../../career/progression';
 import { rollRandomOrigin } from '../../career/origin';
-import { buildDailySetup } from '../../career/daily';
+import { careerRng, originRng, rollCareerSeed } from '../../career/seed';
+import { buildDailySetup, todayDateString } from '../../career/daily';
 import { sponsorPurseMultiplier } from '../../career/life';
 import { classifyCut, initialCutProgress } from '../../career/weightcut';
 import { useCageStore } from '../../state/store';
@@ -28,26 +29,22 @@ import { Screen } from '../components/Screen';
 import { Sheet } from '../components/Sheet';
 import { Stamp } from '../components/Stamp';
 
-// Local calendar date (not UTC) so "today" matches the player's own clock —
-// DESIGN.md §11's daily challenge is meant to change at midnight for them,
-// not at UTC midnight.
-function todayDateString(): string {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-}
-
 export function CareerScreen() {
   const career = useCageStore((s) => s.career);
   const setCareer = useCageStore((s) => s.setCareer);
   const [lastFight, setLastFight] = useState<string | null>(null);
 
   function skipToRandomProspect() {
-    const rng = mulberry32(seedFromString(`skip-${Date.now()}`));
+    // Loop 7.1: rolled once, here, and then stored — everything downstream
+    // derives from it (§16.2). This used to be `skip-${Date.now()}`, which made
+    // the prospect reproducible only within the same millisecond.
+    const seed = rollCareerSeed();
+    const rng = originRng(seed);
     const origin = rollRandomOrigin(amateurMoments, rng);
     // §9.3/§15.4: the skip path rolls a face from its own seed and shows no
     // editor — this is that roll, drawn after the origin from the same stream.
     const face = serializeFaceCode(faceFromSeed(rng));
-    setCareer(startCareer(origin, 'player-1', 'Your Fighter', undefined, undefined, face));
+    setCareer(startCareer(origin, seed, 'player-1', 'Your Fighter', { face }));
     setLastFight(null);
   }
 
@@ -55,30 +52,43 @@ export function CareerScreen() {
   // origin (and, once camp draws from the deck, the same event order) —
   // buildDailySetup derives both from today's date string alone.
   function startTodaysProspect() {
-    const { origin } = buildDailySetup(todayDateString(), amateurMoments, lifeEvents);
-    // Same seed as the origin (the date string), so today's prospect has the same
-    // face for every player — Loop 5.1's determinism contract extended to faces.
-    const rng = mulberry32(seedFromString(todayDateString()));
-    const face = serializeFaceCode(faceFromSeed(rng));
-    setCareer(startCareer(origin, 'player-1', 'Your Fighter', undefined, undefined, face));
+    // §16.2: a daily run's career seed IS the date string, so the whole run —
+    // not just the origin — is shared. Before Loop 7.1 the date seeded the
+    // prospect and the clock seeded the fights, which made the daily a shared
+    // character with private bouts, and so not comparable at all.
+    const seed = todayDateString();
+    const { origin } = buildDailySetup(seed, amateurMoments, lifeEvents);
+    // Same stream as the origin, so today's prospect has the same face for every
+    // player — Loop 5.1's determinism contract extended to faces.
+    const face = serializeFaceCode(faceFromSeed(originRng(seed)));
+    setCareer(startCareer(origin, seed, 'player-1', 'Your Fighter', { face }));
     setLastFight(null);
   }
 
   function findFightAndResolve() {
     if (!career.player) return;
-    const rng = mulberry32(seedFromString(`${career.player.id}-${career.fightHistory.length}-${Date.now()}`));
+    // §16.2: one stream per purpose, indexed by position in the career. Adding
+    // a draw to the bout stream cannot shift which opponent the next fight
+    // generates, because they are addressed independently rather than pulled
+    // from one advancing sequence. This replaces a single clock-seeded stream
+    // that did all three jobs and made the whole career unreproducible.
+    const boutIndex = career.fightHistory.length;
+    const opponentRng = careerRng(career.seed, 'opponent', boutIndex);
+    const boutRng = careerRng(career.seed, 'bout', boutIndex);
+    const injuryRng = careerRng(career.seed, 'injury', boutIndex);
+
     const opponent: Fighter = generateOpponent(
       archetypes,
       namePools,
-      rng,
+      opponentRng,
       { weightClass: career.player.weightClass, idPrefix: 'opp' },
       (faceRng) => serializeFaceCode(faceFromSeed(faceRng)),
     );
     const offer = offerQuality(career.ranking, career.hype, balance, sponsorPurseMultiplier(career.lifeBars));
     const cutQuality = classifyCut(career.weightCutProgress, balance);
     const tactics: Tactics = { [career.player.id]: { cutQuality, rounds: {} } };
-    const result = simulateFight(career.player, opponent, tactics, rng);
-    const after = applyAftermath(career, career.player, result, offer, balance, rng);
+    const result = simulateFight(career.player, opponent, tactics, boutRng);
+    const after = applyAftermath(career, career.player, result, offer, balance, injuryRng);
     const retired = checkRetirement(after, balance);
 
     // The cut is a single-use camp-long resource — consumed on fight night,

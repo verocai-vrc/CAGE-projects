@@ -151,6 +151,8 @@ export const LifeBarsSchema = z.object({
 });
 
 export const CareerStateSchema = z.object({
+  // §16.2. Empty is valid: initialCareerState carries no career to seed.
+  seed: z.string(),
   player: FighterSchema.nullable(),
   origin: OriginSchema.nullable(),
   week: z.number().int().min(0),
