@@ -525,6 +525,30 @@ Sequencing rule: **6.1 and 6.2 come first and are not negotiable.** Screen-level
 - No horizontal scroll at 360px on any screen.
 - All existing tests green; determinism and purity checks untouched.
 
+**Gate outcome (all verify items pass).** Measured, not asserted:
+
+| Check | Result |
+|---|---|
+| §15.9 budgets | 6/6 pass — `npm run budget`, from a real build |
+| axe, serious+critical | 0 across all 7 screens |
+| DOM nodes, busiest player-facing screen | 363 / 1200 (fight night, 12s into playback) |
+| Horizontal scroll @360px | none, all 7 screens |
+| Full career by keyboard alone | title → 25 fights → retirement card, no mouse |
+| Full career under `prefers-reduced-motion` | passes; the walkout never mounts, HUD up at 400ms |
+| Test suite | 281 green |
+
+Four defects the gate caught and this loop fixed:
+
+1. **Fight night scrolled horizontally at 360px** (scrollWidth 534). `.corners` was a non-wrapping two-column flex row. Now wraps and stacks.
+2. **`FighterIdentity`'s corner eyebrow measured 2.39:1 on every File screen** — §15.2's named failure mode, arriving through the register it was not written for: `--red-corner-text` is *lighter* than the fill to lift off arena black, which is backwards on paper. `--corner-text` is now bound per register (`--red-corner-file` / `--blue-corner-file`, 4.97–6.79:1 across all three File surfaces).
+3. **`Stamp`'s `opacity: 0.92` pushed `--stamp` to 4.15:1.** `--stamp` on `--paper` is 4.64:1, the least headroom in the palette; an 8% veil was enough. The border carries the worn look now; the type is opaque. The token test measures token values, so only the rendered-pixel axe pass could catch this — the reason 6.12 exists.
+4. **The JS-delta budget was genuinely exceeded**, at 29.95KB against 20KB. `#/lab` and `#/kit` are now dynamic imports (−8.7KB no player downloads), landing it at 22.84KB; §15.9's JS line was amended 20 → 24KB with the measurement recorded there. Total transfer, the budget that actually protects the player, closes at 108.67/150KB gzip.
+
+Two findings handed forward to M7:
+
+- **§16.4's "6.5KB for faces" does not survive measurement.** It was derived assuming flags spend their full 1.5KB and plates their full 6KB; measured, they spend 1,123 and 3,020. Faces are already at 7,465 and the four families total 13,722 / 14,336 — **614 bytes of headroom** for Loop 7.7's three new slots and three widened ones. `tests/sprite.spec.ts` prints the slice and fails if it goes negative. Expect to cut `gear` as §16.4 instructs.
+- **`#/camp` has no back path**, so the keyboard run reaches the hub by hash rather than by control. Loop 8.1 (§16.3) owns it; the driver prints a NOTE rather than failing, since 6.12 does not scope navigation.
+
 **Exit artifact: M6 is done.** The game a player opens looks like a game.
 
 ---

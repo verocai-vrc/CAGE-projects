@@ -1,16 +1,26 @@
 /* FightScreen — the Broadcast register's fight-night layout (§15.1, §15.8). */
 
+/* Loop 6.12: the two corners sat side by side unconditionally, so at 360px they
+ * needed 2 x 261px and pushed the document to a 534px scrollWidth — the one
+ * horizontal-scroll failure the M6 gate found. `flex-wrap` plus a basis wide
+ * enough to hold a portrait, a name and a meter keeps red-left/blue-right
+ * (§15.1) wherever there is room for it and stacks them where there is not.
+ * `min-width: 0` lets a long fighter name shrink its column rather than forcing
+ * the row wider than the viewport. */
 .corners {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--sp-5);
 }
 
 .corners > div {
-  flex: 1;
+  flex: 1 1 16rem;
+  min-width: 0;
 }
 
 .controls {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--sp-2);
   margin: var(--sp-4) 0;
 }

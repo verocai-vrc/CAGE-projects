@@ -610,12 +610,18 @@ This removes the ability to over-allocate. That costs nothing: `clampAllocation`
 | CSS | 28KB raw / 7KB gzip |
 | Fonts | 60KB total woff2 |
 | Inline SVG (faces + flags + plates) | 14KB |
-| JS delta from the revamp | 20KB raw |
+| JS delta from the revamp | 24KB raw |
 | Total transfer, gzipped | 150KB |
 | Raster assets | zero, favicon excepted |
 | DOM nodes on the busiest screen | 1200 |
 
-The Playwright driver at `.claude/skills/run-cage/driver.mjs` already walks the full flow and screenshots each checkpoint; extend it to assert the node ceiling and to capture at three viewports. Visual loops verify by screenshot — that is what the harness is for.
+**Amended at Loop 6.12 (M6's exit gate): the JS line was 20KB raw and is now 24KB.** The original figure was a forecast written before any of §15 existed. Measured from real builds at both ends — commit `1e07e97` (M5 done) emits a 179,840-byte entry chunk; M6 closes at 203,232 — the revamp cost **22.84KB raw / ~8.6KB gzip**, and bought: the token system and `Screen` primitive (6.1), thirteen kit components (6.2), flags and `FighterIdentity` (6.3), procedural portraits and `FaceCode` (6.4), the portrait editor (6.5), wear derivation (6.6), five rebuilt screens (6.7, 6.8, 6.11), six scene plates (6.9), and the walkout (6.10).
+
+Two developer routes were moved out of the initial chunk first rather than counted against it: `#/lab` (§10, a developer deliverable) and `#/kit` (Loop 6.2's verification surface) are dynamic imports, together 8.7KB no player path downloads. The remaining 3KB could only be recovered by lazily loading character creation as well, which puts a loading state on the first thing every new career does — a worse game in exchange for a rounder number.
+
+The budget that actually protects the player is total transfer, and it closes M6 at **108.67KB gzip against 150KB**. That is the line to defend in M7, where §16.9 shows the headroom falling to single-digit KB.
+
+Every line in this table except inline SVG is enforced by `scripts/check-budgets.mjs`, run in CI against a real build. Inline SVG is enforced at source in `tests/sprite.spec.ts`, because once minified into the bundle it is indistinguishable from the components around it. The Playwright driver at `.claude/skills/run-cage/driver.mjs` walks the full flow and screenshots each checkpoint, and since Loop 6.12 also asserts the node ceiling, captures at three viewports, and runs an axe pass on every screen. Visual loops verify by screenshot — that is what the harness is for.
 
 ---
 

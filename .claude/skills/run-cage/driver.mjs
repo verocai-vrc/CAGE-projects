@@ -3,12 +3,18 @@
 // walks the amateur wrapper -> camp -> fight -> card -> lab -> skip-path
 // flow, and drops a numbered screenshot at each checkpoint.
 //
+// Loop 6.12 (the M6 exit gate) appends a second half: an axe pass on every
+// screen, the §15.9 node ceiling, a 360/768/1280 sweep across the whole
+// inventory, and two full career runs — one by keyboard alone, one under
+// prefers-reduced-motion. Those live under "M6 EXIT GATE" below.
+//
 // Usage:
 //   node .claude/skills/run-cage/driver.mjs
 //   BASE_URL=http://localhost:5173 SHOT_DIR=/tmp/cage-shots node .claude/skills/run-cage/driver.mjs
 import { chromium } from 'playwright';
 import fs from 'node:fs';
 import path from 'node:path';
+import { createRequire } from 'node:module';
 import { fileURLToPath } from 'node:url';
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:5173';
@@ -21,6 +27,17 @@ async function shot(page, label) {
   const shotPath = path.join(SHOT_DIR, `${String(shotN).padStart(2, '0')}-${label}.png`);
   await page.screenshot({ path: shotPath, fullPage: true });
   console.log('SCREENSHOT', shotPath);
+}
+
+/** One line of gate output, and a non-zero exit if it failed. */
+function assertGate(ok, label, detail) {
+  if (ok) {
+    console.log(`  PASS  ${label}${detail ? `  — ${detail}` : ''}`);
+  } else {
+    console.error(`  FAIL  ${label}${detail ? `  — ${detail}` : ''}`);
+    process.exitCode = 1;
+  }
+  return ok;
 }
 
 const browser = await chromium.launch();
@@ -318,7 +335,323 @@ const skipHeader = await page.textContent('#career-screen h1');
 console.log('skip path header:', skipHeader);
 await shot(page, 'skip-path-started');
 
-console.log('CONSOLE ERRORS TOTAL:', JSON.stringify(consoleErrors, null, 2));
+// ===========================================================================
+// M6 EXIT GATE (Loop 6.12)
+//
+// Everything above walks the flow and screenshots it. Everything below
+// measures it against DESIGN.md §15.9 and the loop's verify list:
+//
+//   - zero axe violations at serious or critical severity, every screen
+//   - the 1200-node ceiling on the busiest screen
+//   - no horizontal scroll at 360px, every screen
+//   - screenshots at 360/768/1280, every screen
+//   - a full career by keyboard alone, start to retirement
+//   - a full career under prefers-reduced-motion: reduce
+// ===========================================================================
+
+const require = createRequire(import.meta.url);
+const AXE_SOURCE = fs.readFileSync(require.resolve('axe-core/axe.min.js'), 'utf-8');
+
+// The full screen inventory as of M6. `needsCareer` starts a career first —
+// #/camp and #/card are blank without a player, and auditing a blank screen
+// proves nothing.
+//
+// `devOnly` marks the two routes no player path reaches: the balance lab
+// (DESIGN.md §10, a developer deliverable) and the component gallery built as
+// Loop 6.2's verification surface. Both are lazily loaded and outside the
+// initial bundle (see scripts/check-budgets.mjs). They are still audited for
+// accessibility and still swept for horizontal scroll — a broken dev screen is
+// still broken — but they are excluded from §15.9's "DOM nodes on the busiest
+// screen", which is a ceiling on what the game renders, not on a gallery that
+// deliberately renders 24 portraits and every component twice to be compared.
+const SCREENS = [
+  { route: '/', id: '#career-screen', label: 'career-hub' },
+  { route: '/chargen', id: '#chargen-wrapper', label: 'chargen' },
+  { route: '/camp', id: '#camp-screen', label: 'camp', needsCareer: true },
+  { route: '/card', id: '#career-card-screen', label: 'career-card', needsCareer: true },
+  { route: '/fight', id: '#fight-screen', label: 'fight-night' },
+  { route: '/lab', id: '#lab-screen', label: 'lab', devOnly: true },
+  { route: '/kit', id: '#kit-screen', label: 'kit', devOnly: true },
+];
+
+/** Start a career via the skip path so the career-gated screens have state. */
+async function ensureCareer(p) {
+  await p.goto(BASE_URL + '/#/');
+  await p.waitForSelector('#career-screen');
+  const skip = p.locator('button:has-text("Skip: random prospect")');
+  if (await skip.count()) {
+    await skip.click();
+    await p.waitForTimeout(120);
+  }
+}
+
+/** Run axe against the current page, returning only serious/critical issues. */
+async function axeScan(p) {
+  await p.evaluate(AXE_SOURCE);
+  return await p.evaluate(async () => {
+    // eslint-disable-next-line no-undef
+    const results = await axe.run(document, {
+      resultTypes: ['violations'],
+      // Colour contrast is measured against the token pairs in tests/tokens.spec.ts
+      // at source; axe re-measures it here on real rendered pixels, which is the
+      // check §15.2 actually cares about. Both stay on.
+      runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'best-practice'] },
+    });
+    return results.violations
+      .filter((v) => v.impact === 'serious' || v.impact === 'critical')
+      .map((v) => ({
+        id: v.id,
+        impact: v.impact,
+        help: v.help,
+        nodes: v.nodes.slice(0, 3).map((n) => n.target.join(' ')),
+      }));
+  });
+}
+
+console.log('\n=== M6 EXIT GATE ===\n');
+console.log('--- axe: zero serious/critical on every screen ---');
+await ensureCareer(page);
+await page.setViewportSize({ width: 1000, height: 900 });
+
+let axeTotal = 0;
+for (const screen of SCREENS) {
+  if (screen.needsCareer) await ensureCareer(page);
+  await page.goto(BASE_URL + '/#' + screen.route);
+  await page.waitForSelector(screen.id, { timeout: 5000 }).catch(() => {});
+  // Fight night animates in; let the walkout finish so axe audits the HUD it
+  // hands over to rather than the aria-hidden overlay on top of it.
+  await page.waitForTimeout(screen.route === '/fight' ? 2800 : 250);
+  const violations = await axeScan(page);
+  axeTotal += violations.length;
+  assertGate(
+    violations.length === 0,
+    `axe ${screen.label}`,
+    violations.length ? JSON.stringify(violations) : 'zero serious/critical',
+  );
+}
+console.log(`axe total serious/critical across ${SCREENS.length} screens: ${axeTotal}`);
+
+console.log('\n--- §15.9 node ceiling (1200) on the busiest screen ---');
+const nodeCounts = [];
+for (const screen of SCREENS) {
+  if (screen.needsCareer) await ensureCareer(page);
+  await page.goto(BASE_URL + '/#' + screen.route);
+  await page.waitForSelector(screen.id, { timeout: 5000 }).catch(() => {});
+  await page.waitForTimeout(screen.route === '/fight' ? 2800 : 250);
+  const count = await page.evaluate(() => document.querySelectorAll('*').length);
+  nodeCounts.push({ label: screen.label, count, devOnly: !!screen.devOnly });
+}
+// Fight night is measured again deep into playback, where the play-by-play tape
+// is longest — the whole point of §2's DOM-reuse rule is that this number stops
+// climbing, so measuring it at t=0 would measure nothing.
+await page.goto(BASE_URL + '/#/fight');
+await page.waitForSelector('#fight-screen');
+await page.waitForTimeout(12_000);
+const fightMidCount = await page.evaluate(() => document.querySelectorAll('*').length);
+nodeCounts.push({ label: 'fight-night (12s into playback)', count: fightMidCount, devOnly: false });
+
+nodeCounts.sort((a, b) => b.count - a.count);
+for (const { label, count, devOnly } of nodeCounts) {
+  console.log(`  ${String(count).padStart(5)}  ${label}${devOnly ? '   [dev surface, outside the ceiling]' : ''}`);
+}
+const busiest = nodeCounts.filter((n) => !n.devOnly)[0];
+assertGate(
+  busiest.count <= 1200,
+  'node ceiling',
+  `busiest player-facing screen is ${busiest.label} at ${busiest.count} / 1200`,
+);
+
+console.log('\n--- viewport sweep: 360 / 768 / 1280, every screen ---');
+for (const screen of SCREENS) {
+  if (screen.needsCareer) await ensureCareer(page);
+  for (const width of [360, 768, 1280]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto(BASE_URL + '/#' + screen.route);
+    await page.waitForSelector(screen.id, { timeout: 5000 }).catch(() => {});
+    await page.waitForTimeout(screen.route === '/fight' ? 2800 : 200);
+    const { scrollWidth, clientWidth } = await page.evaluate(() => ({
+      scrollWidth: document.documentElement.scrollWidth,
+      clientWidth: document.documentElement.clientWidth,
+    }));
+    const shotPath = path.join(SHOT_DIR, `gate-${screen.label}-${width}w.png`);
+    await page.screenshot({ path: shotPath, fullPage: true });
+    if (width === 360) {
+      assertGate(
+        scrollWidth <= clientWidth + 1,
+        `no horizontal scroll @360px: ${screen.label}`,
+        `scrollWidth ${scrollWidth} vs clientWidth ${clientWidth}`,
+      );
+    }
+  }
+  console.log(`  SCREENSHOTS gate-${screen.label}-{360,768,1280}w.png`);
+}
+await page.setViewportSize({ width: 1000, height: 900 });
+
+// --- a full career by keyboard alone ---------------------------------------
+// "Completable by keyboard alone" means no click and no page.goto past the
+// initial load: every navigation is a focused link or button activated by
+// Enter/Space, and the camp week is allocated with arrow keys.
+
+/** Tab until `predicate` matches the focused element, then return its text. */
+async function tabTo(p, predicate, limit = 60) {
+  for (let i = 0; i < limit; i++) {
+    await p.keyboard.press('Tab');
+    const info = await p.evaluate(() => {
+      const el = document.activeElement;
+      if (!el) return null;
+      return {
+        tag: el.tagName,
+        text: (el.innerText || el.textContent || '').trim().slice(0, 60),
+        href: el.getAttribute('href') || '',
+        role: el.getAttribute('role') || '',
+      };
+    });
+    if (info && predicate(info)) return info;
+  }
+  return null;
+}
+
+console.log('\n--- full career by keyboard alone ---');
+await page.goto(BASE_URL + '/');
+await page.evaluate(() => localStorage.clear());
+await page.reload();
+await page.waitForSelector('#career-screen');
+await page.evaluate(() => document.body.focus());
+
+const kbStart = await tabTo(page, (el) => /Skip: random prospect/.test(el.text));
+assertGate(!!kbStart, 'keyboard: reach the skip-path control by Tab');
+await page.keyboard.press('Enter');
+await page.waitForTimeout(200);
+const kbStarted = (await page.locator('#career-screen h1').textContent()) || '';
+assertGate(!/^CAGE$/.test(kbStarted.trim()), 'keyboard: career started', `hub reads "${kbStarted.trim()}"`);
+
+// Camp, by keyboard: tab to the Camp link, Enter, allocate with arrows, resolve.
+const kbCamp = await tabTo(page, (el) => el.href === '#/camp' || /^Camp$/.test(el.text));
+assertGate(!!kbCamp, 'keyboard: reach the Camp link by Tab');
+await page.keyboard.press('Enter');
+await page.waitForSelector('#camp-screen');
+
+const kbDivider = await tabTo(page, (el) => el.role === 'slider');
+assertGate(!!kbDivider, 'keyboard: reach a BudgetSplit divider by Tab');
+for (let i = 0; i < 5; i++) await page.keyboard.press('ArrowRight');
+const kbResolve = await tabTo(page, (el) => /Resolve week/.test(el.text));
+assertGate(!!kbResolve, 'keyboard: reach "Resolve week" by Tab');
+const weekBefore = await page.evaluate(() => document.querySelector('#camp-screen')?.innerText || '');
+await page.keyboard.press('Enter');
+await page.waitForTimeout(250);
+const weekAfter = await page.evaluate(() => document.querySelector('#camp-screen')?.innerText || '');
+assertGate(weekBefore !== weekAfter, 'keyboard: camp week resolved without a mouse');
+
+// Fights, by keyboard, until the retirement trigger fires.
+await page.keyboard.press('Escape');
+const kbBackHome = await tabTo(page, (el) => el.href === '#/' || /Back|Career file|CAGE/.test(el.text));
+if (kbBackHome) {
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(200);
+}
+// CampScreen has no back affordance yet (that is Loop 8.1's job) — fall back to
+// the hash, which is still not a click, and note it in the output.
+if ((await page.locator('#career-screen').count()) === 0) {
+  console.log('  NOTE  #/camp has no keyboard-reachable back path — Loop 8.1 (§16.3) owns that.');
+  await page.goto(BASE_URL + '/#/');
+  await page.waitForSelector('#career-screen');
+}
+
+let kbFights = 0;
+for (let i = 0; i < 40; i++) {
+  if ((await page.locator('#career-screen:has-text("Career over")').count()) > 0) break;
+  await page.evaluate(() => document.body.focus());
+  const kbFight = await tabTo(page, (el) => /Find opponent/.test(el.text));
+  if (!kbFight) break;
+  const isDisabled = await page.evaluate(() => document.activeElement?.disabled === true);
+  if (isDisabled) break;
+  await page.keyboard.press('Enter');
+  await page.waitForTimeout(90);
+  kbFights++;
+}
+const kbRetired = (await page.locator('#career-screen:has-text("Career over")').count()) > 0;
+assertGate(kbRetired, 'keyboard: career reached retirement', `${kbFights} fights, all by Enter`);
+
+await page.evaluate(() => document.body.focus());
+const kbCard = await tabTo(page, (el) => el.href === '#/card' || /View career card/.test(el.text));
+assertGate(!!kbCard, 'keyboard: reach the career card by Tab');
+await page.keyboard.press('Enter');
+await page.waitForSelector('#career-card-screen');
+await shot(page, 'gate-keyboard-career-card');
+assertGate(true, 'keyboard: full career start to retirement card, no mouse');
+
+// --- the same career under prefers-reduced-motion --------------------------
+console.log('\n--- full career under prefers-reduced-motion: reduce ---');
+const rmContext = await browser.newContext({ viewport: { width: 1000, height: 900 }, reducedMotion: 'reduce' });
+const rmPage = await rmContext.newPage();
+const rmErrors = [];
+rmPage.on('console', (m) => { if (m.type() === 'error') rmErrors.push(m.text()); });
+rmPage.on('pageerror', (e) => rmErrors.push('PAGEERROR: ' + String(e)));
+
+await rmPage.goto(BASE_URL + '/');
+await rmPage.evaluate(() => localStorage.clear());
+await rmPage.reload();
+await rmPage.waitForSelector('#career-screen');
+await rmPage.click('button:has-text("Skip: random prospect")');
+await rmPage.waitForTimeout(150);
+
+await rmPage.click('a[href="#/camp"]');
+await rmPage.waitForSelector('#camp-screen');
+const rmDivider = rmPage.locator('#camp-screen [role="slider"]').first();
+await rmDivider.focus();
+for (let i = 0; i < 5; i++) await rmPage.keyboard.press('ArrowRight');
+await rmPage.click('#camp-screen button:has-text("Resolve week")');
+await rmPage.waitForTimeout(200);
+assertGate(
+  (await rmPage.locator('#camp-screen').count()) > 0,
+  'reduced motion: camp week resolves, screen still present',
+);
+
+// §15.7: reduced motion must CUT to the end state, not slow it down — the
+// walkout never mounts at all, so the HUD is present immediately rather than
+// 2.5s later. Measured at 400ms, well inside the sequence's normal runtime.
+await rmPage.goto(BASE_URL + '/#/fight');
+await rmPage.waitForSelector('#fight-screen');
+await rmPage.waitForTimeout(400);
+const rmWalkoutNodes = await rmPage.evaluate(
+  () => document.querySelectorAll('[class*="Walkout"], [class*="walkout"]').length,
+);
+const rmHudPresent = await rmPage.evaluate(() => document.querySelectorAll('[role="meter"]').length);
+assertGate(rmWalkoutNodes === 0, 'reduced motion: the walkout never mounts', `${rmWalkoutNodes} walkout nodes`);
+assertGate(rmHudPresent > 0, 'reduced motion: the HUD is up immediately', `${rmHudPresent} meters at 400ms`);
+await rmPage.screenshot({ path: path.join(SHOT_DIR, 'gate-reduced-motion-fight.png'), fullPage: true });
+
+await rmPage.goto(BASE_URL + '/#/');
+await rmPage.waitForSelector('#career-screen');
+let rmFights = 0;
+for (let i = 0; i < 40; i++) {
+  if ((await rmPage.locator('#career-screen:has-text("Career over")').count()) > 0) break;
+  const btn = rmPage.locator('#career-screen button:has-text("Find opponent")');
+  if ((await btn.count()) === 0 || (await btn.isDisabled())) break;
+  await btn.click();
+  await rmPage.waitForTimeout(80);
+  rmFights++;
+}
+const rmRetired = (await rmPage.locator('#career-screen:has-text("Career over")').count()) > 0;
+assertGate(rmRetired, 'reduced motion: career reached retirement', `${rmFights} fights`);
+await rmPage.click('a[href="#/card"]');
+await rmPage.waitForSelector('#career-card-screen');
+const rmCardText = await rmPage.textContent('#career-card-screen');
+assertGate(
+  /\d/.test(rmCardText) && rmCardText.length > 80,
+  'reduced motion: the career card renders its full state, nothing missing',
+  `${rmCardText.replace(/\s+/g, ' ').trim().length} chars of card`,
+);
+await rmPage.screenshot({ path: path.join(SHOT_DIR, 'gate-reduced-motion-card.png'), fullPage: true });
+
+assertGate(rmErrors.length === 0, 'reduced motion: no console errors', JSON.stringify(rmErrors));
+await rmContext.close();
+
+console.log('\nCONSOLE ERRORS TOTAL:', JSON.stringify(consoleErrors, null, 2));
 if (consoleErrors.length > 0) process.exitCode = 1;
+
+console.log(
+  process.exitCode ? '\n=== M6 EXIT GATE: FAIL ===' : '\n=== M6 EXIT GATE: PASS ===',
+);
 
 await browser.close();

@@ -1,18 +1,50 @@
+import { useEffect, useState } from 'preact/hooks';
+import type { ComponentType } from 'preact';
 import { useHashRoute } from './router';
-import { LabScreen } from './lab/LabScreen';
 import { FightScreen } from './ui/screens/FightScreen';
 import { CampScreen } from './ui/screens/CampScreen';
 import { CareerScreen } from './ui/screens/CareerScreen';
 import { CareerCardScreen } from './ui/screens/CareerCardScreen';
 import { ChargenWrapper } from './ui/screens/ChargenWrapper';
-import { KitScreen } from './ui/screens/KitScreen';
 import { Sprite } from './ui/sprite/Sprite';
+
+// Loop 6.12: `#/lab` and `#/kit` are not on any player's path — one is the
+// balance lab (DESIGN.md §10, a developer deliverable) and the other is the
+// component gallery built as Loop 6.2's verification surface. Both were riding
+// in the initial chunk, costing 8.7KB raw that no player ever executes, against
+// a §15.9 JS-delta ceiling of 20KB. A dynamic import moves them into their own
+// chunks: still reachable at their routes, no longer part of what a player
+// downloads to reach fight night. See scripts/check-budgets.mjs for the numbers.
+const DEFERRED_SCREENS: Record<string, () => Promise<{ default: ComponentType }>> = {
+  '/lab': () => import('./lab/LabScreen').then((m) => ({ default: m.LabScreen })),
+  '/kit': () => import('./ui/screens/KitScreen').then((m) => ({ default: m.KitScreen })),
+};
+
+/** Loads a deferred screen's chunk on first navigation to its route. Renders a
+ *  bare status line while the chunk is in flight — these two routes are the only
+ *  ones that can show one, and both are developer surfaces. */
+function DeferredScreen({ route }: { route: string }) {
+  const [Screen, setScreen] = useState<ComponentType | null>(null);
+
+  useEffect(() => {
+    let live = true;
+    setScreen(null);
+    DEFERRED_SCREENS[route]().then((m) => {
+      if (live) setScreen(() => m.default);
+    });
+    return () => {
+      live = false;
+    };
+  }, [route]);
+
+  if (!Screen) return <p aria-live="polite">Loading…</p>;
+  return <Screen />;
+}
 
 function Routed() {
   const route = useHashRoute();
 
-  if (route === '/lab') return <LabScreen />;
-  if (route === '/kit') return <KitScreen />;
+  if (route in DEFERRED_SCREENS) return <DeferredScreen route={route} />;
   if (route === '/fight') return <FightScreen />;
   if (route === '/camp') return <CampScreen />;
   if (route === '/card') return <CareerCardScreen />;

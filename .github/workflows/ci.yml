@@ -18,3 +18,7 @@ jobs:
       - run: npm run typecheck
       - run: npm run test
       - run: npm run build
+      # Loop 6.12: DESIGN.md §15.9's budgets, measured from the build above
+      # rather than estimated. Budgets erode one reasonable addition at a time,
+      # so this runs on every push, not once at the end of a milestone.
+      - run: npm run budget

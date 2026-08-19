@@ -58,6 +58,7 @@ describe('tokens.css defines the full §15.2 palette', () => {
     'desk', 'paper', 'paper-carbon', 'paper-pink', 'ink', 'ink-soft', 'rule', 'stamp', 'stamp-blue',
     'canvas', 'canvas-lit', 'bone', 'bone-soft', 'grid',
     'red-corner', 'blue-corner', 'red-corner-text', 'blue-corner-text', 'amber',
+    'red-corner-file', 'blue-corner-file',
   ];
 
   it.each(required)('defines --%s', (name) => {
@@ -78,6 +79,21 @@ describe('text contrast meets AA (≥4.5:1) at body size', () => {
     ['ink-soft', 'paper-carbon', 5.03],
     ['ink', 'paper-pink', 10.5],
     ['ink-soft', 'paper-pink', 4.71],
+    // Loop 6.12: corner identity rendered as type on the File. The Broadcast's
+    // -text twins are lighter than the fills to lift off arena black, which is
+    // the wrong direction on paper — FighterIdentity's corner eyebrow measured
+    // 2.39:1 there until these were bound per register. Every File surface a
+    // corner-assigned block can land on is measured.
+    ['red-corner-file', 'paper', 6.35],
+    ['red-corner-file', 'paper-carbon', 5.3],
+    ['red-corner-file', 'paper-pink', 4.97],
+    ['blue-corner-file', 'paper', 6.79],
+    ['blue-corner-file', 'paper-carbon', 5.66],
+    ['blue-corner-file', 'paper-pink', 5.31],
+    // The pair that was missing when Stamp's `opacity: 0.92` pushed --stamp
+    // below AA on paper: --stamp has the least headroom in the palette, so both
+    // of the File surfaces it can be stamped on are pinned here.
+    ['stamp-blue', 'paper-carbon', 5.69],
     ['bone', 'canvas', 17.1],
     ['bone-soft', 'canvas', 6.67],
     ['amber', 'canvas', 9.22],
@@ -114,6 +130,25 @@ describe('corner fills are fills, and the -text variants are the reason', () => 
 
   it('--rule is hairline geometry, never text — it is not held to AA', () => {
     expect(ratio('rule', 'paper')).toBeLessThan(4.5);
+  });
+
+  // Loop 6.12. --stamp clears AA on --paper by 0.14 and nothing else. On the
+  // goldenrod second sheet it does not clear it at all, so a Stamp on a carbon
+  // Sheet must take the blue variant (--mark-alt / --stamp-blue, 5.69:1). No
+  // such pairing exists today — the axe pass in driver.mjs is what would catch
+  // one — and this records why it must not be introduced.
+  it('--stamp is not text-safe on --paper-carbon: a carbon-sheet stamp must be blue', () => {
+    expect(ratio('stamp', 'paper-carbon')).toBeLessThan(4.5);
+    expect(ratio('stamp-blue', 'paper-carbon')).toBeGreaterThanOrEqual(4.5);
+  });
+
+  // The File's corner type is type, never a fill — the fills stay register-
+  // independent and these two never appear as one.
+  it.each([
+    ['red-corner-file', 'red-corner'],
+    ['blue-corner-file', 'blue-corner'],
+  ])('--%s is darker than the --%s fill, the opposite of the Broadcast twins', (fileText, fill) => {
+    expect(ratio(fileText, 'paper')).toBeGreaterThan(ratio(fill, 'paper'));
   });
 });
 

@@ -16,8 +16,14 @@
   letter-spacing: 0.08em;
   text-transform: uppercase;
   transform: rotate(-1.5deg);
-  /* Ink never covers the whole area evenly. */
-  opacity: 0.92;
+  /* Ink never covers the whole area evenly — but that unevenness belongs to the
+   * rule, not the type. Loop 6.12: `opacity: 0.92` on the whole element
+   * composited --mark-text down to #B84238 on --paper, which measures 4.15:1.
+   * --stamp on --paper is 4.64:1, the least headroom of any pair in the palette
+   * (see tokens.css), so an 8% veil was enough to push the one mark the File
+   * register puts in vermilion below AA. The border carries the worn look now
+   * and the text keeps its measured ratio. */
+  border-color: color-mix(in srgb, var(--mark) 88%, transparent);
 }
 
 .blue {
