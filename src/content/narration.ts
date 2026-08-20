@@ -1,4 +1,13 @@
-// narration/load.ts — Loop 7.10: the lazy content chunk (DESIGN.md §16.6, §16.9).
+// content/narration.ts — Loop 7.10: the lazy content chunk
+// (DESIGN.md §16.6, §16.9).
+//
+// Lives in /content rather than /narration because Appendix B is explicit that
+// "/narration imports nothing from /ui or /state" — and validating a pool means
+// importing its Zod schema, which §2 keeps in state/schema.ts with every other
+// content schema. A content loader in /content is where that import is
+// legitimate, and it sits beside content/load.ts, which does the same job for
+// the eagerly-loaded files. (Loop 7.10 originally put this in /narration and
+// enforced the purity rule in the wrong direction; 7.11 corrected both.)
 //
 // §16.9 has the arithmetic that forces this: M7's content measures ~12KB gzip
 // against ~10KB of headroom under the 150KB initial-transfer ceiling. "M7 as
@@ -20,7 +29,7 @@
 // before the walkout.
 
 import { NarrationPoolSchema } from '../state/schema';
-import type { NarrationLine } from './types';
+import type { NarrationLine } from '../narration/types';
 
 /**
  * Every narration pool file, as lazy importers.
@@ -30,7 +39,7 @@ import type { NarrationLine } from './types';
  * waiting to happen. Vite resolves the glob at build time, so the file set is
  * still static — this is not a runtime directory read.
  */
-const poolModules = import.meta.glob<{ default: unknown }>('../content/narration/*.json');
+const poolModules = import.meta.glob<{ default: unknown }>('./narration/*.json');
 
 /** Resolved once per session and cached (§16.6: "cached for the session"). */
 let cached: readonly NarrationLine[] | null = null;

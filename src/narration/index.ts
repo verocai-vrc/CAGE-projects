@@ -1,10 +1,15 @@
 // narration/index.ts — Loop 7.10 (DESIGN.md §16.6).
 //
-// Types and the manifest are safe to import from anywhere: they are pure data
-// and cost a few hundred bytes. `load.ts` is deliberately NOT re-exported here —
-// importing it pulls the pool glob, and a barrel that quietly dragged the
-// narration chunk into the initial bundle would defeat §16.9's whole reason for
-// splitting it. Import `narration/load` directly, from fight night only.
+// Types, the manifest, and beat extraction are safe to import from anywhere:
+// pure code over data, no content behind them.
+//
+// The content LOADER is deliberately not here and not even in this directory —
+// it lives in content/narration.ts, because Appendix B bans /narration from
+// importing /state and validating a pool needs the schema. Importing it pulls
+// the pool glob with it, so fight night imports `content/narration` directly
+// (Loops 7.15/7.16); a barrel that dragged the chunk into the initial bundle
+// would defeat §16.9's whole reason for splitting it.
 
 export * from './types';
 export * from './manifest';
+export * from './beats';

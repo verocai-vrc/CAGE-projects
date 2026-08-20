@@ -21,7 +21,7 @@ import {
   type BeatKind,
   type NarrationLine,
 } from '../src/narration/types';
-import { loadNarration, resetNarrationCache, NarrationLoadError } from '../src/narration/load';
+import { loadNarration, resetNarrationCache, NarrationLoadError } from '../src/content/narration';
 
 const NARRATION_DIR = join(process.cwd(), 'src', 'content', 'narration');
 
@@ -227,9 +227,25 @@ describe('the narration chunk stays out of the initial bundle (§16.9)', () => {
   });
 
   it('the narration barrel does not re-export the loader', () => {
-    // Importing load.ts pulls the pool glob with it. A barrel that dragged the
-    // chunk into the initial bundle would defeat the split.
+    // Importing the loader pulls the pool glob with it. A barrel that dragged
+    // the chunk into the initial bundle would defeat the split. Since Loop 7.11
+    // the loader is not even in /narration — it lives in content/narration.ts,
+    // because Appendix B bans /narration from importing /state and validating a
+    // pool needs the schema.
     const barrel = readFileSync(join(process.cwd(), 'src', 'narration', 'index.ts'), 'utf-8');
+    expect(barrel).not.toMatch(/from '.*content\/narration'/);
     expect(barrel).not.toMatch(/export \* from '\.\/load'/);
+  });
+
+  it('/narration imports nothing from /ui or /state (Appendix B)', () => {
+    // The lint rule enforces this on every build; this states the rule in the
+    // test suite too, because Loop 7.10 implemented it in the wrong direction
+    // and a green lint on a mis-specified rule is exactly how that survived.
+    const dir = join(process.cwd(), 'src', 'narration');
+    for (const file of readdirSync(dir).filter((f) => f.endsWith('.ts'))) {
+      const source = readFileSync(join(dir, file), 'utf-8');
+      expect(source, `${file} imports /state`).not.toMatch(/from '\.\.\/state\//);
+      expect(source, `${file} imports /ui`).not.toMatch(/from '\.\.\/ui\//);
+    }
   });
 });

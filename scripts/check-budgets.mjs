@@ -132,7 +132,7 @@ check(
 // §16.9's narration chunk. Reported as absent rather than silently skipped, so
 // the check cannot rot unnoticed.
 //
-// Loop 7.10 built the loader (src/narration/load.ts) and the pools, but the
+// Loop 7.10 built the loader (src/content/narration.ts) and the pools, but the
 // chunk does not appear in a build until something the entry reaches actually
 // imports the loader — Vite drops an unreferenced dynamic import entirely. That
 // consumer is fight night (Loops 7.15/7.16). Until then this is correctly
@@ -143,7 +143,7 @@ const narrationChunks = lazyJs.filter((f) => /narration/i.test(basename(f)));
 if (narrationChunks.length === 0) {
   console.log(
     'Note: no narration chunk in this build — §16.9\'s 13KB check is inert until\n' +
-      '      fight night imports src/narration/load.ts (Loops 7.15/7.16).\n',
+      '      fight night imports src/content/narration.ts (Loops 7.15/7.16).\n',
   );
 }
 if (narrationChunks.length > 0) {
