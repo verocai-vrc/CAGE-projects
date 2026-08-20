@@ -117,15 +117,17 @@ describe('exactly one rng.next() per beat (§16.6)', () => {
   it('holds regardless of candidate-set size', () => {
     // §16.6 rule 1: "exactly one rng.next() per beat, unconditionally — even
     // when only one candidate matches." Divergence at beat k can then never
-    // shift the stream for beats before it. The shipped pool has exactly one
-    // line per kind, so every beat here takes the single-candidate path — the
-    // one most likely to "optimise away" the draw.
+    // shift the stream for beats before it. Run against the pool reduced to one
+    // unconditional line per kind, so every beat takes the single-candidate
+    // path — the one most likely to "optimise away" the draw. (Before 7.13 the
+    // shipped pool was already that; now the reduction has to be explicit.)
+    const single = pool.filter((line) => line.cooldown === 'none' && line.when === undefined);
     for (let n = 0; n < 60; n++) {
       const result = bout(n);
       const beats = extractBeats(result);
       let draws = 0;
       const counting = { next: () => { draws++; return mulberry32(n + draws).next(); } };
-      narrateBeats(beats, pool, { boutSeed: result.seed, a: NAMED, b: NAMELESS, rng: counting });
+      narrateBeats(beats, single, { boutSeed: result.seed, a: NAMED, b: NAMELESS, rng: counting });
       expect(draws, `bout ${n}: ${beats.length} beats consumed ${draws} draws`).toBe(beats.length);
     }
   });
@@ -177,11 +179,16 @@ describe('exactly one rng.next() per beat (§16.6)', () => {
 describe('the selector is total (§16.6)', () => {
   it('400 bouts narrate with zero exceptions and zero empty strings', () => {
     // Verify's exact wording: "with every pool artificially reduced to its
-    // single unconditional fallback line". That is the shipped pool today — 13
-    // lines, one per beat kind, each cooldown 'none' with no `when`.
+    // single unconditional fallback line". Loop 7.12 could take that for free —
+    // the shipped pool WAS thirteen unconditional lines. Since 7.13 authored the
+    // action pools it has to be done deliberately, or this stops testing the
+    // relaxation chain and starts testing the happy path.
+    const reduced = pool.filter((line) => line.cooldown === 'none' && line.when === undefined);
+    expect(reduced.length, 'the reduction found no unconditional lines').toBe(BEAT_KINDS.length);
+
     let narrated = 0;
     for (let n = 0; n < SAMPLE; n++) {
-      const lines = narrate(n);
+      const lines = narrate(n, reduced);
       expect(lines.length).toBeGreaterThan(0);
       for (const line of lines) {
         expect(line.text.length).toBeGreaterThan(0);
@@ -438,12 +445,15 @@ describe('narration draws from its own stream, never the fight\'s (§16.6)', () 
   });
 
   it('changing only the seed changes the narration', () => {
+    // Loop 7.12 could only assert these were EQUAL — the pool was one line per
+    // kind, so the seed had nothing to choose between. With 7.13's action pools
+    // the real property is testable: same beats, different seed, different call.
     const result = bout(21);
     const beats = extractBeats(result);
     const a = narrateBeats(beats, pool, { boutSeed: 'SEED-ONE', a: NAMED, b: NAMELESS });
     const b = narrateBeats(beats, pool, { boutSeed: 'SEED-TWO', a: NAMED, b: NAMELESS });
-    expect(a.map((l) => l.lineId).join()).toBe(b.map((l) => l.lineId).join()); // one line per kind today
     expect(a).toHaveLength(b.length);
+    expect(a.map((l) => l.lineId).join()).not.toBe(b.map((l) => l.lineId).join());
   });
 
   it('does not mutate the beats or the pool it is handed', () => {

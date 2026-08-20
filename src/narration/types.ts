@@ -125,15 +125,51 @@ export interface NarrationPool {
 }
 
 /**
- * Every slot a line may reference (§16.6).
+ * Every slot a line may reference (§16.6, extended in Loop 7.13).
  *
  * `{NICK_*}` and `{GYM_*}` are optional slots: a fighter without a nickname must
  * never render `{NICK_A}`. Lines using one carry the matching tag and the
  * selector filters them out when the slot is unavailable — never a fallback
  * string, which is how "Riko 'undefined' Tanaka" reaches a screenshot.
+ *
+ * ---------------------------------------------------------------------------
+ * `{X}` / `{Y}` — added here, and why (a stated extension of §16.6's list)
+ * ---------------------------------------------------------------------------
+ *
+ * `{A}` and `{B}` are pinned to fighter A and fighter B. That is right for a
+ * beat about the bout — the walkout, the horn, the scorecards — and wrong for
+ * every beat about an ACTION, because an action has an actor and the actor is
+ * whichever man did it. `{A} changes levels and puts {B} on the deck` is a
+ * correct line exactly half the time; the other half it names the man who was
+ * taken down as the one who took the other down.
+ *
+ * §16.6's own sample lines read as actor/other rather than as A/B — its
+ * `takedown` sample and its `rocked` sample cannot both be about fighter A —
+ * so the alternatives were to author every action line twice under a `side`
+ * predicate (double the bytes, half the variety per side) or to name the two
+ * roles. `{X}` is the fighter the beat's `side` fact names; `{Y}` is the other.
+ * Neither resolves on a beat without a `side`, so `canFill` keeps them off the
+ * beats where they would be meaningless, using the machinery already here.
+ *
+ * WHAT `side` MEANS IS PER KIND, and a line has to be written knowing which:
+ *
+ *   exchange    X landed more, Y ate more
+ *   takedown    X completed it, Y went down
+ *   stuffed     X shot and failed, Y sprawled
+ *   ground      X is on top, Y is under him
+ *   standup     X had top control, Y is the one getting back up
+ *   submission  X has the hold, Y is caught in it
+ *   rocked      X is hurt, Y hurt him          <- inverted; read it twice
+ *   finish      X won, Y lost
+ *
+ * `open`, `roundEnd`, `decision`, `corner` and `moment` carry no `side` and use
+ * `{A}`/`{B}`. A moment is always the player's, and the player is fighter A —
+ * the same assumption `{N}` already makes by resolving to A's record.
  */
 export const SLOT_NAMES = [
-  'A', 'B', 'NICK_A', 'NICK_B', 'LAST_A', 'LAST_B', 'GYM_A', 'GYM_B', 'R', 'N', 'TECH',
+  'A', 'B', 'NICK_A', 'NICK_B', 'LAST_A', 'LAST_B', 'GYM_A', 'GYM_B',
+  'X', 'Y', 'NICK_X', 'NICK_Y', 'LAST_X', 'LAST_Y', 'GYM_X', 'GYM_Y',
+  'R', 'N', 'TECH',
 ] as const;
 
 export type SlotName = (typeof SLOT_NAMES)[number];
@@ -142,8 +178,12 @@ export type SlotName = (typeof SLOT_NAMES)[number];
 export const OPTIONAL_SLOT_TAGS: Readonly<Record<string, string>> = Object.freeze({
   NICK_A: 'needsNickname',
   NICK_B: 'needsNickname',
+  NICK_X: 'needsNickname',
+  NICK_Y: 'needsNickname',
   GYM_A: 'needsGym',
   GYM_B: 'needsGym',
+  GYM_X: 'needsGym',
+  GYM_Y: 'needsGym',
 });
 
 /** Every `{SLOT}` referenced by a template, in order of appearance. */

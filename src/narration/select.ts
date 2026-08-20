@@ -219,6 +219,9 @@ export function narrateBeats(
       b: options.b,
       round: beat.round,
       technique: typeof beat.facts.technique === 'string' ? beat.facts.technique : undefined,
+      // The beat's actor, for `{X}`/`{Y}`. Left undefined on beats with no
+      // side, which is what excludes actor lines from the walkout and the horn.
+      side: beat.facts.side === 'a' || beat.facts.side === 'b' ? beat.facts.side : undefined,
     };
 
     const chosen = selectLine(beat, byKind.get(beat.kind) ?? [], state, context, roll);

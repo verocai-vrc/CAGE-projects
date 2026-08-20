@@ -39,6 +39,15 @@ export interface SlotContext {
   round: number;
   /** The technique a beat names, for `{TECH}`, when it has one. */
   technique?: string;
+  /**
+   * The side the beat's `side` fact names — the subject of `{X}`, with `{Y}`
+   * the other man. Absent on beats that have no actor (`open`, `roundEnd`,
+   * `corner`, `moment`, `decision`), which is what keeps `{X}` lines off them:
+   * the slot resolves to null and `canFill` excludes the line. See
+   * narration/types.ts for what `side` means on each kind — it is not uniform,
+   * and `rocked` in particular names the man who got hurt.
+   */
+  side?: 'a' | 'b';
 }
 
 /** The last word of a name — `{LAST_A}` / `{LAST_B}`. */
@@ -53,6 +62,11 @@ function lastName(name: string): string {
  * `null` is the signal `canFill` reads. It never becomes text.
  */
 function slotValue(slot: string, context: SlotContext): string | null {
+  // The actor and the other man, or null on a beat with no actor — which is
+  // how an `{X}` line is kept off the walkout without a second mechanism.
+  const actor = context.side ? context[context.side] : null;
+  const other = context.side ? context[context.side === 'a' ? 'b' : 'a'] : null;
+
   switch (slot) {
     case 'A': return context.a.name;
     case 'B': return context.b.name;
@@ -62,6 +76,14 @@ function slotValue(slot: string, context: SlotContext): string | null {
     case 'LAST_B': return lastName(context.b.name);
     case 'GYM_A': return context.a.gym;
     case 'GYM_B': return context.b.gym;
+    case 'X': return actor?.name ?? null;
+    case 'Y': return other?.name ?? null;
+    case 'NICK_X': return actor?.nickname ?? null;
+    case 'NICK_Y': return other?.nickname ?? null;
+    case 'LAST_X': return actor ? lastName(actor.name) : null;
+    case 'LAST_Y': return other ? lastName(other.name) : null;
+    case 'GYM_X': return actor?.gym ?? null;
+    case 'GYM_Y': return other?.gym ?? null;
     case 'R': return String(context.round);
     case 'N': return context.a.record;
     case 'TECH': return context.technique ?? null;

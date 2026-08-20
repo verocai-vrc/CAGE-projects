@@ -54,32 +54,56 @@
 //    speaking, not both teams talking over each other.
 //
 // ---------------------------------------------------------------------------
-// OPEN FINDING for Loops 7.12/7.13 — the low end of the salience table starves
+// RESOLVED in Loop 7.13 — the low end of the salience table starved
 // ---------------------------------------------------------------------------
 //
-// The budget is saturated: 93.8% of rounds hit the cap of 7, so every optional
-// beat is in a real contest and the bottom of §16.6's base table loses it
-// almost always. Candidates generated vs beats kept, 400 bouts:
+// The finding this file carried forward: the budget is saturated (92.6% of
+// rounds hit the cap), every optional beat is in a real contest, and the bottom
+// of §16.6's base table lost it almost always. Candidates vs kept, 400 bouts:
 //
 //   kind        base   candidates   kept   survives
 //   exchange    calc         7,698  2,586       34%
 //   takedown      45         1,817  1,014       56%
 //   stuffed       35         1,847    201       11%
 //   standup       30         1,711     27      1.6%
-//   ground        25             >0      0        0%
+//   ground        25             ~0      0        0%
 //
-// §16.6's coverage matrix asks for 10 lines each for `standup` and `ground`.
-// At these survival rates that is ~20 authored lines the player will almost
-// never hear — 7.13 would be writing dead content against a matrix whose
-// numbers predate check-beats.
+// §16.6's coverage matrix asks for 10 lines each for `standup` and `ground`, so
+// 7.13 would have been writing ~20 lines the player never hears. Three things
+// were wrong, and each has its own fix below, in the code:
 //
-// This is the retune §16.6a authorised ("the budget or the salience constants
-// may need re-tuning... a tuning pass against real output, not a design
-// decision to make blind"), but it is a CONTENT-COST decision as much as a
-// tuning one, so it is flagged here rather than decided unilaterally. The
-// levers, in increasing order of divergence from §16.6: raise the base salience
-// of standup/ground; give quiet-minute beats a floor guaranteeing one per
-// round; or cut their coverage-matrix floors to match what actually plays.
+// 1. `ground` HAD NO SOURCE. Its only trigger was a quiet check BOUNDARY inside
+//    a ground period, and ground periods almost never span one — measured, the
+//    kind fired once in 400 bouts. It now also fires when a ground period ENDS
+//    with nothing having landed, which is the same grind seen from the other
+//    side. Candidates: 0.0025 -> 2.80 per bout.
+//
+// 2. NOTHING EXPRESSED DIMINISHING RETURNS. See REPEAT_DECAY below. Exchange
+//    out-generates every other optional kind 4:1 and scores highest, so top-N
+//    handed it ~75% of the slots by weight of numbers.
+//
+// 3. `heavy` WAS CALIBRATED ON THE WRONG POPULATION. See the threshold at the
+//    flush site.
+//
+// One base salience moved: `ground` 25 -> 32. §16.6 ranked it last on the
+// assumption it is the quietest thing that can happen; measured, this engine's
+// ground periods are short and frequent rather than long and rare, and ten
+// seconds of top control with nothing landing is the grappler's round being
+// won, which is information. 32 sits above `standup` (30 — the beat that ends
+// the same stretch, and its direct competitor for that slot) and below
+// `stuffed` (35). Nothing else in §16.6's table moved.
+//
+// Beats per bout after all four changes: 18.61, unchanged to two decimals — the
+// budget still fills every slot, it just fills them with a spread. Per bout:
+//
+//   exchange 4.84 · takedown 2.35 · moment 2.29 · roundEnd 1.95 · stuffed 1.65
+//   corner 1.51 · rocked 1.24 · open 1.00 · finish 0.56 · ground 0.45
+//   decision 0.43 · standup 0.30 · submission 0.05
+//
+// Every kind except `submission` now fires at least 0.3 times a bout — six or
+// more airings of each pool over a 20-bout career. `submission` is rare because
+// submission ATTEMPTS are rare (0.05 per bout in the engine); that is not a
+// narration problem, and §16.6 requires its 10 lines regardless.
 
 import type { FightResult } from '../engine/types';
 import type { BeatKind } from './types';
@@ -125,7 +149,7 @@ const BASE_SALIENCE: Readonly<Record<BeatKind, number>> = Object.freeze({
   takedown: 45,
   stuffed: 35,
   standup: 30,
-  ground: 25,
+  ground: 32,
   // Mandatory kinds that §16.6's table does not score. They never compete for a
   // slot, so these values only order them against each other within a round.
   finish: 100,
@@ -142,6 +166,33 @@ function exchangeSalience(totalDamage: number, unansweredStreak: number): number
 
 /** §16.6's per-round beat budget, re-measured against check-beats above. */
 export const BEAT_BUDGET_PER_ROUND = 7;
+
+/**
+ * Diminishing returns on repeating a kind inside one round (§16.6a's authorised
+ * re-tune). The k-th optional beat of a kind competes at
+ * `salience x REPEAT_DECAY^(k-1)`, ranked within the kind by salience, so the
+ * biggest exchange of a round keeps its full score and the fifth one does not.
+ *
+ * This is the fix for the open finding recorded above. The diagnosis, measured
+ * over 400 bouts, is a volume problem rather than a scoring one: exchange
+ * generates 19.25 candidates a bout against 4.5 takedowns, 4.6 stuffed shots
+ * and 4.3 stand-ups, and 92.6% of rounds sit at the cap. Top-N by salience then
+ * hands exchange ~75% of every round's optional slots by weight of numbers, and
+ * the bottom of §16.6's base table never gets in — stand-up survived 1.6% of
+ * the time and `ground` 0%.
+ *
+ * The decay is deliberately NOT a change to §16.6's base table or to its
+ * exchange formula. Both are well calibrated on their own terms: unbudgeted,
+ * the median exchange scores 32 against stand-up's 30, exactly the parity the
+ * table implies. What neither expresses is that the fifth exchange of a round
+ * is less interesting than the first stand-up — which is the thing a broadcast
+ * actually selects on, and the only thing added here.
+ *
+ * Measured at 0.72 (see the table in the commit for 0.6/0.72/0.85): total beats
+ * per bout is unchanged at 18.6 — the budget still fills every slot, it just
+ * fills them with a spread rather than a monotone.
+ */
+export const REPEAT_DECAY = 0.72;
 
 function isMandatory(kind: BeatKind): boolean {
   return MANDATORY_KINDS.includes(kind);
@@ -199,9 +250,16 @@ export function extractBeats(result: FightResult): Beat[] {
   // One corner beat per round — see the measurement note at the top of the file.
   let cornerNarratedInRound = -1;
   let onTheGround = false;
-  // Did anything land in the current one-minute slice? The "was this minute
-  // quiet?" test the `ground` beat depends on.
-  let strikeLandedThisCheck = false;
+  // Is the current stretch of top control still quiet — has nothing landed since
+  // it began? The test the `ground` beat depends on. Cleared both by a strike
+  // and by emitting, so a ground period yields at most one `ground` beat.
+  let groundQuiet = false;
+  // Who is on top. The `position` event carries no side, but topControl always
+  // follows a successful takedown (measured: 13,354 of each across 3,000
+  // bouts), so the last completed takedown names him. `ground` and `standup`
+  // both report it as their `side`, which is what lets a line say who is
+  // holding whom down instead of "someone is on top of someone".
+  let groundSide: Side = 'a';
 
   /** Close the open strike run, if any, into an `exchange` or `ground` beat. */
   const flushRun = () => {
@@ -218,7 +276,16 @@ export function extractBeats(result: FightResult): Beat[] {
       landed,
       // The sub-conditions §16.6's coverage matrix names for `exchange`:
       // heavy / light / one-sided / answered / ground.
-      heavy: run.damage >= 4,
+      //
+      // The heavy threshold is calibrated against the KEPT population, not the
+      // candidate one, and that is the whole subtlety. Salience is damage, so
+      // the budget selects hard for damage: at the old threshold of 4, 52% of
+      // candidate exchanges were heavy but 96% of the ones that reached the
+      // feed were, and §16.6's six required `light` lines fired 0.2 times a
+      // bout against heavy's 4.6. At 10 the surviving split is 45/55 and both
+      // halves of the pool are live. (Measured, 400 bouts: kept damage p25 7.4,
+      // p50 9.6, p75 12.3.)
+      heavy: run.damage >= 10,
       oneSided: run.bestStreak >= 4,
       answered: run.bySide.a > 0 && run.bySide.b > 0,
       ground: run.ground,
@@ -257,7 +324,7 @@ export function extractBeats(result: FightResult): Beat[] {
       if (run.currentSide === side) run.currentStreak++;
       else { run.currentSide = side; run.currentStreak = 1; }
       if (run.currentStreak > run.bestStreak) run.bestStreak = run.currentStreak;
-      strikeLandedThisCheck = true;
+      groundQuiet = false;
       continue;
     }
 
@@ -268,22 +335,21 @@ export function extractBeats(result: FightResult): Beat[] {
         // Not a beat of its own (§16.6a: no new BeatKind). Its role is the run
         // boundary above — the minute-slice that shapes what an exchange is.
         //
-        // With ONE exception, and it is what gives the `ground` kind a source:
-        // a whole minute spent on the mat with nothing landing is the grind
-        // §16.6's `ground` lines describe ("works from the top, looking to
-        // posture up"). Without this, `ground` is unreachable — topControl
-        // always follows a takedown and is always absorbed into it — and the
-        // coverage matrix's 10 required ground lines would be dead content.
-        if (onTheGround && !strikeLandedThisCheck) {
-          push('ground', round, { control: true, quiet: true });
+        // It is also the first of the two triggers that give `ground` a source:
+        // a minute spent on the mat with nothing landing is the grind §16.6's
+        // ground lines describe ("works from the top, looking to posture up").
+        if (onTheGround && groundQuiet) {
+          push('ground', round, { side: groundSide, control: true, quiet: true });
+          groundQuiet = false; // consumed — one ground beat per ground period
         }
-        strikeLandedThisCheck = false;
         break;
 
       case 'takedown':
         if (event.success) {
           push('takedown', round, { side: sideOf(event.by), completed: true });
+          if (!onTheGround) groundQuiet = true;
           onTheGround = true;
+          groundSide = sideOf(event.by);
         } else {
           push('stuffed', round, { side: sideOf(event.by), completed: false });
         }
@@ -297,12 +363,22 @@ export function extractBeats(result: FightResult): Beat[] {
           // engine (13,354 of each across 3,000 bouts), so absorption is
           // unconditional and needs no flag — it is simply never its own beat.
           // What it does do is put us on the mat, which is what the `ground`
-          // beat at the next check boundary reads.
+          // beat reads.
+          if (!onTheGround) groundQuiet = true;
           onTheGround = true;
         } else if (event.state === 'standing') {
-          // Only a beat when it means someone got back up.
-          if (onTheGround) push('standup', round, { fromGround: true });
+          // The second `ground` trigger, and the one that carries it: a ground
+          // period that ENDS without a strike landing was a grind, not a
+          // scramble. It comes before the stand-up because that is the order it
+          // happened in — he held him down, then the other man got up.
+          if (onTheGround && groundQuiet) {
+            push('ground', round, { side: groundSide, control: true, quiet: true });
+          }
+          // Only a beat when it means someone got back up. `side` is the man who
+          // HAD top control, so `{Y}` is the one climbing back to his feet.
+          if (onTheGround) push('standup', round, { side: groundSide, fromGround: true });
           onTheGround = false;
+          groundQuiet = false;
         }
         break;
 
@@ -333,6 +409,11 @@ export function extractBeats(result: FightResult): Beat[] {
         break;
 
       case 'roundEnd': {
+        // A round that ends with him still held down and nothing landing is the
+        // same grind; the horn closes the period instead of a stand-up.
+        if (onTheGround && groundQuiet) {
+          push('ground', round, { side: groundSide, control: true, quiet: true });
+        }
         const leader: Side | 'even' =
           event.scoreA > event.scoreB ? 'a' : event.scoreB > event.scoreA ? 'b' : 'even';
         const lowestStamina = Math.min(event.staminaA, event.staminaB);
@@ -347,6 +428,7 @@ export function extractBeats(result: FightResult): Beat[] {
           decisive: Math.abs(event.scoreA - event.scoreB) >= 2,
         });
         onTheGround = false;
+        groundQuiet = false;
         break;
       }
 
@@ -418,12 +500,23 @@ function applyBudget(beats: Omit<Beat, 'index'>[]): Beat[] {
     const slots = BEAT_BUDGET_PER_ROUND - mandatory.length;
     if (slots <= 0) continue;
 
+    // Rank within each kind first, so the decay can be applied by position.
+    // `salience` itself is never touched: it is §16.6's stated score and the
+    // prefix-property test compares it, so the decay lives here as a ranking
+    // adjustment and nowhere else.
+    const seenOfKind = new Map<BeatKind, number>();
     const optional = bucket
       .filter((beat) => !isMandatory(beat.kind))
       // Sort by salience, then by original order — a stable tie-break, so the
       // result cannot depend on the sort implementation.
       .map((beat, order) => ({ beat, order }))
       .sort((x, y) => y.beat.salience - x.beat.salience || x.order - y.order)
+      .map(({ beat, order }) => {
+        const repeat = seenOfKind.get(beat.kind) ?? 0;
+        seenOfKind.set(beat.kind, repeat + 1);
+        return { beat, order, score: beat.salience * REPEAT_DECAY ** repeat };
+      })
+      .sort((x, y) => y.score - x.score || x.order - y.order)
       .slice(0, slots);
     for (const { beat } of optional) kept.add(beat);
   }

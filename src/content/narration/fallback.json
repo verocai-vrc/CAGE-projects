@@ -5,6 +5,7 @@
       "on": "open",
       "voice": "pbp",
       "cooldown": "none",
+      "weight": 0.05,
       "text": "{A} and {B}, and we are under way."
     },
     {
@@ -12,34 +13,39 @@
       "on": "exchange",
       "voice": "pbp",
       "cooldown": "none",
-      "text": "{A} and {B} trade in the middle of the cage."
+      "weight": 0.05,
+      "text": "{X} and {Y} trade in the middle of the cage."
     },
     {
       "id": "fallback-takedown",
       "on": "takedown",
       "voice": "pbp",
       "cooldown": "none",
-      "text": "{A} gets in on the hips and finishes the takedown."
+      "weight": 0.05,
+      "text": "{X} gets in on the hips and finishes the takedown."
     },
     {
       "id": "fallback-stuffed",
       "on": "stuffed",
       "voice": "pbp",
       "cooldown": "none",
-      "text": "{B} defends the shot and stays upright."
+      "weight": 0.05,
+      "text": "{Y} defends the shot and stays upright."
     },
     {
       "id": "fallback-ground",
       "on": "ground",
       "voice": "pbp",
       "cooldown": "none",
-      "text": "{A} works from the top, looking to posture up."
+      "weight": 0.05,
+      "text": "{X} works from the top, looking to posture up."
     },
     {
       "id": "fallback-standup",
       "on": "standup",
       "voice": "pbp",
       "cooldown": "none",
+      "weight": 0.05,
       "text": "Back to the feet, and we reset."
     },
     {
@@ -47,20 +53,23 @@
       "on": "submission",
       "voice": "pbp",
       "cooldown": "none",
-      "text": "{A} goes hunting for the finish."
+      "weight": 0.05,
+      "text": "{X} goes hunting for the finish."
     },
     {
       "id": "fallback-rocked",
       "on": "rocked",
       "voice": "pbp",
       "cooldown": "none",
-      "text": "{B} is hurt, and {A} knows it."
+      "weight": 0.05,
+      "text": "{X} is hurt, and {Y} knows it."
     },
     {
       "id": "fallback-moment",
       "on": "moment",
       "voice": "pbp",
       "cooldown": "none",
+      "weight": 0.05,
       "text": "Big moment here, and {A} is in the middle of it."
     },
     {
@@ -68,6 +77,7 @@
       "on": "corner",
       "voice": "pbp",
       "cooldown": "none",
+      "weight": 0.05,
       "text": "The corner has seen enough of that, and they want a change."
     },
     {
@@ -75,6 +85,7 @@
       "on": "roundEnd",
       "voice": "pbp",
       "cooldown": "none",
+      "weight": 0.05,
       "text": "That is the horn. Round {R} is done."
     },
     {
@@ -82,13 +93,15 @@
       "on": "finish",
       "voice": "pbp",
       "cooldown": "none",
-      "text": "It is over! {A} gets the finish."
+      "weight": 0.05,
+      "text": "It is over! {X} gets the finish."
     },
     {
       "id": "fallback-decision",
       "on": "decision",
       "voice": "pbp",
       "cooldown": "none",
+      "weight": 0.05,
       "text": "To the scorecards, and this one is in the judges' hands."
     }
   ]
