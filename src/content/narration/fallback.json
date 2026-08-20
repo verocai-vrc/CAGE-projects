@@ -1,0 +1,95 @@
+{
+  "lines": [
+    {
+      "id": "fallback-open",
+      "on": "open",
+      "voice": "pbp",
+      "cooldown": "none",
+      "text": "{A} and {B}, and we are under way."
+    },
+    {
+      "id": "fallback-exchange",
+      "on": "exchange",
+      "voice": "pbp",
+      "cooldown": "none",
+      "text": "{A} and {B} trade in the middle of the cage."
+    },
+    {
+      "id": "fallback-takedown",
+      "on": "takedown",
+      "voice": "pbp",
+      "cooldown": "none",
+      "text": "{A} gets in on the hips and finishes the takedown."
+    },
+    {
+      "id": "fallback-stuffed",
+      "on": "stuffed",
+      "voice": "pbp",
+      "cooldown": "none",
+      "text": "{B} defends the shot and stays upright."
+    },
+    {
+      "id": "fallback-ground",
+      "on": "ground",
+      "voice": "pbp",
+      "cooldown": "none",
+      "text": "{A} works from the top, looking to posture up."
+    },
+    {
+      "id": "fallback-standup",
+      "on": "standup",
+      "voice": "pbp",
+      "cooldown": "none",
+      "text": "Back to the feet, and we reset."
+    },
+    {
+      "id": "fallback-submission",
+      "on": "submission",
+      "voice": "pbp",
+      "cooldown": "none",
+      "text": "{A} goes hunting for the finish."
+    },
+    {
+      "id": "fallback-rocked",
+      "on": "rocked",
+      "voice": "pbp",
+      "cooldown": "none",
+      "text": "{B} is hurt, and {A} knows it."
+    },
+    {
+      "id": "fallback-moment",
+      "on": "moment",
+      "voice": "pbp",
+      "cooldown": "none",
+      "text": "Big moment here, and {A} is in the middle of it."
+    },
+    {
+      "id": "fallback-corner",
+      "on": "corner",
+      "voice": "pbp",
+      "cooldown": "none",
+      "text": "The corner has seen enough of that, and they want a change."
+    },
+    {
+      "id": "fallback-roundEnd",
+      "on": "roundEnd",
+      "voice": "pbp",
+      "cooldown": "none",
+      "text": "That is the horn. Round {R} is done."
+    },
+    {
+      "id": "fallback-finish",
+      "on": "finish",
+      "voice": "pbp",
+      "cooldown": "none",
+      "text": "It is over! {A} gets the finish."
+    },
+    {
+      "id": "fallback-decision",
+      "on": "decision",
+      "voice": "pbp",
+      "cooldown": "none",
+      "text": "To the scorecards, and this one is in the judges' hands."
+    }
+  ]
+}

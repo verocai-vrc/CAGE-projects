@@ -269,6 +269,55 @@ export const CoachContentSchema = z.object({
   temperaments: CoachTraitPoolSchema(CoachTemperamentSchema),
 });
 
+// Loop 7.10 (§16.6): narration line pools. The shape exists and is validated
+// before a single line is written — the coverage matrix (§16.6's 204-line floor
+// table) is only enforceable against a schema that already exists, and a pool
+// authored against a shape that then changes is a rewrite.
+//
+// `when` is structured data, never code. That is a determinism requirement as
+// much as a safety one: content is Zod-validated and frozen, and an eval-shaped
+// predicate could not be validated at all, let alone replayed identically.
+export const PredicateClauseSchema = z.union([
+  z.object({ eq: z.union([z.string(), z.number(), z.boolean()]) }).strict(),
+  z.object({ ne: z.union([z.string(), z.number(), z.boolean()]) }).strict(),
+  z.object({ gt: z.number() }).strict(),
+  z.object({ gte: z.number() }).strict(),
+  z.object({ lt: z.number() }).strict(),
+  z.object({ lte: z.number() }).strict(),
+  z.object({ in: z.array(z.union([z.string(), z.number()])).min(1) }).strict(),
+]);
+
+export const PredicateSchema = z.record(z.string().min(1), PredicateClauseSchema);
+
+export const BeatKindSchema = z.enum([
+  'open', 'exchange', 'takedown', 'stuffed', 'ground', 'standup', 'submission',
+  'rocked', 'moment', 'corner', 'roundEnd', 'finish', 'decision',
+]);
+
+export const NarrationVoiceSchema = z.enum(['pbp', 'colour']);
+export const NarrationCooldownSchema = z.enum(['fight', 'round', 'none']);
+
+/** §16.6's line schema. `.strict()` because a typo'd key in a 260-line pool is
+ *  invisible otherwise — the line would load, never match, and read as a
+ *  content gap rather than a bug. */
+export const NarrationLineSchema = z
+  .object({
+    id: z.string().min(1),
+    on: BeatKindSchema,
+    when: PredicateSchema.optional(),
+    tags: z.array(z.string().min(1)).optional(),
+    voice: NarrationVoiceSchema,
+    weight: z.number().positive().optional(),
+    priority: z.number().int().min(0).optional(),
+    cooldown: NarrationCooldownSchema.optional(),
+    text: z.string().min(1),
+  })
+  .strict();
+
+export const NarrationPoolSchema = z.object({
+  lines: z.array(NarrationLineSchema).min(1),
+});
+
 // Loop 7.6 (§16.5): nickname pools. One entry is a word plus its base weight
 // and, optionally, the archetypes and nationalities it leans toward — an entry
 // with neither is universal. Leaning is a weight multiplier rather than a
