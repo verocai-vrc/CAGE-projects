@@ -13,3 +13,5 @@
 export * from './types';
 export * from './manifest';
 export * from './beats';
+export * from './slots';
+export * from './select';
