@@ -9,6 +9,7 @@ import type { Fighter, FightRecord, FightResult, Injury, Origin } from '../engin
 import { fighterFromOrigin } from './origin';
 import { nicknameFor } from './identity';
 import { careerRng } from './seed';
+import { generateCoach } from './coach';
 import { initialCareerState, type CareerState } from '../state/store';
 
 export interface ProgressionBalance {
@@ -189,6 +190,12 @@ export function startCareer(
     // first thing that has ever read `origin.mentorGymId`, which the amateur
     // wrapper has been authoring since M4.
     gymId: origin.mentorGymId,
+    // An anchor gym, so it re-resolves from the id alone and does not need to be
+    // carried on the career (see gym.ts's resolveGym).
+    currentGym: null,
+    // Loop 7.9 (§16.8): the corner, on its own addressable slot in the career
+    // stream (§16.2) so rolling it cannot shift the gym or the first opponent.
+    coach: generateCoach(careerRng(seed, 'coach', 0)),
     hype: Math.max(0, Math.min(100, origin.hypeModifier)),
   };
 }

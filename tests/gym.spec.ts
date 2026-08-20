@@ -16,17 +16,24 @@ import { amateurMoments, balance, gymContent } from '../src/content';
 import {
   ANCHOR_GYMS,
   DEFAULT_GYM_ID,
+  GYM_MOVE_TRAINING_PARTNERS,
   SPECIALTY_ATTRIBUTES,
+  acceptGymMove,
   generateGym,
   gymById,
+  gymMoveCost,
+  gymMoveOffer,
   payGymDues,
+  resolveGym,
   specialtyMultiplierFor,
   trainingPartnerCeiling,
   type Gym,
+  type GymMoveOffer,
 } from '../src/career/gym';
 import { resolveCampWeek } from '../src/career/camp';
 import { startCareer } from '../src/career/progression';
 import { GymSchema } from '../src/state/schema';
+import { initialCareerState, type CareerState } from '../src/state/store';
 
 function makeFighter(): Fighter {
   return {
@@ -237,5 +244,183 @@ describe('procedural gyms', () => {
   it('never collide in id across a career-sized sample', () => {
     const ids = Array.from({ length: 300 }, (_, i) => generateGym(mulberry32(i), balance).id);
     expect(new Set(ids).size).toBe(ids.length);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Loop 7.9 — the gym move (§16.8)
+//
+// "Gyms can be changed, or `specialty` is a dice roll wearing a mechanic's
+// coat." Without the move, the gym the amateur wrapper handed the player in
+// week 0 decides which attributes train well for an entire career, off the back
+// of a prose choice about a mentor.
+// ---------------------------------------------------------------------------
+
+/** A career mid-run, at an anchor gym, with money in the bank. */
+function careerAt(gymId: string, purse: number): CareerState {
+  return {
+    ...initialCareerState,
+    seed: 'MOVESEED',
+    gymId,
+    purse,
+    week: 12,
+    lifeBars: { ...initialCareerState.lifeBars, trainingPartners: 90 },
+  };
+}
+
+/** The first offer a stream actually produces, for tests about what a move
+ *  does rather than about how often one appears. */
+function anOffer(): GymMoveOffer {
+  for (let seed = 0; seed < 200; seed++) {
+    const offer = gymMoveOffer(mulberry32(seed), balance);
+    if (offer) return offer;
+  }
+  throw new Error('no gym move offer in 200 seeds — check gymMoveOfferChance');
+}
+
+describe('the gym move offer (§16.8)', () => {
+  it('is deterministic — the same seed gives the same offer', () => {
+    for (let seed = 0; seed < 50; seed++) {
+      expect(gymMoveOffer(mulberry32(seed), balance)).toEqual(gymMoveOffer(mulberry32(seed), balance));
+    }
+  });
+
+  it('sometimes offers nothing, and sometimes offers something', () => {
+    // A move offered every single week is not an offer, it is a menu item.
+    const offers = Array.from({ length: 300 }, (_, i) => gymMoveOffer(mulberry32(i), balance));
+    const made = offers.filter((o) => o !== null);
+    expect(made.length).toBeGreaterThan(0);
+    expect(made.length).toBeLessThan(offers.length);
+  });
+
+  it('consumes a fixed number of draws whether or not an offer is made', () => {
+    // Otherwise "no offer this week" would shift every later career draw, and
+    // the seed would stop reproducing the career (§16.2).
+    const drawsUsed = (seed: number) => {
+      const rng = mulberry32(seed);
+      let count = 0;
+      gymMoveOffer({ next: () => { count++; return rng.next(); } }, balance);
+      return count;
+    };
+    const counts = Array.from({ length: 200 }, (_, i) => drawsUsed(i));
+    expect(new Set(counts).size).toBe(1);
+  });
+
+  it('comes with a room and the man who runs it', () => {
+    const offer = anOffer();
+    expect(GymSchema.safeParse(offer.gym).success).toBe(true);
+    expect(offer.coach.name).toMatch(/\S+ \S+/);
+    expect(offer.cost).toBeGreaterThan(0);
+  });
+
+  it('prices a better room higher', () => {
+    // The good room is expensive twice — once to walk in, and every week after.
+    const cheap = gymMoveCost({ ...striking, reputation: 30 }, balance);
+    const dear = gymMoveCost({ ...striking, reputation: 95 }, balance);
+    expect(dear).toBeGreaterThan(cheap);
+  });
+});
+
+describe('accepting a gym move (§16.8)', () => {
+  it('changes the gym, debits the purse, and resets the bar', () => {
+    const offer = anOffer();
+    const before = careerAt('neighborhood-gym', offer.cost + 5000);
+    const result = acceptGymMove(before, offer);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.career.gymId).toBe(offer.gym.id);
+    expect(result.career.purse).toBe(before.purse - offer.cost);
+    expect(result.career.lifeBars.trainingPartners).toBe(GYM_MOVE_TRAINING_PARTNERS);
+  });
+
+  it('changes the corner too — the coach belongs to the room', () => {
+    const offer = anOffer();
+    const result = acceptGymMove(careerAt('neighborhood-gym', 99999), offer);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.career.coach).toEqual(offer.coach);
+  });
+
+  it('is pure — the career handed in is not mutated', () => {
+    const offer = anOffer();
+    const before = careerAt('neighborhood-gym', 99999);
+    const snapshot = structuredClone(before);
+    acceptGymMove(before, offer);
+    expect(before).toEqual(snapshot);
+  });
+
+  it('the next camp week resolves against the new specialty', () => {
+    // This is the whole point of the loop: the move has to reach camp, or the
+    // player paid money to change a label.
+    const offer = anOffer();
+    const moved = acceptGymMove(careerAt('neighborhood-gym', 99999), offer);
+    expect(moved.ok).toBe(true);
+    if (!moved.ok) return;
+
+    const gym = resolveGym(moved.career);
+    expect(gym.id).toBe(offer.gym.id);
+    expect(gym.specialty).toBe(offer.gym.specialty);
+
+    // And the bias the new specialty implies is the one camp actually applies.
+    const week = campAt(gym);
+    const specialtyAttrs = SPECIALTY_ATTRIBUTES[gym.specialty];
+    const base = makeFighter().attributes;
+    for (const attribute of specialtyAttrs) {
+      expect(week[attribute]).toBeGreaterThan(base[attribute]);
+    }
+  });
+
+  it('a moved-to gym survives being stored on the career', () => {
+    // A procedural gym exists in no content file, so gymById cannot find it —
+    // resolveGym must read it off the career or camp silently falls back to the
+    // neighbourhood gym and the move is undone.
+    const offer = anOffer();
+    const moved = acceptGymMove(careerAt('neighborhood-gym', 99999), offer);
+    if (!moved.ok) throw new Error('expected the move to be accepted');
+    expect(gymById(offer.gym.id).id).toBe(DEFAULT_GYM_ID); // not in content
+    expect(resolveGym(moved.career).id).toBe(offer.gym.id); // but resolved anyway
+  });
+
+  it('anchor gyms still resolve from the id alone', () => {
+    expect(resolveGym({ gymId: 'ironside-mma', currentGym: null }).name).toBe('Ironside MMA');
+  });
+});
+
+describe('a move that cannot be taken surfaces a reason (§16.8)', () => {
+  it('refuses when the player cannot afford it', () => {
+    // "A reason surfaced rather than a dead button" — a disabled control with
+    // no explanation is the failure mode this exists to prevent.
+    const offer = anOffer();
+    const result = acceptGymMove(careerAt('neighborhood-gym', offer.cost - 1), offer);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason).toBe('insufficient-funds');
+    expect(result.message.length).toBeGreaterThan(0);
+  });
+
+  it('a refused move changes nothing', () => {
+    const offer = anOffer();
+    const before = careerAt('neighborhood-gym', 0);
+    const result = acceptGymMove(before, offer);
+    expect(result.ok).toBe(false);
+    expect(before.gymId).toBe('neighborhood-gym');
+    expect(before.purse).toBe(0);
+    expect(before.lifeBars.trainingPartners).toBe(90);
+  });
+
+  it('affording it exactly is enough', () => {
+    // An off-by-one here would read as "the game lied about the price".
+    const offer = anOffer();
+    expect(acceptGymMove(careerAt('neighborhood-gym', offer.cost), offer).ok).toBe(true);
+  });
+
+  it('refuses a move to the gym the player is already at', () => {
+    const offer = anOffer();
+    const already = { ...careerAt(offer.gym.id, 99999), currentGym: offer.gym };
+    const result = acceptGymMove(already, offer);
+    expect(result.ok).toBe(false);
+    if (result.ok) return;
+    expect(result.reason).toBe('already-there');
   });
 });

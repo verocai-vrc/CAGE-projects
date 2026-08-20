@@ -14,7 +14,7 @@
 import { useState } from 'preact/hooks';
 import { resolveCampWeek, type CampAllocation } from '../../career/camp';
 import { campFocusMultiplier, resolveLifeWeek, trainingPartnerQuality } from '../../career/life';
-import { gymById, payGymDues, trainingPartnerCeiling } from '../../career/gym';
+import { payGymDues, resolveGym, trainingPartnerCeiling } from '../../career/gym';
 import { resolveWeightCutWeek } from '../../career/weightcut';
 import { balance } from '../../content';
 import { useCageStore } from '../../state/store';
@@ -52,7 +52,10 @@ export function CampScreen() {
     // Loop 7.8 (§16.8): all three gym effects land here, which is the section's
     // own test of whether a gym ships — "a gym that does not touch camp does
     // not ship."
-    const gym = gymById(career.gymId);
+    // Loop 7.9: resolveGym, not gymById — after a move the player trains at a
+    // procedural gym that exists in no content file and so cannot be looked up
+    // by id. Anchor gyms still resolve exactly as before.
+    const gym = resolveGym(career);
     const result = resolveCampWeek(career.player, allocation, balance, {
       // The gym's reputation is the CEILING; the life bar modulates it. Before
       // this, a full bar at a terrible gym trained as well as one at the best

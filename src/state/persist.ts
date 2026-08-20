@@ -28,7 +28,11 @@ const STORAGE_KEY = 'cage:save';
 // would think the editor lied to them. Hence the bump.
 // Loop 7.8: CareerState gained a required `gymId` (§16.8). A v6 envelope has
 // none, so it fails validation — the bump makes that an intentional discard.
-const SAVE_VERSION = 7;
+// Loop 7.9: CareerState gained required `coach` and `currentGym` (§16.8). Both
+// are nullable, so a v7 envelope missing them would FAIL validation rather than
+// load — Zod treats a missing key as undefined, not null. The bump makes the
+// discard intentional rather than a schema surprise, same as every bump above.
+const SAVE_VERSION = 8;
 const DEBOUNCE_MS = 500;
 
 interface SaveEnvelope {

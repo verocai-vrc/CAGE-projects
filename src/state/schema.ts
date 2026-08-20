@@ -160,6 +160,37 @@ export const LifeBarsSchema = z.object({
   sponsors: z.number().min(0).max(100),
 });
 
+// Loop 7.8 (§16.8): a gym. Declared above CareerStateSchema because a career
+// that has moved gyms carries the gym itself (`currentGym`) — a procedural gym
+// exists in no content file, so it cannot be re-resolved from its id alone. The
+// content pools that generate them live with the other content schemas below.
+export const GymSpecialtySchema = z.enum(['striking', 'grappling', 'conditioning']);
+
+export const GymSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  city: z.string().min(1),
+  country: z.string().min(1),
+  specialty: GymSpecialtySchema,
+  reputation: z.number().min(0).max(100),
+  dues: z.number().min(0),
+});
+
+// Loop 7.9 (§16.8): the coach. Unlike the gym there are no authored anchors —
+// the amateur wrapper names gyms in its prose but never a coach, so every coach
+// in the game is procedural. Declared above CareerStateSchema because that
+// schema embeds it; the content pools live with the other content schemas below.
+export const CoachBackgroundSchema = z.enum(['boxing', 'wrestling', 'bjj', 'kickboxing', 'allround']);
+export const CoachTemperamentSchema = z.enum(['calm', 'furious', 'analytical', 'gambler']);
+
+export const CoachSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  background: CoachBackgroundSchema,
+  temperament: CoachTemperamentSchema,
+  acuity: z.number().min(0).max(100),
+});
+
 export const CareerStateSchema = z.object({
   // §16.2. Empty is valid: initialCareerState carries no career to seed.
   seed: z.string(),
@@ -172,6 +203,12 @@ export const CareerStateSchema = z.object({
   ranking: z.number().int().min(1).nullable(),
   // §16.8. Empty is valid: initialCareerState has no career and so no gym.
   gymId: z.string(),
+  // Loop 7.9 (§16.8). Null is valid two ways: initialCareerState has no career,
+  // and a career that never moved gyms resolves its anchor from `gymId` alone.
+  currentGym: GymSchema.nullable(),
+  // Loop 7.9 (§16.8). Null is valid: initialCareerState has no career and so no
+  // corner. Rolled at career start and replaced by a gym move.
+  coach: CoachSchema.nullable(),
   lifeBars: LifeBarsSchema,
   weightCutProgress: z.number().min(0).max(100),
   fightHistory: z.array(FightSummarySchema),
@@ -211,23 +248,25 @@ export const NamePoolSchema = z.object({
 // already emits and its prose already characterises by name — they are authored
 // rather than generated so "Ironside MMA" is the same gym the wrapper described.
 // Everything else is procedural from the name parts and city list below.
-export const GymSpecialtySchema = z.enum(['striking', 'grappling', 'conditioning']);
-
-export const GymSchema = z.object({
-  id: z.string().min(1),
-  name: z.string().min(1),
-  city: z.string().min(1),
-  country: z.string().min(1),
-  specialty: GymSpecialtySchema,
-  reputation: z.number().min(0).max(100),
-  dues: z.number().min(0),
-});
-
 export const GymContentSchema = z.object({
   anchors: z.array(GymSchema).min(1),
   namePartsA: z.array(z.string().min(1)).min(1),
   namePartsB: z.array(z.string().min(1)).min(1),
   cities: z.array(z.object({ city: z.string().min(1), country: z.string().min(1) })).min(1),
+});
+
+/** A weighted coach-pool entry whose `id` must be one of the enum's members.
+ *  The schema pins the ids rather than accepting free strings so a typo in the
+ *  JSON fails at boot rather than silently producing a temperament that no
+ *  §16.7 line pool has lines for. */
+const CoachTraitPoolSchema = <T extends z.ZodTypeAny>(id: T) =>
+  z.array(z.object({ id, label: z.string().min(1), weight: z.number().positive() })).min(1);
+
+export const CoachContentSchema = z.object({
+  firstNames: z.array(z.string().min(1)).min(1),
+  lastNames: z.array(z.string().min(1)).min(1),
+  backgrounds: CoachTraitPoolSchema(CoachBackgroundSchema),
+  temperaments: CoachTraitPoolSchema(CoachTemperamentSchema),
 });
 
 // Loop 7.6 (§16.5): nickname pools. One entry is a word plus its base weight
@@ -401,6 +440,8 @@ export const BalanceSchema = z.object({
   specialtyMultiplier: z.number().min(0),
   offSpecialtyMultiplier: z.number().min(0),
   gymDuesBase: z.number().min(0),
+  gymMoveCostBase: z.number().min(0),
+  gymMoveOfferChance: z.number().min(0).max(1),
   baseOfferPurse: z.number().min(0),
   offerPursePerRankingPoint: z.number().min(0),
   offerPursePerHype: z.number().min(0),

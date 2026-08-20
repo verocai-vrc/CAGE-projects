@@ -61,6 +61,16 @@ const fixtureCareer: CareerState = {
   hype: 35,
   ranking: 12,
   gymId: 'ironside-mma',
+  // An anchor gym, so it re-resolves from the id alone and the career carries
+  // no gym of its own (Loop 7.9).
+  currentGym: null,
+  coach: {
+    id: 'coach-vince-mercer',
+    name: 'Vince Mercer',
+    background: 'boxing',
+    temperament: 'calm',
+    acuity: 62,
+  },
   lifeBars: { trainingPartners: 80, partner: 60, sponsors: 90 },
   weightCutProgress: 45,
   fightHistory: [],

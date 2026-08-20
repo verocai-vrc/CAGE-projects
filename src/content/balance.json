@@ -41,6 +41,8 @@
   "specialtyMultiplier": 1.35,
   "offSpecialtyMultiplier": 0.85,
   "gymDuesBase": 90,
+  "gymMoveCostBase": 1800,
+  "gymMoveOfferChance": 0.35,
   "baseOfferPurse": 5000,
   "offerPursePerRankingPoint": 400,
   "offerPursePerHype": 50,

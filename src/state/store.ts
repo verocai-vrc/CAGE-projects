@@ -7,6 +7,10 @@ import { create } from 'zustand';
 import type { Fighter, FightRecord, FightSummary, Origin } from '../engine/types';
 import { initialLifeBars, type LifeBars } from '../career/life';
 import { initialCutProgress } from '../career/weightcut';
+// Type-only: career/gym.ts imports CareerState back from here, and `import
+// type` erases at compile time, so the cycle never exists at runtime.
+import type { Gym } from '../career/gym';
+import type { Coach } from '../career/coach';
 
 /**
  * Loop 7.4 (§16.5): kept as an alias so the UI's existing imports do not churn,
@@ -39,6 +43,15 @@ export interface CareerState {
    *  at career start — the mentor gym is where the player starts — and changed
    *  by a gym move (Loop 7.9). Empty only on `initialCareerState`. */
   gymId: string;
+  /** Loop 7.9 (§16.8): the gym itself, once the player has moved to one that
+   *  exists in no content file. Anchor gyms resolve from `gymId` alone, so this
+   *  stays null for a career that never moves; `career/gym.ts`'s `resolveGym`
+   *  is what reads both and is what camp calls. */
+  currentGym: Gym | null;
+  /** Loop 7.9 (§16.8): the corner. Rolled at career start from the `coach`
+   *  stream, replaced by a gym move — the coach belongs to the room. Null only
+   *  on `initialCareerState`. */
+  coach: Coach | null;
   lifeBars: LifeBars; // DESIGN.md §8.3 — decays weekly (career/life.ts)
   weightCutProgress: number; // 0..100, DESIGN.md §8.2 — camp-long diet/hydration discipline (career/weightcut.ts)
   fightHistory: FightSummary[]; // summaries only — full event logs are never persisted (DESIGN.md §2)
@@ -55,6 +68,8 @@ export const initialCareerState: CareerState = {
   hype: 0,
   ranking: null,
   gymId: '',
+  currentGym: null,
+  coach: null,
   lifeBars: initialLifeBars,
   weightCutProgress: initialCutProgress,
   fightHistory: [],

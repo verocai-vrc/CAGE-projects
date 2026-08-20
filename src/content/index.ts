@@ -9,6 +9,7 @@ import {
   NamePoolSchema,
   NicknameContentSchema,
   GymContentSchema,
+  CoachContentSchema,
 } from '../state/schema';
 import { loadContent } from './load';
 import balanceRaw from './balance.json';
@@ -24,6 +25,7 @@ import namesIrelandRaw from './names/ireland.json';
 import namesPolandRaw from './names/poland.json';
 import nicknamesRaw from './names/nicknames.json';
 import gymsRaw from './gyms.json';
+import coachesRaw from './coaches.json';
 
 export const balance = loadContent('balance.json', balanceRaw, BalanceSchema);
 export const attributeMeta = loadContent('attributes.json', attributesRaw, z.array(AttributeMetaSchema));
@@ -46,3 +48,4 @@ export const namePools = Object.freeze(
 
 export const nicknames = loadContent('names/nicknames.json', nicknamesRaw, NicknameContentSchema);
 export const gymContent = loadContent('gyms.json', gymsRaw, GymContentSchema);
+export const coachContent = loadContent('coaches.json', coachesRaw, CoachContentSchema);

@@ -1,0 +1,26 @@
+{
+  "firstNames": [
+    "Dominic", "Ruben", "Marcus", "Errol", "Vince", "Teddy", "Nikos", "Aurelio",
+    "Bruno", "Kenji", "Piotr", "Declan", "Ivan", "Gus", "Malik", "Ramon",
+    "Felix", "Otto", "Sean", "Cyrus", "Hugo", "Lorne", "Damien", "Wes"
+  ],
+  "lastNames": [
+    "Vance", "Okafor", "Mercer", "Salas", "Kilbride", "Novak", "Ferreira",
+    "Whitlock", "Bergman", "Tanaka", "Wozniak", "Doyle", "Kovac", "Halloran",
+    "Bright", "Alvarez", "Moreau", "Dietrich", "Rafferty", "Castellano",
+    "Pryor", "Lindqvist", "Amaro", "Feeney"
+  ],
+  "backgrounds": [
+    { "id": "boxing", "label": "boxing", "weight": 1 },
+    { "id": "wrestling", "label": "wrestling", "weight": 1 },
+    { "id": "bjj", "label": "jiu-jitsu", "weight": 1 },
+    { "id": "kickboxing", "label": "kickboxing", "weight": 1 },
+    { "id": "allround", "label": "mixed martial arts", "weight": 1.2 }
+  ],
+  "temperaments": [
+    { "id": "calm", "label": "calm", "weight": 1 },
+    { "id": "furious", "label": "furious", "weight": 1 },
+    { "id": "analytical", "label": "analytical", "weight": 1 },
+    { "id": "gambler", "label": "gambler", "weight": 1 }
+  ]
+}
